@@ -331,10 +331,10 @@ function InboxPage() {
                   </pre>
                 </div>
 
-                {selected.suggestedReply && (
-                  <div className="rounded-xl border border-border/70 bg-card">
-                    <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2 text-xs font-semibold text-muted-foreground">
-                      <Bot className="h-3.5 w-3.5 text-brand" /> Suggested reply
+                <div className="rounded-xl border border-border/70 bg-card">
+                  <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2 text-xs font-semibold text-muted-foreground">
+                    <Bot className="h-3.5 w-3.5 text-brand" /> Reply
+                    {selected.suggestedReply && (
                       <button
                         onClick={() =>
                           setReply(aiReplies[selected.id] ?? selected.suggestedReply)
@@ -343,65 +343,77 @@ function InboxPage() {
                       >
                         Use draft
                       </button>
-                    </div>
-                    <div className="p-4">
-                      <Textarea
-                        value={
-                          reply || aiReplies[selected.id] || selected.suggestedReply
-                        }
-                        onChange={(e) => setReply(e.target.value)}
-                        rows={6}
-                        className="resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
-                      />
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <Sparkles className="h-3 w-3" /> Tone: warm · Length: brief
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={loadingReply}
-                            onClick={async () => {
-                              setLoadingReply(true);
-                              try {
-                                const { text } = await callGenerateReply({
-                                  data: {
-                                    from: selected.from.email,
-                                    company: selected.from.company,
-                                    subject: selected.subject,
-                                    body: selected.body,
-                                    tone: "warm",
-                                    length: "brief",
-                                  },
-                                });
-                                setAiReplies((r) => ({ ...r, [selected.id]: text }));
-                                setReply(text);
-                                toast.success("Fresh draft ready");
-                              } catch (e) {
-                                toast.error(
-                                  e instanceof Error ? e.message : "AI reply failed",
-                                );
-                              } finally {
-                                setLoadingReply(false);
-                              }
-                            }}
-                          >
-                            {loadingReply ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Reply className="h-3.5 w-3.5" />
-                            )}
-                            Regenerate
-                          </Button>
-                          <Button size="sm" onClick={() => toast.success("Reply sent (demo)")}>
-                            <Send className="h-3.5 w-3.5" /> Send reply
-                          </Button>
-                        </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <Textarea
+                      value={
+                        reply || aiReplies[selected.id] || selected.suggestedReply || ""
+                      }
+                      onChange={(e) => setReply(e.target.value)}
+                      rows={6}
+                      placeholder="Write your reply, or hit Regenerate for an AI draft…"
+                      className="resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                    />
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <Sparkles className="h-3 w-3" /> Tone: warm · Length: brief
+                        {connected && (
+                          <span className="ml-2 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">
+                            Send via {selected.mailbox}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={loadingReply}
+                          onClick={async () => {
+                            setLoadingReply(true);
+                            try {
+                              const { text } = await callGenerateReply({
+                                data: {
+                                  from: selected.from.email,
+                                  company: selected.from.company,
+                                  subject: selected.subject,
+                                  body: selected.body,
+                                  tone: "warm",
+                                  length: "brief",
+                                },
+                              });
+                              setAiReplies((r) => ({ ...r, [selected.id]: text }));
+                              setReply(text);
+                              toast.success("Fresh draft ready");
+                            } catch (e) {
+                              toast.error(
+                                e instanceof Error ? e.message : "AI reply failed",
+                              );
+                            } finally {
+                              setLoadingReply(false);
+                            }
+                          }}
+                        >
+                          {loadingReply ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Reply className="h-3.5 w-3.5" />
+                          )}
+                          Regenerate
+                        </Button>
+                        <Button size="sm" disabled={sending} onClick={handleSend}>
+                          {sending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Send className="h-3.5 w-3.5" />
+                          )}
+                          Send reply
+                        </Button>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+
               </div>
             </ScrollArea>
 
