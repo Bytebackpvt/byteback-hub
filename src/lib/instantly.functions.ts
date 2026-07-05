@@ -321,4 +321,112 @@ export const updateLeadStatus = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export type InstantlyAnalytics = {
+  emailsSent: number;
+  opens: number;
+  replies: number;
+  clicks: number;
+  bounced: number;
+  unsubscribed: number;
+  newLeads: number;
+  opportunities: number;
+  daily: Array<{ date: string; sent: number; opened: number; replied: number }>;
+  categoryBreakdown: Array<{ name: string; value: number; color: string }>;
+};
+
+type OverviewResponse = {
+  open_count?: number;
+  reply_count?: number;
+  click_count?: number;
+  bounced_count?: number;
+  unsubscribed_count?: number;
+  emails_sent_count?: number;
+  new_leads_count?: number;
+  total_opportunities?: number;
+};
+
+type DailyRow = {
+  date: string;
+  sent?: number;
+  opened?: number;
+  unique_opened?: number;
+  replies?: number;
+  clicks?: number;
+};
+
+export const getInstantlyAnalytics = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const [overview, dailyRes, leadsRes] = await Promise.all([
+      instantly<OverviewResponse>("/campaigns/analytics/overview"),
+      instantly<{ items?: DailyRow[] } | DailyRow[]>("/campaigns/analytics/daily", {
+        query: { limit: 14 },
+      }).catch(() => ({ items: [] as DailyRow[] })),
+      instantly<{ items?: RawLead[] }>("/leads/list", {
+        method: "POST",
+        body: { limit: 500 },
+      }).catch(() => ({ items: [] as RawLead[] })),
+    ]);
+
+    const dailyItems: DailyRow[] = Array.isArray(dailyRes)
+      ? dailyRes
+      : (dailyRes.items ?? []);
+    const daily = dailyItems.slice(-7).map((d) => ({
+      date: new Date(d.date).toLocaleDateString(undefined, { weekday: "short" }),
+      sent: d.sent ?? 0,
+      opened: d.opened ?? d.unique_opened ?? 0,
+      replied: d.replies ?? 0,
+    }));
+
+    const leads = leadsRes.items ?? [];
+    const buckets = {
+      Interested: 0,
+      Meeting: 0,
+      Won: 0,
+      "Not interested": 0,
+      Pending: 0,
+    };
+    for (const l of leads) {
+      const i = l.lt_interest_status;
+      if (i === 1) buckets.Interested += 1;
+      else if (i === 2 || i === 3) buckets.Meeting += 1;
+      else if (i === 4) buckets.Won += 1;
+      else if (i === -1 || i === -2 || i === -3) buckets["Not interested"] += 1;
+      else buckets.Pending += 1;
+    }
+
+    const palette: Record<string, string> = {
+      Interested: "oklch(0.62 0.22 274)",
+      Meeting: "oklch(0.65 0.2 300)",
+      Won: "hsl(150 60% 45%)",
+      "Not interested": "hsl(0 70% 55%)",
+      Pending: "hsl(220 10% 60%)",
+    };
+    const categoryBreakdown = Object.entries(buckets)
+      .filter(([, v]) => v > 0)
+      .map(([name, value]) => ({ name, value, color: palette[name] }));
+
+    return {
+      connected: true as const,
+      analytics: {
+        emailsSent: overview.emails_sent_count ?? 0,
+        opens: overview.open_count ?? 0,
+        replies: overview.reply_count ?? 0,
+        clicks: overview.click_count ?? 0,
+        bounced: overview.bounced_count ?? 0,
+        unsubscribed: overview.unsubscribed_count ?? 0,
+        newLeads: overview.new_leads_count ?? 0,
+        opportunities: overview.total_opportunities ?? 0,
+        daily,
+        categoryBreakdown,
+      } satisfies InstantlyAnalytics,
+    };
+  } catch (err) {
+    return {
+      connected: false as const,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
+});
+
+
 
