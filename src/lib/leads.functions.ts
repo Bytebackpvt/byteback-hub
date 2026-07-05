@@ -1,8 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 
-async function getOwnedWorkspaceId(supabase: ReturnType<typeof requireSupabaseAuth>["_output"]["supabase"], userId: string) {
+async function getOwnedWorkspaceId(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+) {
   const { data, error } = await supabase
     .from("workspaces")
     .select("id")
@@ -13,6 +18,7 @@ async function getOwnedWorkspaceId(supabase: ReturnType<typeof requireSupabaseAu
   if (error) throw error;
   return data?.id as string | undefined;
 }
+
 
 export const listLeadScores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
