@@ -21,6 +21,11 @@ import { Route as OnboardingDoneRouteImport } from './routes/onboarding.done'
 import { Route as OnboardingBusinessTypeRouteImport } from './routes/onboarding.business-type'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
+import { Route as AuthenticatedAppTasksRouteImport } from './routes/_authenticated/app.tasks'
+import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/app.pipeline'
+import { Route as AuthenticatedAppInboxRouteImport } from './routes/_authenticated/app.inbox'
+import { Route as AuthenticatedAppCrmRouteImport } from './routes/_authenticated/app.crm'
+import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authenticated/app.analytics'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -81,6 +86,33 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppTasksRoute = AuthenticatedAppTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppPipelineRoute =
+  AuthenticatedAppPipelineRouteImport.update({
+    id: '/pipeline',
+    path: '/pipeline',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppInboxRoute = AuthenticatedAppInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppCrmRoute = AuthenticatedAppCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppAnalyticsRoute =
+  AuthenticatedAppAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -93,6 +125,11 @@ export interface FileRoutesByFullPath {
   '/onboarding/team': typeof OnboardingTeamRoute
   '/onboarding/workspace': typeof OnboardingWorkspaceRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/app/analytics': typeof AuthenticatedAppAnalyticsRoute
+  '/app/crm': typeof AuthenticatedAppCrmRoute
+  '/app/inbox': typeof AuthenticatedAppInboxRoute
+  '/app/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -104,6 +141,11 @@ export interface FileRoutesByTo {
   '/onboarding/team': typeof OnboardingTeamRoute
   '/onboarding/workspace': typeof OnboardingWorkspaceRoute
   '/onboarding': typeof OnboardingIndexRoute
+  '/app/analytics': typeof AuthenticatedAppAnalyticsRoute
+  '/app/crm': typeof AuthenticatedAppCrmRoute
+  '/app/inbox': typeof AuthenticatedAppInboxRoute
+  '/app/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRoutesById {
@@ -119,6 +161,11 @@ export interface FileRoutesById {
   '/onboarding/team': typeof OnboardingTeamRoute
   '/onboarding/workspace': typeof OnboardingWorkspaceRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/_authenticated/app/analytics': typeof AuthenticatedAppAnalyticsRoute
+  '/_authenticated/app/crm': typeof AuthenticatedAppCrmRoute
+  '/_authenticated/app/inbox': typeof AuthenticatedAppInboxRoute
+  '/_authenticated/app/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/_authenticated/app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRouteTypes {
@@ -134,6 +181,11 @@ export interface FileRouteTypes {
     | '/onboarding/team'
     | '/onboarding/workspace'
     | '/onboarding/'
+    | '/app/analytics'
+    | '/app/crm'
+    | '/app/inbox'
+    | '/app/pipeline'
+    | '/app/tasks'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -145,6 +197,11 @@ export interface FileRouteTypes {
     | '/onboarding/team'
     | '/onboarding/workspace'
     | '/onboarding'
+    | '/app/analytics'
+    | '/app/crm'
+    | '/app/inbox'
+    | '/app/pipeline'
+    | '/app/tasks'
     | '/app'
   id:
     | '__root__'
@@ -159,6 +216,11 @@ export interface FileRouteTypes {
     | '/onboarding/team'
     | '/onboarding/workspace'
     | '/onboarding/'
+    | '/_authenticated/app/analytics'
+    | '/_authenticated/app/crm'
+    | '/_authenticated/app/inbox'
+    | '/_authenticated/app/pipeline'
+    | '/_authenticated/app/tasks'
     | '/_authenticated/app/'
   fileRoutesById: FileRoutesById
 }
@@ -255,14 +317,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/tasks': {
+      id: '/_authenticated/app/tasks'
+      path: '/tasks'
+      fullPath: '/app/tasks'
+      preLoaderRoute: typeof AuthenticatedAppTasksRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/pipeline': {
+      id: '/_authenticated/app/pipeline'
+      path: '/pipeline'
+      fullPath: '/app/pipeline'
+      preLoaderRoute: typeof AuthenticatedAppPipelineRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/inbox': {
+      id: '/_authenticated/app/inbox'
+      path: '/inbox'
+      fullPath: '/app/inbox'
+      preLoaderRoute: typeof AuthenticatedAppInboxRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/crm': {
+      id: '/_authenticated/app/crm'
+      path: '/crm'
+      fullPath: '/app/crm'
+      preLoaderRoute: typeof AuthenticatedAppCrmRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/analytics': {
+      id: '/_authenticated/app/analytics'
+      path: '/analytics'
+      fullPath: '/app/analytics'
+      preLoaderRoute: typeof AuthenticatedAppAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
 interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppAnalyticsRoute: typeof AuthenticatedAppAnalyticsRoute
+  AuthenticatedAppCrmRoute: typeof AuthenticatedAppCrmRoute
+  AuthenticatedAppInboxRoute: typeof AuthenticatedAppInboxRoute
+  AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
+  AuthenticatedAppTasksRoute: typeof AuthenticatedAppTasksRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppAnalyticsRoute: AuthenticatedAppAnalyticsRoute,
+  AuthenticatedAppCrmRoute: AuthenticatedAppCrmRoute,
+  AuthenticatedAppInboxRoute: AuthenticatedAppInboxRoute,
+  AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
+  AuthenticatedAppTasksRoute: AuthenticatedAppTasksRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
 }
 

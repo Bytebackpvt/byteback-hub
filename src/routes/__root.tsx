@@ -141,6 +141,24 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Lazy import to keep the browser client out of SSR pathways
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+        if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+        router.invalidate();
+        if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      });
+      // store cleanup on window to avoid TS complaints about return type
+      (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub =
+        sub.subscription;
+    });
+    return () => {
+      (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub?.unsubscribe();
+    };
+  }, [router, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
