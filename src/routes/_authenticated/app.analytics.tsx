@@ -47,7 +47,8 @@ function AnalyticsPage() {
   });
 
   const connected = q.data?.connected === true;
-  const live = connected ? q.data.analytics : null;
+  const live = q.data && "analytics" in q.data ? q.data.analytics : null;
+
 
   const stats = live
     ? [
