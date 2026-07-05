@@ -9,38 +9,152 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
+import { Route as OnboardingWorkspaceRouteImport } from './routes/onboarding.workspace'
+import { Route as OnboardingTeamRouteImport } from './routes/onboarding.team'
+import { Route as OnboardingEmailAccountsRouteImport } from './routes/onboarding.email-accounts'
+import { Route as OnboardingDoneRouteImport } from './routes/onboarding.done'
+import { Route as OnboardingBusinessTypeRouteImport } from './routes/onboarding.business-type'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingWorkspaceRoute = OnboardingWorkspaceRouteImport.update({
+  id: '/workspace',
+  path: '/workspace',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingTeamRoute = OnboardingTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingEmailAccountsRoute = OnboardingEmailAccountsRouteImport.update({
+  id: '/email-accounts',
+  path: '/email-accounts',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingDoneRoute = OnboardingDoneRouteImport.update({
+  id: '/done',
+  path: '/done',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingBusinessTypeRoute = OnboardingBusinessTypeRouteImport.update({
+  id: '/business-type',
+  path: '/business-type',
+  getParentRoute: () => OnboardingRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
+  '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
+  '/onboarding/done': typeof OnboardingDoneRoute
+  '/onboarding/email-accounts': typeof OnboardingEmailAccountsRoute
+  '/onboarding/team': typeof OnboardingTeamRoute
+  '/onboarding/workspace': typeof OnboardingWorkspaceRoute
+  '/onboarding/': typeof OnboardingIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
+  '/onboarding/done': typeof OnboardingDoneRoute
+  '/onboarding/email-accounts': typeof OnboardingEmailAccountsRoute
+  '/onboarding/team': typeof OnboardingTeamRoute
+  '/onboarding/workspace': typeof OnboardingWorkspaceRoute
+  '/onboarding': typeof OnboardingIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
+  '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
+  '/onboarding/done': typeof OnboardingDoneRoute
+  '/onboarding/email-accounts': typeof OnboardingEmailAccountsRoute
+  '/onboarding/team': typeof OnboardingTeamRoute
+  '/onboarding/workspace': typeof OnboardingWorkspaceRoute
+  '/onboarding/': typeof OnboardingIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/onboarding'
+    | '/onboarding/business-type'
+    | '/onboarding/done'
+    | '/onboarding/email-accounts'
+    | '/onboarding/team'
+    | '/onboarding/workspace'
+    | '/onboarding/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/onboarding/business-type'
+    | '/onboarding/done'
+    | '/onboarding/email-accounts'
+    | '/onboarding/team'
+    | '/onboarding/workspace'
+    | '/onboarding'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/onboarding'
+    | '/onboarding/business-type'
+    | '/onboarding/done'
+    | '/onboarding/email-accounts'
+    | '/onboarding/team'
+    | '/onboarding/workspace'
+    | '/onboarding/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  OnboardingRoute: typeof OnboardingRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +162,78 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/workspace': {
+      id: '/onboarding/workspace'
+      path: '/workspace'
+      fullPath: '/onboarding/workspace'
+      preLoaderRoute: typeof OnboardingWorkspaceRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/team': {
+      id: '/onboarding/team'
+      path: '/team'
+      fullPath: '/onboarding/team'
+      preLoaderRoute: typeof OnboardingTeamRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/email-accounts': {
+      id: '/onboarding/email-accounts'
+      path: '/email-accounts'
+      fullPath: '/onboarding/email-accounts'
+      preLoaderRoute: typeof OnboardingEmailAccountsRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/done': {
+      id: '/onboarding/done'
+      path: '/done'
+      fullPath: '/onboarding/done'
+      preLoaderRoute: typeof OnboardingDoneRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/business-type': {
+      id: '/onboarding/business-type'
+      path: '/business-type'
+      fullPath: '/onboarding/business-type'
+      preLoaderRoute: typeof OnboardingBusinessTypeRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
   }
 }
 
+interface OnboardingRouteChildren {
+  OnboardingBusinessTypeRoute: typeof OnboardingBusinessTypeRoute
+  OnboardingDoneRoute: typeof OnboardingDoneRoute
+  OnboardingEmailAccountsRoute: typeof OnboardingEmailAccountsRoute
+  OnboardingTeamRoute: typeof OnboardingTeamRoute
+  OnboardingWorkspaceRoute: typeof OnboardingWorkspaceRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
+}
+
+const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingBusinessTypeRoute: OnboardingBusinessTypeRoute,
+  OnboardingDoneRoute: OnboardingDoneRoute,
+  OnboardingEmailAccountsRoute: OnboardingEmailAccountsRoute,
+  OnboardingTeamRoute: OnboardingTeamRoute,
+  OnboardingWorkspaceRoute: OnboardingWorkspaceRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
+}
+
+const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
+  OnboardingRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
+  OnboardingRoute: OnboardingRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
