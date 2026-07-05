@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   Archive,
   Bot,
@@ -7,6 +9,7 @@ import {
   Clock,
   Filter,
   Inbox as InboxIcon,
+  Loader2,
   Reply,
   Search,
   Send,
@@ -18,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { generateReply, summarizeThread } from "@/lib/ai.functions";
 import {
   CATEGORY_META,
   MAILBOXES,
@@ -36,6 +40,13 @@ function InboxPage() {
   const [selectedId, setSelectedId] = useState<string>(THREADS[0].id);
   const [search, setSearch] = useState("");
   const [reply, setReply] = useState("");
+  const [aiSummaries, setAiSummaries] = useState<Record<string, string>>({});
+  const [aiReplies, setAiReplies] = useState<Record<string, string>>({});
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [loadingReply, setLoadingReply] = useState(false);
+
+  const callGenerateReply = useServerFn(generateReply);
+  const callSummarize = useServerFn(summarizeThread);
 
   const filtered = useMemo(() => {
     return THREADS.filter((t) => {
