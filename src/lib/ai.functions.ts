@@ -82,3 +82,35 @@ Body: ${data.body}`;
     ]);
     return { summary: text };
   });
+
+const ScoreInput = z.object({
+  name: z.string(),
+  email: z.string(),
+  company: z.string(),
+  title: z.string(),
+  status: z.string(),
+  lastActivity: z.string(),
+});
+
+export const scoreLead = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) => ScoreInput.parse(raw))
+  .handler(async ({ data }) => {
+    const system =
+      'You are a B2B sales lead scorer. Respond ONLY with compact JSON: {"score": <0-100 integer>, "reason": "<max 12 words>"}. No markdown, no prose.';
+    const user = `Contact: ${data.name} — ${data.title} at ${data.company} (${data.email}).
+Pipeline status: ${data.status}. Last activity: ${data.lastActivity}.
+Score buying intent + fit.`;
+    const raw = await callGateway([
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ]);
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+    try {
+      const parsed = JSON.parse(cleaned) as { score: number; reason: string };
+      const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+      return { score, reason: String(parsed.reason ?? "").slice(0, 120) };
+    } catch {
+      return { score: 0, reason: "Could not parse AI response" };
+    }
+  });
+
