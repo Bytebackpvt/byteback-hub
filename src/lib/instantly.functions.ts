@@ -224,3 +224,75 @@ export const sendInstantlyReply = createServerFn({ method: "POST" })
     });
     return { ok: true as const, id: res.id };
   });
+
+export type InstantlyLead = {
+  id: string;
+  email: string;
+  name: string;
+  company: string;
+  title: string;
+  status: "new" | "interested" | "meeting" | "customer" | "not-interested" | "bounced";
+  lastActivity: string;
+  campaign?: string;
+};
+
+type RawLead = {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+  personalization?: string;
+  payload?: Record<string, unknown>;
+  status?: number;
+  lt_interest_status?: number;
+  campaign?: string;
+  timestamp_last_touch?: string;
+  timestamp_created?: string;
+};
+
+function leadStatus(s?: number, interest?: number): InstantlyLead["status"] {
+  if (interest === 4) return "customer";
+  if (interest === 2 || interest === 3) return "meeting";
+  if (interest === 1) return "interested";
+  if (interest === -1 || interest === -2 || interest === -3) return "not-interested";
+  if (s === -1) return "bounced";
+  return "new";
+}
+
+export const listInstantlyLeads = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const data = await instantly<{ items?: RawLead[] }>("/leads/list", {
+      method: "POST",
+      body: { limit: 100 },
+    });
+    const items = data.items ?? [];
+    const leads: InstantlyLead[] = items.map((l) => {
+      const name =
+        [l.first_name, l.last_name].filter(Boolean).join(" ").trim() ||
+        l.email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      const title =
+        (l.payload && typeof l.payload.title === "string" ? l.payload.title : "") ||
+        (l.payload && typeof l.payload.job_title === "string" ? l.payload.job_title : "") ||
+        "";
+      return {
+        id: l.id,
+        email: l.email,
+        name,
+        company: l.company_name ?? companyFromEmail(l.email),
+        title,
+        status: leadStatus(l.status, l.lt_interest_status),
+        lastActivity: timeAgo(l.timestamp_last_touch ?? l.timestamp_created),
+        campaign: l.campaign,
+      };
+    });
+    return { leads, connected: true as const };
+  } catch (err) {
+    return {
+      leads: [] as InstantlyLead[],
+      connected: false as const,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
+});
+
