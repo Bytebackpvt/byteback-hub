@@ -30,13 +30,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
-const NAV = [
+const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string }[] = [
   { to: "/app/inbox", label: "Inbox", icon: Inbox, badge: "12" },
   { to: "/app/crm", label: "Contacts", icon: Users },
   { to: "/app/pipeline", label: "Pipeline", icon: Kanban },
   { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badge: "4" },
   { to: "/app/analytics", label: "Analytics", icon: BarChart3 },
-] as const;
+];
 
 export function AppSidebar() {
   const navigate = useNavigate();

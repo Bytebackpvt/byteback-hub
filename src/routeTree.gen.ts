@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
 import { Route as OnboardingWorkspaceRouteImport } from './routes/onboarding.workspace'
@@ -18,6 +19,8 @@ import { Route as OnboardingTeamRouteImport } from './routes/onboarding.team'
 import { Route as OnboardingEmailAccountsRouteImport } from './routes/onboarding.email-accounts'
 import { Route as OnboardingDoneRouteImport } from './routes/onboarding.done'
 import { Route as OnboardingBusinessTypeRouteImport } from './routes/onboarding.business-type'
+import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -27,6 +30,10 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -64,17 +71,29 @@ const OnboardingBusinessTypeRoute = OnboardingBusinessTypeRouteImport.update({
   path: '/business-type',
   getParentRoute: () => OnboardingRoute,
 } as any)
+const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/app': typeof AuthenticatedAppRouteWithChildren
   '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
   '/onboarding/done': typeof OnboardingDoneRoute
   '/onboarding/email-accounts': typeof OnboardingEmailAccountsRoute
   '/onboarding/team': typeof OnboardingTeamRoute
   '/onboarding/workspace': typeof OnboardingWorkspaceRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/app/': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,18 +104,22 @@ export interface FileRoutesByTo {
   '/onboarding/team': typeof OnboardingTeamRoute
   '/onboarding/workspace': typeof OnboardingWorkspaceRoute
   '/onboarding': typeof OnboardingIndexRoute
+  '/app': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
   '/onboarding/done': typeof OnboardingDoneRoute
   '/onboarding/email-accounts': typeof OnboardingEmailAccountsRoute
   '/onboarding/team': typeof OnboardingTeamRoute
   '/onboarding/workspace': typeof OnboardingWorkspaceRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -104,12 +127,14 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/onboarding'
+    | '/app'
     | '/onboarding/business-type'
     | '/onboarding/done'
     | '/onboarding/email-accounts'
     | '/onboarding/team'
     | '/onboarding/workspace'
     | '/onboarding/'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -120,21 +145,26 @@ export interface FileRouteTypes {
     | '/onboarding/team'
     | '/onboarding/workspace'
     | '/onboarding'
+    | '/app'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/auth'
     | '/onboarding'
+    | '/_authenticated/app'
     | '/onboarding/business-type'
     | '/onboarding/done'
     | '/onboarding/email-accounts'
     | '/onboarding/team'
     | '/onboarding/workspace'
     | '/onboarding/'
+    | '/_authenticated/app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
 }
@@ -153,6 +183,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -204,8 +241,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingBusinessTypeRouteImport
       parentRoute: typeof OnboardingRoute
     }
+    '/_authenticated/app': {
+      id: '/_authenticated/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AuthenticatedAppRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/': {
+      id: '/_authenticated/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
+
+interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+}
+
+const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+}
+
+const AuthenticatedAppRouteWithChildren =
+  AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface OnboardingRouteChildren {
   OnboardingBusinessTypeRoute: typeof OnboardingBusinessTypeRoute
@@ -231,6 +304,7 @@ const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
 }
