@@ -104,15 +104,40 @@ function InboxPage() {
 
 
   const filtered = useMemo(() => {
-    return THREADS.filter((t) => {
+    return activeThreads.filter((t) => {
       if (mailbox !== "all" && t.mailbox !== mailbox) return false;
       if (search && !`${t.from.name} ${t.subject} ${t.preview}`.toLowerCase().includes(search.toLowerCase()))
         return false;
       return true;
     });
-  }, [mailbox, search]);
+  }, [activeThreads, mailbox, search]);
 
-  const selected = THREADS.find((t) => t.id === selectedId) ?? filtered[0];
+  const selected = activeThreads.find((t) => t.id === selectedId) ?? filtered[0];
+
+  async function handleSend() {
+    if (!selected) return;
+    if (!connected) {
+      toast.success("Reply sent (demo — Instantly not connected)");
+      return;
+    }
+    setSending(true);
+    try {
+      await callSendReply({
+        data: {
+          replyToId: selected.id,
+          eaccount: selected.mailbox,
+          subject: selected.subject.startsWith("Re:") ? selected.subject : `Re: ${selected.subject}`,
+          body: reply || aiReplies[selected.id] || "",
+        },
+      });
+      toast.success("Reply sent via Instantly");
+      setReply("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to send reply");
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <div className="grid h-[calc(100vh-3rem)] grid-cols-[240px_360px_1fr]">
