@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Archive,
@@ -10,6 +11,7 @@ import {
   Filter,
   Inbox as InboxIcon,
   Loader2,
+  Plug,
   Reply,
   Search,
   Send,
@@ -22,6 +24,11 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { generateReply, summarizeThread } from "@/lib/ai.functions";
+import {
+  listInstantlyMailboxes,
+  listInstantlyThreads,
+  sendInstantlyReply,
+} from "@/lib/instantly.functions";
 import {
   CATEGORY_META,
   MAILBOXES,
@@ -44,9 +51,57 @@ function InboxPage() {
   const [aiReplies, setAiReplies] = useState<Record<string, string>>({});
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [loadingReply, setLoadingReply] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const callGenerateReply = useServerFn(generateReply);
   const callSummarize = useServerFn(summarizeThread);
+  const callListThreads = useServerFn(listInstantlyThreads);
+  const callListMailboxes = useServerFn(listInstantlyMailboxes);
+  const callSendReply = useServerFn(sendInstantlyReply);
+
+  const threadsQuery = useQuery({
+    queryKey: ["instantly", "threads"],
+    queryFn: () => callListThreads(),
+    staleTime: 30_000,
+  });
+  const mailboxesQuery = useQuery({
+    queryKey: ["instantly", "mailboxes"],
+    queryFn: () => callListMailboxes(),
+    staleTime: 60_000,
+  });
+
+  const liveThreads: Thread[] = useMemo(() => {
+    const items = threadsQuery.data?.threads ?? [];
+    return items.map((t) => ({
+      ...t,
+      starred: false,
+      aiSummary: "",
+      suggestedReply: "",
+    }));
+  }, [threadsQuery.data]);
+
+  const connected = threadsQuery.data?.connected === true;
+  const activeThreads: Thread[] = connected && liveThreads.length > 0 ? liveThreads : THREADS;
+
+  const mailboxes = useMemo(() => {
+    const live = mailboxesQuery.data?.mailboxes ?? [];
+    if (!connected || live.length === 0) return MAILBOXES;
+    return [
+      { id: "all", label: "All inboxes", color: "bg-brand" },
+      ...live.map((m, i) => ({
+        id: m.email,
+        label: m.email,
+        color: ["bg-emerald-500", "bg-sky-500", "bg-amber-500", "bg-pink-500", "bg-violet-500"][i % 5],
+      })),
+    ];
+  }, [mailboxesQuery.data, connected]);
+
+  useEffect(() => {
+    if (activeThreads.length && !activeThreads.some((t) => t.id === selectedId)) {
+      setSelectedId(activeThreads[0].id);
+    }
+  }, [activeThreads, selectedId]);
+
 
   const filtered = useMemo(() => {
     return THREADS.filter((t) => {
