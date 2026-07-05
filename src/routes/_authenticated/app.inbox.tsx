@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Archive,
@@ -10,6 +11,7 @@ import {
   Filter,
   Inbox as InboxIcon,
   Loader2,
+  Plug,
   Reply,
   Search,
   Send,
@@ -22,6 +24,11 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { generateReply, summarizeThread } from "@/lib/ai.functions";
+import {
+  listInstantlyMailboxes,
+  listInstantlyThreads,
+  sendInstantlyReply,
+} from "@/lib/instantly.functions";
 import {
   CATEGORY_META,
   MAILBOXES,
@@ -44,38 +51,117 @@ function InboxPage() {
   const [aiReplies, setAiReplies] = useState<Record<string, string>>({});
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [loadingReply, setLoadingReply] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const callGenerateReply = useServerFn(generateReply);
   const callSummarize = useServerFn(summarizeThread);
+  const callListThreads = useServerFn(listInstantlyThreads);
+  const callListMailboxes = useServerFn(listInstantlyMailboxes);
+  const callSendReply = useServerFn(sendInstantlyReply);
+
+  const threadsQuery = useQuery({
+    queryKey: ["instantly", "threads"],
+    queryFn: () => callListThreads(),
+    staleTime: 30_000,
+  });
+  const mailboxesQuery = useQuery({
+    queryKey: ["instantly", "mailboxes"],
+    queryFn: () => callListMailboxes(),
+    staleTime: 60_000,
+  });
+
+  const liveThreads: Thread[] = useMemo(() => {
+    const items = threadsQuery.data?.threads ?? [];
+    return items.map((t) => ({
+      ...t,
+      starred: false,
+      aiSummary: "",
+      suggestedReply: "",
+    }));
+  }, [threadsQuery.data]);
+
+  const connected = threadsQuery.data?.connected === true;
+  const activeThreads: Thread[] = connected && liveThreads.length > 0 ? liveThreads : THREADS;
+
+  const mailboxes = useMemo(() => {
+    const live = mailboxesQuery.data?.mailboxes ?? [];
+    if (!connected || live.length === 0) return MAILBOXES;
+    return [
+      { id: "all", label: "All inboxes", color: "bg-brand" },
+      ...live.map((m, i) => ({
+        id: m.email,
+        label: m.email,
+        color: ["bg-emerald-500", "bg-sky-500", "bg-amber-500", "bg-pink-500", "bg-violet-500"][i % 5],
+      })),
+    ];
+  }, [mailboxesQuery.data, connected]);
+
+  useEffect(() => {
+    if (activeThreads.length && !activeThreads.some((t) => t.id === selectedId)) {
+      setSelectedId(activeThreads[0].id);
+    }
+  }, [activeThreads, selectedId]);
+
 
   const filtered = useMemo(() => {
-    return THREADS.filter((t) => {
+    return activeThreads.filter((t) => {
       if (mailbox !== "all" && t.mailbox !== mailbox) return false;
       if (search && !`${t.from.name} ${t.subject} ${t.preview}`.toLowerCase().includes(search.toLowerCase()))
         return false;
       return true;
     });
-  }, [mailbox, search]);
+  }, [activeThreads, mailbox, search]);
 
-  const selected = THREADS.find((t) => t.id === selectedId) ?? filtered[0];
+  const selected = activeThreads.find((t) => t.id === selectedId) ?? filtered[0];
+
+  async function handleSend() {
+    if (!selected) return;
+    if (!connected) {
+      toast.success("Reply sent (demo — Instantly not connected)");
+      return;
+    }
+    setSending(true);
+    try {
+      await callSendReply({
+        data: {
+          replyToId: selected.id,
+          eaccount: selected.mailbox,
+          subject: selected.subject.startsWith("Re:") ? selected.subject : `Re: ${selected.subject}`,
+          body: reply || aiReplies[selected.id] || "",
+        },
+      });
+      toast.success("Reply sent via Instantly");
+      setReply("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to send reply");
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <div className="grid h-[calc(100vh-3rem)] grid-cols-[240px_360px_1fr]">
       {/* Mailboxes column */}
       <aside className="flex flex-col border-r border-border/60 bg-muted/20">
         <div className="border-b border-border/60 p-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Mailboxes
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <Plug className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-muted-foreground/50")} />
+            {connected ? "Instantly · live" : threadsQuery.isLoading ? "Connecting…" : "Demo data"}
           </div>
+          {!connected && threadsQuery.data?.error && (
+            <div className="mt-1 text-[10px] text-rose-500/80" title={threadsQuery.data.error}>
+              {threadsQuery.data.error.slice(0, 60)}
+            </div>
+          )}
         </div>
         <ScrollArea className="flex-1">
           <div className="space-y-0.5 p-2">
-            {MAILBOXES.map((mb) => {
+            {mailboxes.map((mb) => {
               const active = mailbox === mb.id;
               const count =
                 mb.id === "all"
-                  ? THREADS.length
-                  : THREADS.filter((t) => t.mailbox === mb.id).length;
+                  ? activeThreads.length
+                  : activeThreads.filter((t) => t.mailbox === mb.id).length;
               return (
                 <button
                   key={mb.id}
@@ -245,10 +331,10 @@ function InboxPage() {
                   </pre>
                 </div>
 
-                {selected.suggestedReply && (
-                  <div className="rounded-xl border border-border/70 bg-card">
-                    <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2 text-xs font-semibold text-muted-foreground">
-                      <Bot className="h-3.5 w-3.5 text-brand" /> Suggested reply
+                <div className="rounded-xl border border-border/70 bg-card">
+                  <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2 text-xs font-semibold text-muted-foreground">
+                    <Bot className="h-3.5 w-3.5 text-brand" /> Reply
+                    {selected.suggestedReply && (
                       <button
                         onClick={() =>
                           setReply(aiReplies[selected.id] ?? selected.suggestedReply)
@@ -257,65 +343,77 @@ function InboxPage() {
                       >
                         Use draft
                       </button>
-                    </div>
-                    <div className="p-4">
-                      <Textarea
-                        value={
-                          reply || aiReplies[selected.id] || selected.suggestedReply
-                        }
-                        onChange={(e) => setReply(e.target.value)}
-                        rows={6}
-                        className="resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
-                      />
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <Sparkles className="h-3 w-3" /> Tone: warm · Length: brief
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={loadingReply}
-                            onClick={async () => {
-                              setLoadingReply(true);
-                              try {
-                                const { text } = await callGenerateReply({
-                                  data: {
-                                    from: selected.from.email,
-                                    company: selected.from.company,
-                                    subject: selected.subject,
-                                    body: selected.body,
-                                    tone: "warm",
-                                    length: "brief",
-                                  },
-                                });
-                                setAiReplies((r) => ({ ...r, [selected.id]: text }));
-                                setReply(text);
-                                toast.success("Fresh draft ready");
-                              } catch (e) {
-                                toast.error(
-                                  e instanceof Error ? e.message : "AI reply failed",
-                                );
-                              } finally {
-                                setLoadingReply(false);
-                              }
-                            }}
-                          >
-                            {loadingReply ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Reply className="h-3.5 w-3.5" />
-                            )}
-                            Regenerate
-                          </Button>
-                          <Button size="sm" onClick={() => toast.success("Reply sent (demo)")}>
-                            <Send className="h-3.5 w-3.5" /> Send reply
-                          </Button>
-                        </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <Textarea
+                      value={
+                        reply || aiReplies[selected.id] || selected.suggestedReply || ""
+                      }
+                      onChange={(e) => setReply(e.target.value)}
+                      rows={6}
+                      placeholder="Write your reply, or hit Regenerate for an AI draft…"
+                      className="resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                    />
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <Sparkles className="h-3 w-3" /> Tone: warm · Length: brief
+                        {connected && (
+                          <span className="ml-2 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">
+                            Send via {selected.mailbox}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={loadingReply}
+                          onClick={async () => {
+                            setLoadingReply(true);
+                            try {
+                              const { text } = await callGenerateReply({
+                                data: {
+                                  from: selected.from.email,
+                                  company: selected.from.company,
+                                  subject: selected.subject,
+                                  body: selected.body,
+                                  tone: "warm",
+                                  length: "brief",
+                                },
+                              });
+                              setAiReplies((r) => ({ ...r, [selected.id]: text }));
+                              setReply(text);
+                              toast.success("Fresh draft ready");
+                            } catch (e) {
+                              toast.error(
+                                e instanceof Error ? e.message : "AI reply failed",
+                              );
+                            } finally {
+                              setLoadingReply(false);
+                            }
+                          }}
+                        >
+                          {loadingReply ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Reply className="h-3.5 w-3.5" />
+                          )}
+                          Regenerate
+                        </Button>
+                        <Button size="sm" disabled={sending} onClick={handleSend}>
+                          {sending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Send className="h-3.5 w-3.5" />
+                          )}
+                          Send reply
+                        </Button>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+
               </div>
             </ScrollArea>
 
