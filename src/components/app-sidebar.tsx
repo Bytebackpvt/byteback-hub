@@ -1,0 +1,126 @@
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  BarChart3,
+  CheckSquare,
+  Inbox,
+  Kanban,
+  LogOut,
+  Settings,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { BrandLink } from "@/components/brand";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+
+const NAV = [
+  { to: "/app/inbox", label: "Inbox", icon: Inbox, badge: "12" },
+  { to: "/app/crm", label: "Contacts", icon: Users },
+  { to: "/app/pipeline", label: "Pipeline", icon: Kanban },
+  { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badge: "4" },
+  { to: "/app/analytics", label: "Analytics", icon: BarChart3 },
+] as const;
+
+export function AppSidebar() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [email, setEmail] = useState<string>("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
+  }, []);
+
+  const signOut = async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    toast.success("Signed out");
+    navigate({ to: "/auth", replace: true });
+  };
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b border-border/60 px-4 py-3">
+        <BrandLink />
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {NAV.map((item) => {
+                const active = pathname.startsWith(item.to);
+                return (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton asChild isActive={active}>
+                      <Link to={item.to} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        <span className="flex-1">{item.label}</span>
+                        {item.badge && (
+                          <span className="ml-auto rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>AI</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <div className="rounded-lg border border-border/70 bg-gradient-to-br from-brand/10 to-transparent p-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                <Sparkles className="h-3.5 w-3.5 text-brand" /> Daily summary
+              </div>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                <span className="font-medium text-foreground">6 hot leads</span> replied
+                overnight. 2 want to book a call this week.
+              </p>
+            </div>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t border-border/60 p-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-xs font-medium">{email || "Loading…"}</div>
+            <div className="text-[10px] text-muted-foreground">Owner</div>
+          </div>
+          <ThemeToggle />
+        </div>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" className="flex-1 justify-start text-xs">
+            <Settings className="h-3.5 w-3.5" /> Settings
+          </Button>
+          <Button variant="ghost" size="sm" onClick={signOut} className="text-xs">
+            <LogOut className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
