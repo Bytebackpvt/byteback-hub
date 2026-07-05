@@ -296,3 +296,29 @@ export const listInstantlyLeads = createServerFn({ method: "GET" }).handler(asyn
   }
 });
 
+const STATUS_TO_INTEREST: Record<InstantlyLead["status"], number> = {
+  interested: 1,
+  meeting: 2,
+  customer: 4,
+  "not-interested": -1,
+  new: 0,
+  bounced: 0,
+};
+
+const UpdateStatusInput = z.object({
+  leadId: z.string().min(1),
+  status: z.enum(["new", "interested", "meeting", "customer", "not-interested", "bounced"]),
+});
+
+export const updateLeadStatus = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) => UpdateStatusInput.parse(raw))
+  .handler(async ({ data }) => {
+    const interest = STATUS_TO_INTEREST[data.status];
+    await instantly("/leads/update-interest-status", {
+      method: "POST",
+      body: { id: data.leadId, interest_status: interest },
+    });
+    return { ok: true as const };
+  });
+
+
