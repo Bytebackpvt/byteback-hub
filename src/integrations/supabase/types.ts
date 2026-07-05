@@ -114,6 +114,56 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          created_at: string
+          done: boolean
+          due: string | null
+          id: string
+          linked_to: string
+          priority: string
+          source: string
+          thread_id: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          due?: string | null
+          id?: string
+          linked_to?: string
+          priority?: string
+          source?: string
+          thread_id?: string | null
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          due?: string | null
+          id?: string
+          linked_to?: string
+          priority?: string
+          source?: string
+          thread_id?: string | null
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_invites: {
         Row: {
           created_at: string
