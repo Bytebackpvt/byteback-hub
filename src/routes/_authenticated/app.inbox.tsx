@@ -200,8 +200,39 @@ function InboxPage() {
                 <div className="rounded-xl border border-brand/30 bg-gradient-to-br from-brand/10 to-transparent p-4">
                   <div className="flex items-center gap-2 text-xs font-semibold text-brand">
                     <Sparkles className="h-3.5 w-3.5" /> AI summary
+                    <button
+                      disabled={loadingSummary}
+                      onClick={async () => {
+                        setLoadingSummary(true);
+                        try {
+                          const { summary } = await callSummarize({
+                            data: {
+                              from: selected.from.email,
+                              company: selected.from.company,
+                              subject: selected.subject,
+                              body: selected.body,
+                            },
+                          });
+                          setAiSummaries((s) => ({ ...s, [selected.id]: summary }));
+                        } catch (e) {
+                          toast.error(e instanceof Error ? e.message : "AI summary failed");
+                        } finally {
+                          setLoadingSummary(false);
+                        }
+                      }}
+                      className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-brand hover:underline disabled:opacity-50"
+                    >
+                      {loadingSummary ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3" />
+                      )}
+                      Re-analyze
+                    </button>
                   </div>
-                  <p className="mt-1.5 text-sm text-foreground/90">{selected.aiSummary}</p>
+                  <p className="mt-1.5 text-sm text-foreground/90">
+                    {aiSummaries[selected.id] ?? selected.aiSummary}
+                  </p>
                 </div>
 
                 <div className="rounded-xl border border-border/70 bg-background p-5">
@@ -219,7 +250,9 @@ function InboxPage() {
                     <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2 text-xs font-semibold text-muted-foreground">
                       <Bot className="h-3.5 w-3.5 text-brand" /> Suggested reply
                       <button
-                        onClick={() => setReply(selected.suggestedReply)}
+                        onClick={() =>
+                          setReply(aiReplies[selected.id] ?? selected.suggestedReply)
+                        }
                         className="ml-auto text-[11px] font-medium text-brand hover:underline"
                       >
                         Use draft
@@ -227,7 +260,9 @@ function InboxPage() {
                     </div>
                     <div className="p-4">
                       <Textarea
-                        value={reply || selected.suggestedReply}
+                        value={
+                          reply || aiReplies[selected.id] || selected.suggestedReply
+                        }
                         onChange={(e) => setReply(e.target.value)}
                         rows={6}
                         className="resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
@@ -237,10 +272,43 @@ function InboxPage() {
                           <Sparkles className="h-3 w-3" /> Tone: warm · Length: brief
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="ghost" size="sm">
-                            <Reply className="h-3.5 w-3.5" /> Regenerate
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={loadingReply}
+                            onClick={async () => {
+                              setLoadingReply(true);
+                              try {
+                                const { text } = await callGenerateReply({
+                                  data: {
+                                    from: selected.from.email,
+                                    company: selected.from.company,
+                                    subject: selected.subject,
+                                    body: selected.body,
+                                    tone: "warm",
+                                    length: "brief",
+                                  },
+                                });
+                                setAiReplies((r) => ({ ...r, [selected.id]: text }));
+                                setReply(text);
+                                toast.success("Fresh draft ready");
+                              } catch (e) {
+                                toast.error(
+                                  e instanceof Error ? e.message : "AI reply failed",
+                                );
+                              } finally {
+                                setLoadingReply(false);
+                              }
+                            }}
+                          >
+                            {loadingReply ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Reply className="h-3.5 w-3.5" />
+                            )}
+                            Regenerate
                           </Button>
-                          <Button size="sm">
+                          <Button size="sm" onClick={() => toast.success("Reply sent (demo)")}>
                             <Send className="h-3.5 w-3.5" /> Send reply
                           </Button>
                         </div>
@@ -250,6 +318,7 @@ function InboxPage() {
                 )}
               </div>
             </ScrollArea>
+
           </>
         ) : (
           <div className="grid flex-1 place-items-center text-sm text-muted-foreground">
