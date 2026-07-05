@@ -2,9 +2,11 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, PartyPopper, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/stores/onboarding";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/onboarding/done")({
   component: DoneStep,
@@ -12,14 +14,51 @@ export const Route = createFileRoute("/onboarding/done")({
 
 function DoneStep() {
   const navigate = useNavigate();
-  const { workspaceName, invites, accounts, businessType, reset } = useOnboarding();
+  const { workspaceName, workspaceSlug, invites, accounts, businessType, reset } = useOnboarding();
+  const [saving, setSaving] = useState(false);
 
-  const goDashboard = () => {
-    toast.message("Dashboard coming next", {
-      description: "Your unified inbox and AI classification launch in the next release.",
-    });
-    reset();
-    navigate({ to: "/" });
+  const goDashboard = async () => {
+    setSaving(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      if (!user) throw new Error("Not signed in");
+
+      if (workspaceName) {
+        const slug = (workspaceSlug || workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, "-")) + "-" + user.id.slice(0, 6);
+        const { data: ws, error } = await supabase
+          .from("workspaces")
+          .insert({
+            owner_id: user.id,
+            name: workspaceName,
+            slug,
+            business_type: businessType,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+
+        if (ws && invites.length > 0) {
+          await supabase.from("workspace_invites").insert(
+            invites.map((email) => ({ workspace_id: ws.id, email })),
+          );
+        }
+        if (ws && accounts.length > 0) {
+          await supabase.from("email_accounts").insert(
+            accounts.map((a) => ({ workspace_id: ws.id, provider: a.provider, email: a.email })),
+          );
+        }
+      }
+
+      await supabase.from("profiles").update({ onboarded: true }).eq("id", user.id);
+      reset();
+      toast.success("Workspace ready. Welcome to ByteBack.");
+      navigate({ to: "/app" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not finish setup";
+      toast.error(msg);
+      setSaving(false);
+    }
   };
 
   return (
@@ -36,7 +75,7 @@ function DoneStep() {
         {workspaceName ? `${workspaceName} is ready.` : "You're all set."}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Your unified inbox is being prepared. AI is warming up.
+        Your unified inbox is warm. AI classification is live.
       </p>
 
       <div className="mx-auto mt-6 grid max-w-sm grid-cols-3 gap-2 text-left">
@@ -62,8 +101,8 @@ function DoneStep() {
         </span>
       </div>
 
-      <Button className="mt-6 rounded-lg px-5" size="lg" onClick={goDashboard}>
-        Enter ByteBack <ArrowRight className="ml-1.5 h-4 w-4" />
+      <Button className="mt-6 rounded-lg px-5" size="lg" onClick={goDashboard} disabled={saving}>
+        {saving ? "Setting up…" : "Enter ByteBack"} <ArrowRight className="ml-1.5 h-4 w-4" />
       </Button>
     </div>
   );
