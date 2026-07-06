@@ -30,7 +30,8 @@ export async function deliverToWebhooks(
 
   await Promise.all(
     hooks.flatMap((hook) => {
-      if (!hook.secret) return [];
+      const url = hook.secret;
+      if (!url) return [];
       return notifications.map((n) => {
         const body =
           hook.provider === "slack_webhook"
@@ -44,7 +45,7 @@ export async function deliverToWebhooks(
                 link: n.link,
                 ts: new Date().toISOString(),
               });
-        return fetch(hook.secret, {
+        return fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body,
