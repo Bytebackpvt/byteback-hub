@@ -378,7 +378,7 @@ function StageManager({
                   {s.is_lost && " · lost"}
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(s)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(s)} aria-label={`Edit ${s.label}`} title="Edit stage">
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
               <Button
