@@ -2,6 +2,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Bell, Check, Flame, Mail, TrendingDown } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   listNotifications,
   markNotificationsRead,
@@ -15,6 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 const KIND_ICON: Record<NotificationKind, typeof Bell> = {
@@ -47,10 +49,30 @@ export function NotificationsBell() {
   const qc = useQueryClient();
   const callList = useServerFn(listNotifications);
   const callMark = useServerFn(markNotificationsRead);
+  const [sessionReady, setSessionReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (active && data.session?.access_token) setSessionReady(true);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active && session?.access_token) setSessionReady(true);
+      if (active && !session) setSessionReady(false);
+    });
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   const { data } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => callList(),
+    enabled: sessionReady,
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
@@ -59,6 +81,7 @@ export function NotificationsBell() {
   const unread = data?.unread ?? 0;
 
   async function markAll() {
+    if (!sessionReady) return;
     await callMark({ data: {} });
     qc.invalidateQueries({ queryKey: ["notifications"] });
   }
