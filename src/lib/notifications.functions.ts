@@ -86,6 +86,39 @@ export const markNotificationsRead = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+const NotifActionInput = z.object({
+  id: z.string().uuid(),
+  action: z.enum(["archive", "unarchive", "pin", "unpin", "snooze_1h", "snooze_1d", "unsnooze"]),
+});
+export const updateNotification = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => NotifActionInput.parse(raw))
+  .handler(async ({ data, context }) => {
+    const workspaceId = await getOwnedWorkspaceId(context.supabase, context.userId);
+    if (!workspaceId) return { ok: true as const };
+    const nowIso = new Date().toISOString();
+    const patch: Record<string, string | boolean | null> = {};
+    if (data.action === "archive") patch.archived_at = nowIso;
+    else if (data.action === "unarchive") patch.archived_at = null;
+    else if (data.action === "pin") patch.pinned = true;
+    else if (data.action === "unpin") patch.pinned = false;
+    else if (data.action === "unsnooze") patch.snoozed_until = null;
+    else if (data.action === "snooze_1h")
+      patch.snoozed_until = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    else if (data.action === "snooze_1d")
+      patch.snoozed_until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (context.supabase as any)
+      .from("notifications")
+      .update(patch)
+      .eq("workspace_id", workspaceId)
+      .eq("id", data.id);
+    if (error) throw error;
+    return { ok: true as const };
+  });
+
+
+
 // ------- Smart notification scanner -------
 // Given the current inbox thread list, create/update workspace notifications
 // idempotently (unique index on workspace_id+kind+thread_key).
