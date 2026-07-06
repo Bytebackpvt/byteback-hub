@@ -192,39 +192,48 @@ export type Database = {
       }
       notifications: {
         Row: {
+          archived_at: string | null
           body: string
           created_at: string
           id: string
           kind: Database["public"]["Enums"]["notification_kind"]
           link: string | null
           meta: Json
+          pinned: boolean
           read_at: string | null
+          snoozed_until: string | null
           thread_key: string | null
           title: string
           user_id: string | null
           workspace_id: string
         }
         Insert: {
+          archived_at?: string | null
           body?: string
           created_at?: string
           id?: string
           kind?: Database["public"]["Enums"]["notification_kind"]
           link?: string | null
           meta?: Json
+          pinned?: boolean
           read_at?: string | null
+          snoozed_until?: string | null
           thread_key?: string | null
           title: string
           user_id?: string | null
           workspace_id: string
         }
         Update: {
+          archived_at?: string | null
           body?: string
           created_at?: string
           id?: string
           kind?: Database["public"]["Enums"]["notification_kind"]
           link?: string | null
           meta?: Json
+          pinned?: boolean
           read_at?: string | null
+          snoozed_until?: string | null
           thread_key?: string | null
           title?: string
           user_id?: string | null
@@ -422,6 +431,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      escalate_overdue_tasks: { Args: never; Returns: undefined }
       has_workspace_role: {
         Args: {
           _roles: Database["public"]["Enums"]["workspace_role"][]
