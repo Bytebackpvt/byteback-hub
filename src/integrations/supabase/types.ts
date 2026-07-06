@@ -14,6 +14,112 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_events: {
+        Row: {
+          category: string | null
+          confidence: number | null
+          created_at: string
+          detail: string | null
+          event_type: string
+          id: string
+          lead_email: string | null
+          meta: Json
+          next_action: string | null
+          reason: string | null
+          thread_id: string | null
+          title: string
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          category?: string | null
+          confidence?: number | null
+          created_at?: string
+          detail?: string | null
+          event_type: string
+          id?: string
+          lead_email?: string | null
+          meta?: Json
+          next_action?: string | null
+          reason?: string | null
+          thread_id?: string | null
+          title: string
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          category?: string | null
+          confidence?: number | null
+          created_at?: string
+          detail?: string | null
+          event_type?: string
+          id?: string
+          lead_email?: string | null
+          meta?: Json
+          next_action?: string | null
+          reason?: string | null
+          thread_id?: string | null
+          title?: string
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_feedback: {
+        Row: {
+          correction: string | null
+          created_at: string
+          id: string
+          meta: Json
+          suggestion_type: string
+          suggestion_value: string
+          thread_id: string | null
+          user_id: string
+          verdict: string
+          workspace_id: string
+        }
+        Insert: {
+          correction?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          suggestion_type: string
+          suggestion_value: string
+          thread_id?: string | null
+          user_id: string
+          verdict: string
+          workspace_id: string
+        }
+        Update: {
+          correction?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          suggestion_type?: string
+          suggestion_value?: string
+          thread_id?: string | null
+          user_id?: string
+          verdict?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_feedback_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_accounts: {
         Row: {
           created_at: string
