@@ -198,15 +198,81 @@ function InboxPage() {
 
 
   const filtered = useMemo(() => {
+    const now = Date.now();
     return activeThreads.filter((t) => {
+      const f = flags[t.id] ?? {};
+      if (f.archived) return false;
+      if (f.snoozedUntil && f.snoozedUntil > now) return false;
       if (mailbox !== "all" && t.mailbox !== mailbox) return false;
       if (search && !`${t.from.name} ${t.subject} ${t.preview}`.toLowerCase().includes(search.toLowerCase()))
         return false;
+      if (filter === "unread" && (f.read || !t.unread)) return false;
+      if (filter === "starred" && !f.starred) return false;
       return true;
     });
-  }, [activeThreads, mailbox, search]);
+  }, [activeThreads, mailbox, search, flags, filter]);
 
   const selected = activeThreads.find((t) => t.id === selectedId) ?? filtered[0];
+  const selFlags = selected ? (flags[selected.id] ?? {}) : {};
+
+  function setFlag(id: string, patch: Partial<ThreadFlags>) {
+    setFlags((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+  }
+  function toggleStar() {
+    if (!selected) return;
+    setFlag(selected.id, { starred: !selFlags.starred });
+    toast.success(selFlags.starred ? "Unstarred" : "Starred");
+  }
+  function snooze1h() {
+    if (!selected) return;
+    setFlag(selected.id, { snoozedUntil: Date.now() + 60 * 60 * 1000 });
+    toast.success("Snoozed for 1 hour");
+  }
+  function archiveSelected() {
+    if (!selected) return;
+    setFlag(selected.id, { archived: true });
+    toast.success("Archived");
+  }
+  function markRead() {
+    if (!selected) return;
+    setFlag(selected.id, { read: true });
+    toast.success("Marked as read");
+  }
+
+  // Keyboard shortcuts: j/k navigate, s star, e archive, u snooze, r focus reply, / focus search
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      const editing = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement | null)?.isContentEditable;
+      if (e.key === "/" && !editing) {
+        e.preventDefault();
+        (document.getElementById("inbox-search") as HTMLInputElement | null)?.focus();
+        return;
+      }
+      if (editing) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const idx = filtered.findIndex((t) => t.id === (selected?.id ?? ""));
+      if (e.key === "j" && idx < filtered.length - 1) {
+        setSelectedId(filtered[idx + 1].id);
+      } else if (e.key === "k" && idx > 0) {
+        setSelectedId(filtered[idx - 1].id);
+      } else if (e.key === "s") {
+        toggleStar();
+      } else if (e.key === "e") {
+        archiveSelected();
+      } else if (e.key === "u") {
+        snooze1h();
+      } else if (e.key === "r") {
+        e.preventDefault();
+        document.getElementById("inbox-reply")?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, selected?.id, selFlags.starred]);
+
+
 
   async function handleSend() {
     if (!selected) return;
