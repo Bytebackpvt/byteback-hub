@@ -362,16 +362,34 @@ function InboxPage() {
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
+              id="inbox-search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search replies…"
+              placeholder="Search replies…  (press /)"
               className="h-8 pl-8"
+              aria-label="Search replies"
             />
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Filter className="h-3.5 w-3.5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant={filter === "all" ? "ghost" : "secondary"}
+                size="icon"
+                className="h-8 w-8"
+                aria-label="Filter threads"
+                title="Filter threads"
+              >
+                <Filter className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setFilter("all")}>All</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setFilter("unread")}>Unread only</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setFilter("starred")}>Starred only</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
         <ScrollArea className="flex-1">
           <div>
             {filtered.map((t) => (
