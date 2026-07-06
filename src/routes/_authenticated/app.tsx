@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { OfflineBanner } from "@/components/offline-banner";
+import { NotificationsBell } from "@/components/notifications-bell";
 import { initNativeShell } from "@/lib/native";
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -28,6 +29,9 @@ function AppLayout() {
           <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border/60 bg-background/80 px-3 backdrop-blur">
             <SidebarTrigger />
             <span className="text-sm font-medium text-muted-foreground md:hidden">ByteBack</span>
+            <div className="ml-auto flex items-center gap-1">
+              <NotificationsBell />
+            </div>
           </header>
           <OfflineBanner />
           <main className="flex-1 overflow-auto">
