@@ -201,12 +201,24 @@ export const scanForNotifications = createServerFn({ method: "POST" })
 
     // Email delivery for high-signal alerts via Resend gateway.
     const alertKinds = new Set<NotificationKind>(["hot_lead", "lost_lead", "followup"]);
+    const insertedRows = (inserted ?? []) as Array<{
+      kind: NotificationKind;
+      title: string;
+      body: string;
+      link: string | null;
+    }>;
+    const alerts = insertedRows.filter((r) => alertKinds.has(r.kind));
+
+    // Fan out to Slack/Zapier webhooks configured for this workspace.
+    if (alerts.length) {
+      const { deliverToWebhooks } = await import("./webhook-delivery.server");
+      await deliverToWebhooks(context.supabase, workspaceId, alerts);
+    }
+
     const toEmail = (await context.supabase.auth.getUser()).data.user?.email;
     const apiKey = process.env.RESEND_API_KEY;
     const lovableKey = process.env.LOVABLE_API_KEY;
-    if (toEmail && apiKey && lovableKey && inserted?.length) {
-      const alerts = (inserted as Array<{ kind: NotificationKind; title: string; body: string; link: string | null }>)
-        .filter((r) => alertKinds.has(r.kind));
+    if (toEmail && apiKey && lovableKey && alerts.length) {
       await Promise.all(
         alerts.map((r) =>
           fetch("https://connector-gateway.lovable.dev/resend/emails", {
@@ -226,7 +238,7 @@ export const scanForNotifications = createServerFn({ method: "POST" })
         ),
       );
     }
-    return { created: inserted?.length ?? 0 };
+    return { created: insertedRows.length };
   });
 
 function escapeHtml(s: string) {
