@@ -7,7 +7,7 @@ import type { Database } from "@/integrations/supabase/types";
 async function getOwnedWorkspaceId(
   supabase: SupabaseClient<Database>,
   userId: string,
-) {
+): Promise<string | null> {
   const { data, error } = await supabase
     .from("workspaces")
     .select("id")
@@ -16,14 +16,7 @@ async function getOwnedWorkspaceId(
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  if (data?.id) return data.id as string;
-  const { data: created, error: createErr } = await supabase
-    .from("workspaces")
-    .insert({ owner_id: userId, name: "My Workspace", slug: `ws-${userId.slice(0, 8)}-${Date.now().toString(36)}` })
-    .select("id")
-    .single();
-  if (createErr) throw createErr;
-  return created.id as string;
+  return (data?.id as string | undefined) ?? null;
 }
 
 // Rules: due date + priority derived from lead interest / reply sentiment.
