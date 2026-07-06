@@ -19,6 +19,9 @@ export type NotificationRow = {
   link: string | null;
   thread_key: string | null;
   read_at: string | null;
+  archived_at: string | null;
+  snoozed_until: string | null;
+  pinned: boolean;
   created_at: string;
   meta: Record<string, string | number | boolean | null>;
 };
@@ -44,13 +47,17 @@ export const listNotifications = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const workspaceId = await getOwnedWorkspaceId(context.supabase, context.userId);
     if (!workspaceId) return { notifications: [] as NotificationRow[], unread: 0 };
+    const nowIso = new Date().toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (context.supabase as any)
       .from("notifications")
-      .select("id, kind, title, body, link, thread_key, read_at, created_at, meta")
+      .select("id, kind, title, body, link, thread_key, read_at, archived_at, snoozed_until, pinned, created_at, meta")
       .eq("workspace_id", workspaceId)
+      .is("archived_at", null)
+      .or(`snoozed_until.is.null,snoozed_until.lte.${nowIso}`)
+      .order("pinned", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(100);
     if (error) throw error;
     const rows = (data ?? []) as NotificationRow[];
     return {
@@ -58,6 +65,7 @@ export const listNotifications = createServerFn({ method: "GET" })
       unread: rows.filter((r) => !r.read_at).length,
     };
   });
+
 
 const MarkReadInput = z.object({ id: z.string().uuid().optional() });
 export const markNotificationsRead = createServerFn({ method: "POST" })
@@ -77,6 +85,39 @@ export const markNotificationsRead = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true as const };
   });
+
+const NotifActionInput = z.object({
+  id: z.string().uuid(),
+  action: z.enum(["archive", "unarchive", "pin", "unpin", "snooze_1h", "snooze_1d", "unsnooze"]),
+});
+export const updateNotification = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => NotifActionInput.parse(raw))
+  .handler(async ({ data, context }) => {
+    const workspaceId = await getOwnedWorkspaceId(context.supabase, context.userId);
+    if (!workspaceId) return { ok: true as const };
+    const nowIso = new Date().toISOString();
+    const patch: Record<string, string | boolean | null> = {};
+    if (data.action === "archive") patch.archived_at = nowIso;
+    else if (data.action === "unarchive") patch.archived_at = null;
+    else if (data.action === "pin") patch.pinned = true;
+    else if (data.action === "unpin") patch.pinned = false;
+    else if (data.action === "unsnooze") patch.snoozed_until = null;
+    else if (data.action === "snooze_1h")
+      patch.snoozed_until = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    else if (data.action === "snooze_1d")
+      patch.snoozed_until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (context.supabase as any)
+      .from("notifications")
+      .update(patch)
+      .eq("workspace_id", workspaceId)
+      .eq("id", data.id);
+    if (error) throw error;
+    return { ok: true as const };
+  });
+
+
 
 // ------- Smart notification scanner -------
 // Given the current inbox thread list, create/update workspace notifications
