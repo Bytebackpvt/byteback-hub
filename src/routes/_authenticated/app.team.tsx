@@ -295,7 +295,7 @@ function MemberRowUI({
         </span>
       )}
       {canManage && !isOwner && (
-        <Button variant="ghost" size="icon" onClick={onRemove} disabled={busy}>
+        <Button variant="ghost" size="icon" onClick={onRemove} disabled={busy} aria-label={`Remove ${member.email ?? "member"}`} title="Remove member">
           <Trash2 className="h-4 w-4 text-muted-foreground" />
         </Button>
       )}
