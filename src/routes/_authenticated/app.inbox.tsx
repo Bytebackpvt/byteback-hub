@@ -29,6 +29,8 @@ import {
   listInstantlyThreads,
   sendInstantlyReply,
 } from "@/lib/instantly.functions";
+import { scanForNotifications } from "@/lib/notifications.functions";
+import { autoScheduleFollowUps } from "@/lib/followups.functions";
 import {
   CATEGORY_META,
   MAILBOXES,
