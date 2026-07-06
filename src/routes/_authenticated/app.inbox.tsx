@@ -102,6 +102,39 @@ function InboxPage() {
     }
   }, [activeThreads, selectedId]);
 
+  // Auto-draft: on thread select, generate an AI reply in the background if none exists.
+  useEffect(() => {
+    if (!selectedId) return;
+    const t = activeThreads.find((x) => x.id === selectedId);
+    if (!t) return;
+    if (aiReplies[selectedId] || t.suggestedReply) return;
+    if (loadingReply) return;
+    if (t.category === "unsubscribe" || t.category === "spam" || t.category === "ooo") return;
+    let cancelled = false;
+    setLoadingReply(true);
+    callGenerateReply({
+      data: {
+        from: t.from.email,
+        company: t.from.company,
+        subject: t.subject,
+        body: t.body,
+        tone: "warm",
+        length: "brief",
+      },
+    })
+      .then(({ text }) => {
+        if (!cancelled) setAiReplies((r) => ({ ...r, [t.id]: text }));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoadingReply(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
 
   const filtered = useMemo(() => {
     return activeThreads.filter((t) => {
