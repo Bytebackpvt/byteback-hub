@@ -164,7 +164,9 @@ export function NotificationsBell() {
     qc.invalidateQueries({ queryKey: ["notifications"] });
   }
 
-  async function act(id: string, action: Parameters<typeof callUpdate>[0]["data"]["action"]) {
+  type NotifAction = "archive" | "unarchive" | "pin" | "unpin" | "snooze_1h" | "snooze_1d" | "unsnooze";
+  async function act(id: string, action: NotifAction) {
+
     await callUpdate({ data: { id, action } });
     qc.invalidateQueries({ queryKey: ["notifications"] });
   }
