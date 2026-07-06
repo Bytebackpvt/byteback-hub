@@ -120,7 +120,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-border/60 p-3">
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div class-name="truncate text-xs font-medium">{email || "Loading…"}</div>
+            <div className="truncate text-xs font-medium">{email || "Loading…"}</div>
             <div className="text-[10px] capitalize text-muted-foreground">{role ?? "\u00A0"}</div>
           </div>
           <ThemeToggle />
