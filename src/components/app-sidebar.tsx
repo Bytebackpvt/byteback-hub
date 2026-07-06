@@ -4,6 +4,7 @@ import {
   CheckSquare,
   Inbox,
   Kanban,
+  LayoutDashboard,
   LogOut,
   Settings,
   Sparkles,
@@ -31,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string }[] = [
+  { to: "/app", label: "Dashboard", icon: LayoutDashboard },
   { to: "/app/inbox", label: "Inbox", icon: Inbox, badge: "12" },
   { to: "/app/crm", label: "Contacts", icon: Users },
   { to: "/app/pipeline", label: "Pipeline", icon: Kanban },
