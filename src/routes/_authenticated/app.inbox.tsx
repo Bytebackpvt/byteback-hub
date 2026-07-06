@@ -450,19 +450,54 @@ function InboxPage() {
                 </div>
               </div>
               <div className="flex shrink-0 gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Star className="h-4 w-4" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={toggleStar}
+                  aria-label={selFlags.starred ? "Unstar" : "Star"}
+                  aria-pressed={!!selFlags.starred}
+                  title="Star (S)"
+                >
+                  <Star
+                    className={cn(
+                      "h-4 w-4",
+                      selFlags.starred && "fill-amber-400 text-amber-500",
+                    )}
+                  />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={snooze1h}
+                  aria-label="Snooze 1 hour"
+                  title="Snooze 1h (U)"
+                >
                   <Clock className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={archiveSelected}
+                  aria-label="Archive thread"
+                  title="Archive (E)"
+                >
                   <Archive className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={markRead}
+                  aria-label="Mark as read"
+                  title="Mark as read"
+                >
                   <CheckCheck className="h-4 w-4" />
                 </Button>
               </div>
+
             </div>
 
             <ScrollArea className="flex-1">
