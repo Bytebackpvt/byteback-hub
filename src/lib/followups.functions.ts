@@ -19,7 +19,7 @@ async function getOwnedWorkspaceId(
   if (data?.id) return data.id as string;
   const { data: created, error: createErr } = await supabase
     .from("workspaces")
-    .insert({ owner_id: userId, name: "My Workspace" })
+    .insert({ owner_id: userId, name: "My Workspace", slug: `ws-${userId.slice(0, 8)}-${Date.now().toString(36)}` })
     .select("id")
     .single();
   if (createErr) throw createErr;
