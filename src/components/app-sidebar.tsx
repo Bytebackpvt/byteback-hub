@@ -6,6 +6,7 @@ import {
   Kanban,
   LayoutDashboard,
   LogOut,
+  Plug,
   Settings,
   Shield,
   Sparkles,
@@ -42,6 +43,7 @@ const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string }[] =
   { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badge: "4" },
   { to: "/app/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/app/team", label: "Team", icon: Shield },
+  { to: "/app/integrations", label: "Integrations", icon: Plug },
 ];
 
 export function AppSidebar() {
