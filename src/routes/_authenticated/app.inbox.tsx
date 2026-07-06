@@ -410,6 +410,17 @@ function InboxPage() {
                   </p>
                 </div>
 
+                <AiInsightPanel
+                  threadId={selected.id}
+                  from={selected.from.name}
+                  fromEmail={selected.from.email}
+                  company={selected.from.company}
+                  subject={selected.subject}
+                  body={selected.body}
+                />
+
+
+
                 <div className="rounded-xl border border-border/70 bg-background p-5">
                   <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
                     <span>{selected.receivedAt}</span>
