@@ -384,6 +384,8 @@ function StageManager({
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label={`Delete ${s.label}`}
+                title="Delete stage"
                 className="h-7 w-7 text-rose-500 hover:bg-rose-500/10 hover:text-rose-500"
                 onClick={async () => {
                   if (!confirm(`Delete stage "${s.label}"?`)) return;
