@@ -30,7 +30,9 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getCurrentWorkspace } from "@/lib/workspace.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string }[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard },
@@ -47,6 +49,13 @@ export function AppSidebar() {
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [email, setEmail] = useState<string>("");
+  const callWorkspace = useServerFn(getCurrentWorkspace);
+  const wsQuery = useQuery({
+    queryKey: ["workspace", "current"],
+    queryFn: () => callWorkspace(),
+    staleTime: 60_000,
+  });
+  const role = wsQuery.data?.role ?? null;
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
@@ -111,8 +120,8 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-border/60 p-3">
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="truncate text-xs font-medium">{email || "Loading…"}</div>
-            <div className="text-[10px] text-muted-foreground">Owner</div>
+            <div class-name="truncate text-xs font-medium">{email || "Loading…"}</div>
+            <div className="text-[10px] capitalize text-muted-foreground">{role ?? "\u00A0"}</div>
           </div>
           <ThemeToggle />
         </div>
