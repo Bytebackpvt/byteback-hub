@@ -577,6 +577,8 @@ function InboxPage() {
                   </div>
                   <div className="p-4">
                     <Textarea
+                      id="inbox-reply"
+                      aria-label="Reply body"
                       value={
                         reply || aiReplies[selected.id] || selected.suggestedReply || ""
                       }
