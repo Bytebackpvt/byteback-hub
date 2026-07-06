@@ -55,6 +55,11 @@ function InboxPage() {
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [loadingReply, setLoadingReply] = useState(false);
   const [sending, setSending] = useState(false);
+  // Local UX state for star / snooze / archive / read overlaid on threads.
+  type ThreadFlags = { starred?: boolean; snoozedUntil?: number; archived?: boolean; read?: boolean };
+  const [flags, setFlags] = useState<Record<string, ThreadFlags>>({});
+  const [filter, setFilter] = useState<"all" | "unread" | "starred">("all");
+
 
   const callGenerateReply = useServerFn(generateReply);
   const callSummarize = useServerFn(summarizeThread);
