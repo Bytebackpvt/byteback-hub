@@ -6,6 +6,7 @@ import {
   Kanban,
   LayoutDashboard,
   LogOut,
+  Plug,
   Settings,
   Shield,
   Sparkles,
