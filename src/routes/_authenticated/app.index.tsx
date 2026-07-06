@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BarChart3,
   CheckSquare,
+  Flame,
   Inbox,
   Loader2,
   Mail,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { generateDailyBriefing } from "@/lib/ai.functions";
+import { generatePriorityActions, type PriorityAction } from "@/lib/ai.functions";
 import {
   getInstantlyAnalytics,
   listInstantlyThreads,
@@ -28,11 +29,12 @@ export const Route = createFileRoute("/_authenticated/app/")({
   component: DashboardPage,
 });
 
+
 function DashboardPage() {
   const callThreads = useServerFn(listInstantlyThreads);
   const callAnalytics = useServerFn(getInstantlyAnalytics);
   const callTasks = useServerFn(listTasks);
-  const callBriefing = useServerFn(generateDailyBriefing);
+  const callBriefing = useServerFn(generatePriorityActions);
 
   const threadsQuery = useQuery({
     queryKey: ["instantly", "threads"],
@@ -121,18 +123,14 @@ function DashboardPage() {
         </Button>
       </header>
 
-      {/* AI briefing */}
+      {/* AI briefing v2 — explainable priority ranking */}
       <section className="rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/10 via-brand/5 to-transparent p-6">
         <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand">
-          <Sparkles className="h-3.5 w-3.5" /> Today's briefing
+          <Sparkles className="h-3.5 w-3.5" /> Today's priority actions
         </div>
         {briefingQuery.isLoading || briefingQuery.isFetching ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Synthesizing your day…
-          </div>
-        ) : briefingQuery.data?.briefing ? (
-          <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
-            {briefingQuery.data.briefing}
+            <Loader2 className="h-4 w-4 animate-spin" /> Ranking your day…
           </div>
         ) : briefingQuery.error ? (
           <p className="text-sm text-rose-500">
@@ -140,12 +138,26 @@ function DashboardPage() {
               ? briefingQuery.error.message
               : "Failed to generate briefing"}
           </p>
+        ) : briefingQuery.data?.actions?.length ? (
+          <div className="space-y-3">
+            {briefingQuery.data.headline && (
+              <p className="text-sm font-medium leading-snug text-foreground/90">
+                {briefingQuery.data.headline}
+              </p>
+            )}
+            <ol className="space-y-2">
+              {briefingQuery.data.actions.map((a) => (
+                <PriorityRow key={`${a.priority}-${a.title}`} action={a} />
+              ))}
+            </ol>
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground">
             Nothing urgent right now. Enjoy the quiet.
           </p>
         )}
       </section>
+
 
       {/* KPIs */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -349,3 +361,67 @@ function MiniStat({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+
+const URGENCY_STYLE: Record<PriorityAction["urgency"], string> = {
+  now: "bg-rose-500/15 text-rose-500 border-rose-500/30",
+  today: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  this_week: "bg-muted text-muted-foreground border-border",
+};
+
+const CATEGORY_ICON: Record<PriorityAction["category"], typeof Inbox> = {
+  reply: Reply,
+  task: CheckSquare,
+  followup: Mail,
+  review: BarChart3,
+};
+
+function PriorityRow({ action }: { action: PriorityAction }) {
+  const Icon = CATEGORY_ICON[action.category];
+  return (
+    <li className="flex gap-3 rounded-xl border border-border/50 bg-background/50 p-3">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/15 text-xs font-bold text-brand">
+        {action.priority}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
+              <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate">{action.title}</span>
+            </div>
+            {action.target && (
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                {action.target}
+              </div>
+            )}
+          </div>
+          <span
+            className={cn(
+              "shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+              URGENCY_STYLE[action.urgency],
+            )}
+          >
+            {action.urgency === "this_week" ? "this week" : action.urgency}
+          </span>
+        </div>
+        <p className="mt-1.5 flex items-start gap-1 text-xs leading-relaxed text-muted-foreground">
+          <Flame className="mt-0.5 h-3 w-3 shrink-0 text-brand" />
+          <span>{action.reason}</span>
+        </p>
+        {action.signals.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {action.signals.map((s) => (
+              <span
+                key={s}
+                className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
+

@@ -159,3 +159,75 @@ Metrics: sent=${data.metrics?.sent ?? 0} replies=${data.metrics?.replies ?? 0} o
     return { briefing: text };
   });
 
+const PriorityActionsInput = BriefingInput;
+
+export type PriorityAction = {
+  priority: number; // 1 = most important
+  title: string; // Imperative action, max ~10 words
+  reason: string; // Why this matters — explainable, references data
+  signals: string[]; // Short evidence tags e.g. ["hot lead", "3d silent"]
+  category: "reply" | "task" | "followup" | "review";
+  target?: string; // Who / what (e.g. "Alex @ Acme")
+  urgency: "now" | "today" | "this_week";
+};
+
+export const generatePriorityActions = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) => PriorityActionsInput.parse(raw))
+  .handler(async ({ data }) => {
+    const system = `You are a B2B sales chief-of-staff. Rank the rep's most valuable next actions.
+Output STRICT JSON only, no markdown fences:
+{"headline":"<one sentence, max 20 words, no emoji>",
+ "actions":[
+  {"priority":1,"title":"<imperative, max 10 words>","reason":"<why now, cite the data, max 25 words>","signals":["<tag>","<tag>"],"category":"reply|task|followup|review","target":"<person @ company or task name>","urgency":"now|today|this_week"}
+ ]}
+Return 3–5 actions, sorted by priority (1 = most urgent). Reasons must be explainable and reference specific names, categories, or metrics from the input. No preamble, no trailing text.`;
+
+    const user = `Rep: ${data.senderName}
+Unread replies: ${data.unreadCount}
+Hot threads:
+${data.hotThreads.map((t) => `- ${t.from} @ ${t.company} — ${t.category} — "${t.subject}"`).join("\n") || "- none"}
+Open tasks:
+${data.openTasks.map((t) => `- [${t.priority}] ${t.title}`).join("\n") || "- none"}
+Metrics: sent=${data.metrics?.sent ?? 0} replies=${data.metrics?.replies ?? 0} opportunities=${data.metrics?.opportunities ?? 0}`;
+
+    const raw = await callGateway([
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ]);
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+    try {
+      const parsed = JSON.parse(cleaned) as {
+        headline: string;
+        actions: PriorityAction[];
+      };
+      const actions = (parsed.actions ?? [])
+        .filter((a) => a && typeof a.title === "string")
+        .slice(0, 6)
+        .map((a, i) => ({
+          priority: Number(a.priority) || i + 1,
+          title: String(a.title).slice(0, 120),
+          reason: String(a.reason ?? "").slice(0, 240),
+          signals: Array.isArray(a.signals) ? a.signals.slice(0, 4).map(String) : [],
+          category: (["reply", "task", "followup", "review"] as const).includes(
+            a.category as PriorityAction["category"],
+          )
+            ? (a.category as PriorityAction["category"])
+            : "review",
+          target: a.target ? String(a.target).slice(0, 80) : undefined,
+          urgency: (["now", "today", "this_week"] as const).includes(
+            a.urgency as PriorityAction["urgency"],
+          )
+            ? (a.urgency as PriorityAction["urgency"])
+            : "today",
+        }))
+        .sort((a, b) => a.priority - b.priority);
+      return {
+        headline: String(parsed.headline ?? "").slice(0, 200),
+        actions,
+      };
+    } catch {
+      return { headline: "", actions: [] as PriorityAction[] };
+    }
+  });
+
+
