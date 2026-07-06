@@ -84,6 +84,56 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          link: string | null
+          meta: Json
+          read_at: string | null
+          thread_key: string | null
+          title: string
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          link?: string | null
+          meta?: Json
+          read_at?: string | null
+          thread_key?: string | null
+          title: string
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          link?: string | null
+          meta?: Json
+          read_at?: string | null
+          thread_key?: string | null
+          title?: string
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -288,6 +338,12 @@ export type Database = {
       }
     }
     Enums: {
+      notification_kind:
+        | "hot_lead"
+        | "new_reply"
+        | "lost_lead"
+        | "followup"
+        | "info"
       workspace_role: "owner" | "admin" | "member" | "viewer"
     }
     CompositeTypes: {
@@ -416,6 +472,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      notification_kind: [
+        "hot_lead",
+        "new_reply",
+        "lost_lead",
+        "followup",
+        "info",
+      ],
       workspace_role: ["owner", "admin", "member", "viewer"],
     },
   },
