@@ -20,42 +20,82 @@ function DoneStep() {
   const goDashboard = async () => {
     setSaving(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: userErr } = await supabase.auth.getUser();
+      if (userErr) throw userErr;
       const user = userData.user;
-      if (!user) throw new Error("Not signed in");
+      if (!user) throw new Error("Not signed in. Please log in again.");
 
-      if (workspaceName) {
-        const slug = (workspaceSlug || workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, "-")) + "-" + user.id.slice(0, 6);
+      // Reuse an existing workspace owned by this user if one is already there
+      // (the app auto-creates a default workspace the first time a protected
+      // query runs, so a naive insert here would collide on the slug).
+      const { data: existing, error: existingErr } = await supabase
+        .from("workspaces")
+        .select("id")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+      if (existingErr) throw existingErr;
+
+      let workspaceId = existing?.id as string | undefined;
+
+      if (!workspaceId) {
+        const baseSlug =
+          (workspaceSlug || workspaceName || "workspace")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "") || "workspace";
+        const slug = `${baseSlug}-${user.id.slice(0, 6)}-${Date.now().toString(36)}`;
         const { data: ws, error } = await supabase
           .from("workspaces")
           .insert({
             owner_id: user.id,
-            name: workspaceName,
+            name: workspaceName || "My Workspace",
             slug,
             business_type: businessType,
           })
-          .select()
+          .select("id")
           .single();
         if (error) throw error;
-
-        if (ws && invites.length > 0) {
-          await supabase.from("workspace_invites").insert(
-            invites.map((email) => ({ workspace_id: ws.id, email })),
-          );
-        }
-        if (ws && accounts.length > 0) {
-          await supabase.from("email_accounts").insert(
-            accounts.map((a) => ({ workspace_id: ws.id, provider: a.provider, email: a.email })),
-          );
-        }
+        workspaceId = ws.id;
+      } else if (workspaceName || businessType) {
+        await supabase
+          .from("workspaces")
+          .update({
+            ...(workspaceName ? { name: workspaceName } : {}),
+            ...(businessType ? { business_type: businessType } : {}),
+          })
+          .eq("id", workspaceId);
       }
 
-      await supabase.from("profiles").update({ onboarded: true }).eq("id", user.id);
+      if (workspaceId && invites.length > 0) {
+        const { error: invErr } = await supabase.from("workspace_invites").insert(
+          invites.map((email) => ({ workspace_id: workspaceId, email })),
+        );
+        if (invErr) throw invErr;
+      }
+      if (workspaceId && accounts.length > 0) {
+        const { error: accErr } = await supabase.from("email_accounts").insert(
+          accounts.map((a) => ({ workspace_id: workspaceId, provider: a.provider, email: a.email })),
+        );
+        if (accErr) throw accErr;
+      }
+
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .update({ onboarded: true })
+        .eq("id", user.id);
+      if (profErr) throw profErr;
+
       reset();
       toast.success("Workspace ready. Welcome to ByteBack.");
       navigate({ to: "/app" });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Could not finish setup";
+      const anyErr = err as { message?: string; details?: string; hint?: string } | null;
+      const msg =
+        anyErr?.message ||
+        anyErr?.details ||
+        anyErr?.hint ||
+        (typeof err === "string" ? err : "Could not finish setup");
+      console.error("Onboarding finish error:", err);
       toast.error(msg);
       setSaving(false);
     }
