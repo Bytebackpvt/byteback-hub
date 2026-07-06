@@ -20,7 +20,7 @@ export type NotificationRow = {
   thread_key: string | null;
   read_at: string | null;
   created_at: string;
-  meta: Record<string, unknown>;
+  meta: Record<string, string | number | boolean | null>;
 };
 
 async function getOwnedWorkspaceId(
@@ -111,7 +111,7 @@ export const scanForNotifications = createServerFn({ method: "POST" })
       body: string;
       link: string;
       thread_key: string;
-      meta: Record<string, unknown>;
+      meta: Record<string, string | number | boolean | null>;
     };
     const rows: NewNotif[] = [];
     for (const t of data.threads) {
