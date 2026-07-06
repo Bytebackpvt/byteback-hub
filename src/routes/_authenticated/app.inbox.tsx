@@ -21,6 +21,12 @@ import {
 
 import { AiInsightPanel } from "@/components/ai-insight-panel";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,6 +61,11 @@ function InboxPage() {
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [loadingReply, setLoadingReply] = useState(false);
   const [sending, setSending] = useState(false);
+  // Local UX state for star / snooze / archive / read overlaid on threads.
+  type ThreadFlags = { starred?: boolean; snoozedUntil?: number; archived?: boolean; read?: boolean };
+  const [flags, setFlags] = useState<Record<string, ThreadFlags>>({});
+  const [filter, setFilter] = useState<"all" | "unread" | "starred">("all");
+
 
   const callGenerateReply = useServerFn(generateReply);
   const callSummarize = useServerFn(summarizeThread);
@@ -193,15 +204,81 @@ function InboxPage() {
 
 
   const filtered = useMemo(() => {
+    const now = Date.now();
     return activeThreads.filter((t) => {
+      const f = flags[t.id] ?? {};
+      if (f.archived) return false;
+      if (f.snoozedUntil && f.snoozedUntil > now) return false;
       if (mailbox !== "all" && t.mailbox !== mailbox) return false;
       if (search && !`${t.from.name} ${t.subject} ${t.preview}`.toLowerCase().includes(search.toLowerCase()))
         return false;
+      if (filter === "unread" && (f.read || !t.unread)) return false;
+      if (filter === "starred" && !f.starred) return false;
       return true;
     });
-  }, [activeThreads, mailbox, search]);
+  }, [activeThreads, mailbox, search, flags, filter]);
 
   const selected = activeThreads.find((t) => t.id === selectedId) ?? filtered[0];
+  const selFlags = selected ? (flags[selected.id] ?? {}) : {};
+
+  function setFlag(id: string, patch: Partial<ThreadFlags>) {
+    setFlags((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+  }
+  function toggleStar() {
+    if (!selected) return;
+    setFlag(selected.id, { starred: !selFlags.starred });
+    toast.success(selFlags.starred ? "Unstarred" : "Starred");
+  }
+  function snooze1h() {
+    if (!selected) return;
+    setFlag(selected.id, { snoozedUntil: Date.now() + 60 * 60 * 1000 });
+    toast.success("Snoozed for 1 hour");
+  }
+  function archiveSelected() {
+    if (!selected) return;
+    setFlag(selected.id, { archived: true });
+    toast.success("Archived");
+  }
+  function markRead() {
+    if (!selected) return;
+    setFlag(selected.id, { read: true });
+    toast.success("Marked as read");
+  }
+
+  // Keyboard shortcuts: j/k navigate, s star, e archive, u snooze, r focus reply, / focus search
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      const editing = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement | null)?.isContentEditable;
+      if (e.key === "/" && !editing) {
+        e.preventDefault();
+        (document.getElementById("inbox-search") as HTMLInputElement | null)?.focus();
+        return;
+      }
+      if (editing) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const idx = filtered.findIndex((t) => t.id === (selected?.id ?? ""));
+      if (e.key === "j" && idx < filtered.length - 1) {
+        setSelectedId(filtered[idx + 1].id);
+      } else if (e.key === "k" && idx > 0) {
+        setSelectedId(filtered[idx - 1].id);
+      } else if (e.key === "s") {
+        toggleStar();
+      } else if (e.key === "e") {
+        archiveSelected();
+      } else if (e.key === "u") {
+        snooze1h();
+      } else if (e.key === "r") {
+        e.preventDefault();
+        document.getElementById("inbox-reply")?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, selected?.id, selFlags.starred]);
+
+
 
   async function handleSend() {
     if (!selected) return;
@@ -291,16 +368,34 @@ function InboxPage() {
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
+              id="inbox-search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search replies…"
+              placeholder="Search replies…  (press /)"
               className="h-8 pl-8"
+              aria-label="Search replies"
             />
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Filter className="h-3.5 w-3.5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant={filter === "all" ? "ghost" : "secondary"}
+                size="icon"
+                className="h-8 w-8"
+                aria-label="Filter threads"
+                title="Filter threads"
+              >
+                <Filter className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setFilter("all")}>All</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setFilter("unread")}>Unread only</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setFilter("starred")}>Starred only</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
         <ScrollArea className="flex-1">
           <div>
             {filtered.map((t) => (
@@ -355,19 +450,54 @@ function InboxPage() {
                 </div>
               </div>
               <div className="flex shrink-0 gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Star className="h-4 w-4" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={toggleStar}
+                  aria-label={selFlags.starred ? "Unstar" : "Star"}
+                  aria-pressed={!!selFlags.starred}
+                  title="Star (S)"
+                >
+                  <Star
+                    className={cn(
+                      "h-4 w-4",
+                      selFlags.starred && "fill-amber-400 text-amber-500",
+                    )}
+                  />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={snooze1h}
+                  aria-label="Snooze 1 hour"
+                  title="Snooze 1h (U)"
+                >
                   <Clock className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={archiveSelected}
+                  aria-label="Archive thread"
+                  title="Archive (E)"
+                >
                   <Archive className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={markRead}
+                  aria-label="Mark as read"
+                  title="Mark as read"
+                >
                   <CheckCheck className="h-4 w-4" />
                 </Button>
               </div>
+
             </div>
 
             <ScrollArea className="flex-1">
@@ -447,6 +577,8 @@ function InboxPage() {
                   </div>
                   <div className="p-4">
                     <Textarea
+                      id="inbox-reply"
+                      aria-label="Reply body"
                       value={
                         reply || aiReplies[selected.id] || selected.suggestedReply || ""
                       }
