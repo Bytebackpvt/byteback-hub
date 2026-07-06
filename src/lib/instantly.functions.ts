@@ -31,7 +31,23 @@ async function instantly<T>(
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Instantly ${res.status}: ${text.slice(0, 300)}`);
+    console.error(`Instantly API error ${res.status} on ${path}: ${text.slice(0, 500)}`);
+    if (res.status === 401 || res.status === 403) {
+      throw new Error("Email service authentication failed. Please check your API key.");
+    }
+    if (res.status === 429) {
+      throw new Error("Email service rate limit reached. Please try again shortly.");
+    }
+    if (res.status >= 500) {
+      throw new Error("Email service is temporarily unavailable. Please try again later.");
+    }
+    if (res.status === 400 || res.status === 422) {
+      throw new Error("Email service rejected the request.");
+    }
+    if (res.status === 404) {
+      throw new Error("Requested email resource was not found.");
+    }
+    throw new Error("Email service request failed.");
   }
   return (await res.json()) as T;
 }
