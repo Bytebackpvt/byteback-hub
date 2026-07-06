@@ -35,7 +35,14 @@ async function getOwnedWorkspaceId(
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  return data?.id as string | undefined;
+  if (data?.id) return data.id as string;
+  const { data: created, error: createErr } = await supabase
+    .from("workspaces")
+    .insert({ owner_id: userId, name: "My Workspace", slug: `ws-${userId.slice(0, 8)}-${Date.now().toString(36)}` })
+    .select("id")
+    .single();
+  if (createErr) throw createErr;
+  return created.id as string;
 }
 
 export const listNotifications = createServerFn({ method: "GET" })
