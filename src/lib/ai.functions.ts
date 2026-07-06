@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
@@ -41,7 +42,7 @@ const ReplyInput = z.object({
   instructions: z.string().optional(),
 });
 
-export const generateReply = createServerFn({ method: "POST" })
+export const generateReply = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ReplyInput.parse(raw))
   .handler(async ({ data }) => {
     const system = `You are an elite B2B sales rep writing reply emails for cold outreach. Write only the email body — no subject line, no headers, no explanations. Sign off as "${data.senderName}".`;
@@ -68,7 +69,7 @@ const SummaryInput = z.object({
   body: z.string(),
 });
 
-export const summarizeThread = createServerFn({ method: "POST" })
+export const summarizeThread = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => SummaryInput.parse(raw))
   .handler(async ({ data }) => {
     const system =
@@ -92,7 +93,7 @@ const ScoreInput = z.object({
   lastActivity: z.string(),
 });
 
-export const scoreLead = createServerFn({ method: "POST" })
+export const scoreLead = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ScoreInput.parse(raw))
   .handler(async ({ data }) => {
     const system =
@@ -139,7 +140,7 @@ const BriefingInput = z.object({
     .optional(),
 });
 
-export const generateDailyBriefing = createServerFn({ method: "POST" })
+export const generateDailyBriefing = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => BriefingInput.parse(raw))
   .handler(async ({ data }) => {
     const system =
@@ -171,7 +172,7 @@ export type PriorityAction = {
   urgency: "now" | "today" | "this_week";
 };
 
-export const generatePriorityActions = createServerFn({ method: "POST" })
+export const generatePriorityActions = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => PriorityActionsInput.parse(raw))
   .handler(async ({ data }) => {
     const system = `You are a B2B sales chief-of-staff. Rank the rep's most valuable next actions.

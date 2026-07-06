@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const BASE = "https://api.instantly.ai/api/v2";
 
@@ -30,7 +31,23 @@ async function instantly<T>(
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Instantly ${res.status}: ${text.slice(0, 300)}`);
+    console.error(`Instantly API error ${res.status} on ${path}: ${text.slice(0, 500)}`);
+    if (res.status === 401 || res.status === 403) {
+      throw new Error("Email service authentication failed. Please check your API key.");
+    }
+    if (res.status === 429) {
+      throw new Error("Email service rate limit reached. Please try again shortly.");
+    }
+    if (res.status >= 500) {
+      throw new Error("Email service is temporarily unavailable. Please try again later.");
+    }
+    if (res.status === 400 || res.status === 422) {
+      throw new Error("Email service rejected the request.");
+    }
+    if (res.status === 404) {
+      throw new Error("Requested email resource was not found.");
+    }
+    throw new Error("Email service request failed.");
   }
   return (await res.json()) as T;
 }
@@ -139,7 +156,7 @@ function priorityFrom(cat: InstantlyThread["category"], interest?: number): Inst
   return "low";
 }
 
-export const listInstantlyThreads = createServerFn({ method: "GET" }).handler(async () => {
+export const listInstantlyThreads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
   try {
     const data = await instantly<{ items?: RawEmail[] }>("/emails", {
       query: { limit: 50, email_type: "received" },
@@ -181,7 +198,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" }).handler(as
   }
 });
 
-export const listInstantlyMailboxes = createServerFn({ method: "GET" }).handler(async () => {
+export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
   try {
     const data = await instantly<{ items?: Array<{ email: string; status?: string; id?: string }> }>(
       "/accounts",
@@ -210,7 +227,7 @@ const ReplyInput = z.object({
   body: z.string().min(1),
 });
 
-export const sendInstantlyReply = createServerFn({ method: "POST" })
+export const sendInstantlyReply = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ReplyInput.parse(raw))
   .handler(async ({ data }) => {
     const res = await instantly<{ id?: string }>("/emails/reply", {
@@ -260,7 +277,7 @@ function leadStatus(s?: number, interest?: number): InstantlyLead["status"] {
   return "new";
 }
 
-export const listInstantlyLeads = createServerFn({ method: "GET" }).handler(async () => {
+export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
   try {
     const data = await instantly<{ items?: RawLead[] }>("/leads/list", {
       method: "POST",
@@ -310,7 +327,7 @@ const UpdateStatusInput = z.object({
   status: z.enum(["new", "interested", "meeting", "customer", "not-interested", "bounced"]),
 });
 
-export const updateLeadStatus = createServerFn({ method: "POST" })
+export const updateLeadStatus = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => UpdateStatusInput.parse(raw))
   .handler(async ({ data }) => {
     const interest = STATUS_TO_INTEREST[data.status];
@@ -354,7 +371,7 @@ type DailyRow = {
   clicks?: number;
 };
 
-export const getInstantlyAnalytics = createServerFn({ method: "GET" }).handler(async () => {
+export const getInstantlyAnalytics = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
   try {
     const [overview, dailyRes, leadsRes] = await Promise.all([
       instantly<OverviewResponse>("/campaigns/analytics/overview"),
