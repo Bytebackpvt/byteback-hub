@@ -29,6 +29,8 @@ import {
   listInstantlyThreads,
   sendInstantlyReply,
 } from "@/lib/instantly.functions";
+import { scanForNotifications } from "@/lib/notifications.functions";
+import { autoScheduleFollowUps } from "@/lib/followups.functions";
 import {
   CATEGORY_META,
   MAILBOXES,
@@ -58,6 +60,8 @@ function InboxPage() {
   const callListThreads = useServerFn(listInstantlyThreads);
   const callListMailboxes = useServerFn(listInstantlyMailboxes);
   const callSendReply = useServerFn(sendInstantlyReply);
+  const callScan = useServerFn(scanForNotifications);
+  const callAutoSchedule = useServerFn(autoScheduleFollowUps);
 
   const threadsQuery = useQuery({
     queryKey: ["instantly", "threads"],
@@ -82,6 +86,57 @@ function InboxPage() {
 
   const connected = threadsQuery.data?.connected === true;
   const activeThreads: Thread[] = connected && liveThreads.length > 0 ? liveThreads : THREADS;
+
+  // Fire notification scan + auto follow-up scheduling whenever the live inbox loads.
+  useEffect(() => {
+    if (!connected || liveThreads.length === 0) return;
+    const payload = liveThreads.slice(0, 50).map((t) => ({
+      id: t.id,
+      fromName: t.from.name,
+      company: t.from.company,
+      subject: t.subject,
+      category: t.category,
+      priority: t.priority,
+      unread: t.unread,
+    }));
+    callScan({ data: { threads: payload } }).catch(() => {});
+
+    const followupCats = new Set([
+      "meeting",
+      "interested",
+      "objection",
+      "not-now",
+      "not-interested",
+      "ooo",
+      "unsubscribe",
+      "spam",
+    ]);
+    const fu = liveThreads
+      .filter((t) => followupCats.has(t.category))
+      .slice(0, 25)
+      .map((t) => ({
+        id: t.id,
+        fromName: t.from.name,
+        company: t.from.company,
+        category: t.category as
+          | "meeting"
+          | "interested"
+          | "objection"
+          | "not-now"
+          | "not-interested"
+          | "ooo"
+          | "unsubscribe"
+          | "spam",
+        sentiment:
+          t.priority === "hot"
+            ? ("positive" as const)
+            : t.category === "objection" || t.category === "not-interested"
+              ? ("negative" as const)
+              : ("neutral" as const),
+      }));
+    if (fu.length) callAutoSchedule({ data: { threads: fu } }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, liveThreads.length]);
 
   const mailboxes = useMemo(() => {
     const live = mailboxesQuery.data?.mailboxes ?? [];
