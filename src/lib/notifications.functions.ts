@@ -154,7 +154,39 @@ export const scanForNotifications = createServerFn({ method: "POST" })
         onConflict: "workspace_id,kind,thread_key",
         ignoreDuplicates: true,
       })
-      .select("id");
+      .select("id, kind, title, body, link");
     if (error) throw error;
+
+    // Email delivery for high-signal alerts via Resend gateway.
+    const alertKinds = new Set<NotificationKind>(["hot_lead", "lost_lead", "followup"]);
+    const toEmail = (await context.supabase.auth.getUser()).data.user?.email;
+    const apiKey = process.env.RESEND_API_KEY;
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    if (toEmail && apiKey && lovableKey && inserted?.length) {
+      const alerts = (inserted as Array<{ kind: NotificationKind; title: string; body: string; link: string | null }>)
+        .filter((r) => alertKinds.has(r.kind));
+      await Promise.all(
+        alerts.map((r) =>
+          fetch("https://connector-gateway.lovable.dev/resend/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${lovableKey}`,
+              "X-Connection-Api-Key": apiKey,
+            },
+            body: JSON.stringify({
+              from: "ByteBack Inbox <onboarding@resend.dev>",
+              to: [toEmail],
+              subject: r.title,
+              html: `<div style="font-family:system-ui,sans-serif;max-width:520px;padding:24px"><h2 style="margin:0 0 8px 0;font-size:18px">${escapeHtml(r.title)}</h2><p style="margin:0 0 16px 0;color:#475569">${escapeHtml(r.body)}</p><a href="${r.link ?? "/app/inbox"}" style="display:inline-block;background:#6366f1;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600">Open inbox</a></div>`,
+            }),
+          }).catch(() => {}),
+        ),
+      );
+    }
     return { created: inserted?.length ?? 0 };
   });
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
