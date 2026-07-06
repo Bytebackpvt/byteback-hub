@@ -60,6 +60,8 @@ function InboxPage() {
   const callListThreads = useServerFn(listInstantlyThreads);
   const callListMailboxes = useServerFn(listInstantlyMailboxes);
   const callSendReply = useServerFn(sendInstantlyReply);
+  const callScan = useServerFn(scanForNotifications);
+  const callAutoSchedule = useServerFn(autoScheduleFollowUps);
 
   const threadsQuery = useQuery({
     queryKey: ["instantly", "threads"],
