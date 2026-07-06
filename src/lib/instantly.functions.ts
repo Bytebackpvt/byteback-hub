@@ -156,7 +156,7 @@ function priorityFrom(cat: InstantlyThread["category"], interest?: number): Inst
   return "low";
 }
 
-export const listInstantlyThreads = createServerFn({ method: "GET" }).handler(async () => {
+export const listInstantlyThreads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
   try {
     const data = await instantly<{ items?: RawEmail[] }>("/emails", {
       query: { limit: 50, email_type: "received" },
@@ -198,7 +198,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" }).handler(as
   }
 });
 
-export const listInstantlyMailboxes = createServerFn({ method: "GET" }).handler(async () => {
+export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
   try {
     const data = await instantly<{ items?: Array<{ email: string; status?: string; id?: string }> }>(
       "/accounts",
@@ -227,7 +227,7 @@ const ReplyInput = z.object({
   body: z.string().min(1),
 });
 
-export const sendInstantlyReply = createServerFn({ method: "POST" })
+export const sendInstantlyReply = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ReplyInput.parse(raw))
   .handler(async ({ data }) => {
     const res = await instantly<{ id?: string }>("/emails/reply", {
@@ -277,7 +277,7 @@ function leadStatus(s?: number, interest?: number): InstantlyLead["status"] {
   return "new";
 }
 
-export const listInstantlyLeads = createServerFn({ method: "GET" }).handler(async () => {
+export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
   try {
     const data = await instantly<{ items?: RawLead[] }>("/leads/list", {
       method: "POST",
@@ -327,7 +327,7 @@ const UpdateStatusInput = z.object({
   status: z.enum(["new", "interested", "meeting", "customer", "not-interested", "bounced"]),
 });
 
-export const updateLeadStatus = createServerFn({ method: "POST" })
+export const updateLeadStatus = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => UpdateStatusInput.parse(raw))
   .handler(async ({ data }) => {
     const interest = STATUS_TO_INTEREST[data.status];
@@ -371,7 +371,7 @@ type DailyRow = {
   clicks?: number;
 };
 
-export const getInstantlyAnalytics = createServerFn({ method: "GET" }).handler(async () => {
+export const getInstantlyAnalytics = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
   try {
     const [overview, dailyRes, leadsRes] = await Promise.all([
       instantly<OverviewResponse>("/campaigns/analytics/overview"),
