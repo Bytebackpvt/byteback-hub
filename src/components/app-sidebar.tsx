@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  Shield,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -38,6 +39,7 @@ const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string }[] =
   { to: "/app/pipeline", label: "Pipeline", icon: Kanban },
   { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badge: "4" },
   { to: "/app/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/app/team", label: "Team", icon: Shield },
 ];
 
 export function AppSidebar() {
