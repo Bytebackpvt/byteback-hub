@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BarChart3,
   CheckSquare,
+  Flame,
   Inbox,
   Loader2,
   Mail,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { generateDailyBriefing } from "@/lib/ai.functions";
+import { generatePriorityActions, type PriorityAction } from "@/lib/ai.functions";
 import {
   getInstantlyAnalytics,
   listInstantlyThreads,
@@ -28,11 +29,12 @@ export const Route = createFileRoute("/_authenticated/app/")({
   component: DashboardPage,
 });
 
+
 function DashboardPage() {
   const callThreads = useServerFn(listInstantlyThreads);
   const callAnalytics = useServerFn(getInstantlyAnalytics);
   const callTasks = useServerFn(listTasks);
-  const callBriefing = useServerFn(generateDailyBriefing);
+  const callBriefing = useServerFn(generatePriorityActions);
 
   const threadsQuery = useQuery({
     queryKey: ["instantly", "threads"],
@@ -121,18 +123,14 @@ function DashboardPage() {
         </Button>
       </header>
 
-      {/* AI briefing */}
+      {/* AI briefing v2 — explainable priority ranking */}
       <section className="rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/10 via-brand/5 to-transparent p-6">
         <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand">
-          <Sparkles className="h-3.5 w-3.5" /> Today's briefing
+          <Sparkles className="h-3.5 w-3.5" /> Today's priority actions
         </div>
         {briefingQuery.isLoading || briefingQuery.isFetching ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Synthesizing your day…
-          </div>
-        ) : briefingQuery.data?.briefing ? (
-          <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
-            {briefingQuery.data.briefing}
+            <Loader2 className="h-4 w-4 animate-spin" /> Ranking your day…
           </div>
         ) : briefingQuery.error ? (
           <p className="text-sm text-rose-500">
@@ -140,12 +138,26 @@ function DashboardPage() {
               ? briefingQuery.error.message
               : "Failed to generate briefing"}
           </p>
+        ) : briefingQuery.data?.actions?.length ? (
+          <div className="space-y-3">
+            {briefingQuery.data.headline && (
+              <p className="text-sm font-medium leading-snug text-foreground/90">
+                {briefingQuery.data.headline}
+              </p>
+            )}
+            <ol className="space-y-2">
+              {briefingQuery.data.actions.map((a) => (
+                <PriorityRow key={`${a.priority}-${a.title}`} action={a} />
+              ))}
+            </ol>
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground">
             Nothing urgent right now. Enjoy the quiet.
           </p>
         )}
       </section>
+
 
       {/* KPIs */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
