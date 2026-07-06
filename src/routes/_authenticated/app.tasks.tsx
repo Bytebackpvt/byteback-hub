@@ -300,6 +300,8 @@ function TaskRowView({
         size="icon"
         className="h-7 w-7 opacity-0 transition group-hover:opacity-100"
         onClick={onDelete}
+        aria-label="Delete task"
+        title="Delete task"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </Button>
