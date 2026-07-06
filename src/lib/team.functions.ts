@@ -23,10 +23,11 @@ export type InviteRow = {
 };
 
 async function assertAdmin(
-  supabase: Awaited<ReturnType<typeof requireSupabaseAuth>> extends never ? never : any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   workspaceId: string,
   userId: string,
-) {
+): Promise<WorkspaceRole> {
   const { data } = await supabase
     .from("workspace_members")
     .select("role")
