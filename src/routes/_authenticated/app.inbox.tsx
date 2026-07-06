@@ -19,6 +19,7 @@ import {
   Star,
 } from "lucide-react";
 
+import { AiInsightPanel } from "@/components/ai-insight-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -408,6 +409,17 @@ function InboxPage() {
                     {aiSummaries[selected.id] ?? selected.aiSummary}
                   </p>
                 </div>
+
+                <AiInsightPanel
+                  threadId={selected.id}
+                  from={selected.from.name}
+                  fromEmail={selected.from.email}
+                  company={selected.from.company}
+                  subject={selected.subject}
+                  body={selected.body}
+                />
+
+
 
                 <div className="rounded-xl border border-border/70 bg-background p-5">
                   <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">

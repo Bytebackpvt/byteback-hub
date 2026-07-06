@@ -1,82 +1,89 @@
+# Byteback Inbox AI — Phase 2 Audit & Rollout Plan
 
-# ByteBack Inbox AI — v1 Build Plan
+This is a very large scope (13 steps, 20+ integrations, AI overhaul, pipelines, notifications, mobile). I can't ship all of it in one turn without producing shallow, broken work. Below is an honest audit of what exists today, then a phased plan. **Pick which phase you want first and I'll build it end-to-end.**
 
-Scope: marketing landing page, authentication screens, and the 5-step onboarding flow. No backend, no real email integrations, no dashboard/inbox internals yet. All auth methods are UI-only (buttons work, no wiring).
+---
 
-## Design system
+## Step 1 — Product Audit (current state)
 
-- Aesthetic: Apple + Linear + Superhuman. Minimal, high-contrast, generous whitespace, soft shadows, subtle glassmorphism on nav and cards, tasteful micro-animations (fade/slide on scroll, spring on hover).
-- Theme: system-preference default with manual light/dark toggle. Both themes fully tuned via `src/styles.css` design tokens (oklch).
-- Typography: Inter Tight for display + Inter for body (via @fontsource), tight tracking on headings.
-- Palette: near-black background (dark) / off-white (light) + a single vivid accent (electric indigo `oklch(0.62 0.22 274)`), muted borders, soft gradient orbs behind hero.
-- Radius: 12–16px cards, 10px buttons. Motion via Tailwind transitions + a light Framer Motion for hero/section reveals.
+### Done
+- Auth (email + Google), onboarding, workspaces + members + roles
+- Tasks table + list, notifications table + bell
+- Lead scores table, basic AI functions (`src/lib/ai.functions.ts`)
+- Instantly.ai integration (server fn)
+- Email accounts table (schema only)
 
-## Routes (TanStack Start, file-based)
+### Partial
+- **AI summary / classification** — exists but keyword-ish, no confidence, no reason, no next-action
+- **Notifications** — table + bell UI, no push/browser/email/Slack delivery, no snooze/pin/assign
+- **Follow-up engine** — tasks exist, no "when to follow up?" prompt on status change, no escalation
+- **Pipelines / lead status** — hardcoded, not user-configurable, no drag-and-drop
+- **Email accounts** — table exists, no OAuth connect flow, no sync
+- **Clickability** — several cards/avatars/stat tiles are decorative
 
-```
-src/routes/
-  __root.tsx                  (update: real meta, theme provider, font imports)
-  index.tsx                   (landing page)
-  auth.tsx                    (sign in / sign up — tabs; Google, Microsoft, Email, OTP, 2FA UI)
-  onboarding.tsx              (layout with progress bar + <Outlet/>)
-  onboarding.index.tsx        (redirect → /onboarding/workspace)
-  onboarding.workspace.tsx    (Step 1: create workspace)
-  onboarding.team.tsx         (Step 2: invite team)
-  onboarding.email-accounts.tsx (Step 3: connect email accounts — provider tiles)
-  onboarding.business-type.tsx  (Step 4: select business type)
-  onboarding.done.tsx         (Step 5: success + CTA to dashboard placeholder)
-```
+### Missing
+- Native OAuth to Gmail / Google Workspace / Microsoft 365 / Outlook / IMAP / SMTP
+- CRM integrations: HubSpot, Zoho, Salesforce, Pipedrive, Freshsales, Close
+- Outreach: Smartlead, Apollo, Lemlist, Saleshandy
+- Comms: Slack, Teams, Google Calendar, Meet, Zoom
+- Automation: Zapier, Make, generic webhook API
+- AI Timeline per lead + "Why is this lead Hot?" explainability
+- Smart escalation (30m / 2h / 24h no-reply)
+- Custom pipelines (unlimited stages, colors, icons, drag/drop, multiple boards)
+- Custom lead statuses with color/icon/automation
+- Notification delivery channels (push, browser, desktop, email, Slack, Teams, Telegram)
+- Mobile PWA + offline + native push
+- Universal 2-click UX pass, a11y pass
 
-Each route file gets its own `head()` with unique title/description/OG tags.
+---
 
-## Landing page sections (`/`)
+## Reality check on integrations
 
-1. Sticky glass nav — logo, Features, Pricing, FAQ, Blog, Sign in, Start Free.
-2. Hero — headline "One Inbox. Every Lead. Zero Missed Opportunities.", subtitle, dual CTAs (Start Free, Book Demo), tertiary Watch Demo link, subtle animated gradient + product mock preview card.
-3. Logo marquee — Instantly, Smartlead, Google Workspace, Microsoft 365, Outlook, Apollo, Lemlist, Saleshandy (auto-scrolling).
-4. Problem/solution band — 3 short cards.
-5. Features grid — bento layout: Unified Inbox, AI Classification, AI Priority, Notifications, CRM, Tasks, Analytics, Team Collaboration, AI Search.
-6. AI Summary showcase — mock daily summary card.
-7. Target customers — icon chips row.
-8. Pricing — 4 tiers (Starter free, Growth, Business, Enterprise) with feature bullets; monthly/annual toggle (visual only).
-9. Testimonials — 3 quote cards.
-10. FAQ — accordion, 8 items.
-11. Final CTA band.
-12. Footer — product, company, resources, legal, socials.
+Each OAuth integration = provider app registration + secrets + callback route + token storage + refresh + sync workers + UI. **A single one (e.g. Gmail) is a multi-hour build.** 20+ of them in one turn is not feasible and would ship broken.
 
-## Auth screen (`/auth`)
+Realistic path: build the **integration framework once** (OAuth connector shell, token vault, sync worker, webhook receiver), then light up providers one at a time. Gmail + Outlook + Slack + HubSpot cover ~80% of demand — start there.
 
-Tabs: Sign in / Sign up. Buttons for Continue with Google, Continue with Microsoft, plus Email + password fields, "Send OTP" link, and a 2FA code stub screen. Trust row (SOC2, GDPR badges). No backend calls — buttons route to `/onboarding/workspace` for demo.
+---
 
-## Onboarding flow
+## Proposed phased rollout
 
-Shared layout: centered card, top progress indicator (1/5 … 5/5), Back/Continue buttons, keyboard-friendly.
+**Phase 2A — AI & Lead Intelligence (highest user-visible value, no external deps)**
+- Rewrite classification with Lovable AI (Gemini) using structured JSON: `category`, `confidence`, `reason`, `next_action`
+- 22 categories from your list, 11 next-actions
+- Per-lead **AI Timeline** table + UI (events: received, classified, assigned, reminded, escalated, replied…)
+- **"Why is this lead Hot?"** explainability panel
+- Accept / Reject on every AI suggestion (feedback loop stored)
 
-- Step 1 Workspace: name + logo upload placeholder.
-- Step 2 Team: multi-email invite chips, Skip option.
-- Step 3 Email accounts: provider tiles (Google Workspace, Gmail, Microsoft 365, Outlook, IMAP, SMTP) with "Connect" (opens stub modal). Show connected list.
-- Step 4 Business type: card grid (IT Company, Agency, Healthcare, Manufacturing, ITAD, Refurbished Laptops, Rental, Other).
-- Step 5 Done: confetti-lite success, "Go to Dashboard" button → `/` for now (with toast noting dashboard is next milestone).
+**Phase 2B — Follow-up & Notification Engine**
+- Status-change modal: "When would you like to follow up?" (Today / Tomorrow / Next week / Custom / None)
+- Auto-create task + notification + scheduled reminder
+- Escalation cron (30m / 2h / 24h) via pg_cron → `/api/public/hooks/escalate`
+- Notification Center: mark read, archive, pin, snooze, assign
+- Browser push (Web Push API) + email (Resend, already connected)
 
-State kept in a small Zustand store (`src/stores/onboarding.ts`), persisted to localStorage so refresh works.
+**Phase 2C — Custom Pipelines & Statuses**
+- `pipelines`, `pipeline_stages`, `lead_statuses` tables
+- Drag-and-drop board (dnd-kit), color + icon per stage/status
+- Multiple saved pipelines per workspace
+- Per-status automation hooks (calls into follow-up engine)
 
-## Non-goals for v1
+**Phase 2D — Clickability & UX pass**
+- Audit every page, wire up every stat card / avatar / menu / icon
+- 2-click max for common actions, keyboard shortcuts, a11y pass
 
-- No Lovable Cloud, no Supabase, no real auth, no email provider OAuth, no AI calls, no dashboard, unified inbox, CRM, tasks, analytics, mobile Capacitor build. These are staged for follow-up milestones.
+**Phase 2E — Integration Framework + first providers**
+- Generic OAuth connector table + token vault (encrypted)
+- Gmail sync (read + send), Outlook sync, Slack notify, HubSpot contact sync
+- Webhook API + Zapier/Make triggers
 
-## Technical notes
+**Phase 2F — Additional providers** (Salesforce, Pipedrive, Zoho, Freshsales, Close, Smartlead, Apollo, Lemlist, Saleshandy, Teams, Calendar, Meet, Zoom, IMAP/SMTP) — one per turn
 
-- Add deps: `framer-motion`, `@fontsource-variable/inter`, `zustand`, `lucide-react` (already present with shadcn).
-- Theme provider: small `ThemeProvider` in `__root.tsx` writing `.dark` on `<html>` based on system + user override stored in localStorage.
-- Replace placeholder in `src/routes/index.tsx`.
-- Update `__root.tsx` head to real ByteBack meta (title, description, OG, Twitter).
-- All colors go through design tokens — no hardcoded hex in components.
-- Responsive: mobile-first; nav collapses to sheet menu at <md.
+**Phase 2G — Mobile PWA** — installable, offline shell, native push
 
-## Follow-up milestones (not this pass)
+---
 
-1. Enable Lovable Cloud, real Google/Microsoft/email/OTP auth, workspace persistence.
-2. Dashboard shell + Unified Inbox with mock data.
-3. AI classification + summaries via Lovable AI Gateway.
-4. CRM (contacts/companies/deals/pipeline), Tasks, Analytics.
-5. Capacitor mobile packaging.
+## What I need from you
+
+Reply with which phase to build first — recommended order is **2A → 2B → 2C → 2D → 2E → 2F → 2G**. I'll implement the chosen phase completely (schema + server fns + UI + wiring + verification) in the next turn, then move to the next.
+
+If you'd rather I just start, I'll begin with **Phase 2A (AI & Lead Intelligence)** since it delivers the biggest visible upgrade and unblocks the follow-up engine.
