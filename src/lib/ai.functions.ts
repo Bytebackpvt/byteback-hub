@@ -114,3 +114,48 @@ Score buying intent + fit.`;
     }
   });
 
+const BriefingInput = z.object({
+  senderName: z.string().default("there"),
+  unreadCount: z.number().int().nonnegative(),
+  hotThreads: z
+    .array(
+      z.object({
+        from: z.string(),
+        company: z.string(),
+        subject: z.string(),
+        category: z.string(),
+      }),
+    )
+    .max(10),
+  openTasks: z
+    .array(z.object({ title: z.string(), priority: z.string() }))
+    .max(10),
+  metrics: z
+    .object({
+      sent: z.number().optional(),
+      replies: z.number().optional(),
+      opportunities: z.number().optional(),
+    })
+    .optional(),
+});
+
+export const generateDailyBriefing = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) => BriefingInput.parse(raw))
+  .handler(async ({ data }) => {
+    const system =
+      "You are an executive assistant writing a crisp morning briefing for a B2B sales rep. Output ONLY 3–5 short bullet points in markdown (use '- '), max 18 words each. Lead with the single most urgent action. Reference names/companies. No preamble, no sign-off, no headings.";
+    const user = `Rep: ${data.senderName}
+Unread replies: ${data.unreadCount}
+Hot threads:
+${data.hotThreads.map((t) => `- ${t.from} @ ${t.company} — ${t.category} — "${t.subject}"`).join("\n") || "- none"}
+Open tasks:
+${data.openTasks.map((t) => `- [${t.priority}] ${t.title}`).join("\n") || "- none"}
+Metrics: sent=${data.metrics?.sent ?? 0} replies=${data.metrics?.replies ?? 0} opportunities=${data.metrics?.opportunities ?? 0}`;
+
+    const text = await callGateway([
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ]);
+    return { briefing: text };
+  });
+

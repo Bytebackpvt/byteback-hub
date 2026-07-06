@@ -4,6 +4,7 @@ import {
   CheckSquare,
   Inbox,
   Kanban,
+  LayoutDashboard,
   LogOut,
   Settings,
   Sparkles,
@@ -31,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string }[] = [
+  { to: "/app", label: "Dashboard", icon: LayoutDashboard },
   { to: "/app/inbox", label: "Inbox", icon: Inbox, badge: "12" },
   { to: "/app/crm", label: "Contacts", icon: Users },
   { to: "/app/pipeline", label: "Pipeline", icon: Kanban },
@@ -67,7 +69,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {NAV.map((item) => {
-                const active = pathname.startsWith(item.to);
+                const active = item.to === "/app" ? pathname === "/app" : pathname.startsWith(item.to);
                 return (
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton asChild isActive={active}>
