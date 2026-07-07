@@ -121,6 +121,8 @@ function PipelinePage() {
   const callUpsert = useServerFn(upsertPipelineStage);
   const callDelete = useServerFn(deletePipelineStage);
   const callReorder = useServerFn(reorderPipelineStages);
+  const callRunAutomation = useServerFn(runStageAutomation);
+
 
   const stagesQuery = useQuery({
     queryKey: ["pipeline", "stages"],
