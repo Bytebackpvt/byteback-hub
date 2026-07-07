@@ -262,27 +262,31 @@ function IntegrationCard({
         </div>
       </div>
 
-      {open && catalog.kind === "webhook" && (
+      {open && (catalog.kind === "webhook" || catalog.kind === "sheets") && (
         <div className="mt-4 space-y-3 rounded-lg border border-dashed border-border/70 bg-muted/30 p-3">
           {catalog.help && <p className="text-xs text-muted-foreground">{catalog.help}</p>}
           <div className="space-y-1.5">
             <Label htmlFor={`url-${catalog.provider}`} className="text-xs">
-              Webhook URL
+              {catalog.kind === "sheets" ? "Google Sheet URL" : "Webhook URL"}
             </Label>
             <Input
               id={`url-${catalog.provider}`}
-              placeholder="https://hooks.slack.com/services/…"
+              placeholder={
+                catalog.kind === "sheets"
+                  ? "https://docs.google.com/spreadsheets/d/…"
+                  : "https://hooks.slack.com/services/…"
+              }
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor={`label-${catalog.provider}`} className="text-xs">
-              Label (optional)
+              {catalog.kind === "sheets" ? "Tab name (default: Leads)" : "Label (optional)"}
             </Label>
             <Input
               id={`label-${catalog.provider}`}
-              placeholder="#sales-alerts"
+              placeholder={catalog.kind === "sheets" ? "Leads" : "#sales-alerts"}
               value={label}
               onChange={(e) => setLabel(e.target.value)}
             />
