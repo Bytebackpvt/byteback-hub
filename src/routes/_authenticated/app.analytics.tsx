@@ -115,12 +115,14 @@ function AnalyticsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Plug className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-muted-foreground/50")} />
-            {connected
-              ? "Live from Instantly · all campaigns"
-              : q.isLoading
-                ? "Loading analytics…"
-                : "Demo data · connect Instantly to see live campaign stats"}
+            <Plug aria-hidden="true" className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-amber-500")} />
+            <span aria-label={connected ? "Connected to Instantly" : "Not connected to Instantly"}>
+              {connected
+                ? "Live from Instantly · all campaigns"
+                : q.isLoading
+                  ? "Loading analytics…"
+                  : "Demo data · connect Instantly to see live campaign stats"}
+            </span>
           </p>
         </div>
         {!connected && !q.isLoading && (

@@ -310,8 +310,11 @@ function InboxPage() {
       {/* Mailboxes column */}
       <aside className="flex flex-col border-r border-border/60 bg-muted/20">
         <div className="border-b border-border/60 p-3">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <Plug className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-muted-foreground/50")} />
+          <div
+            className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            aria-label={connected ? "Connected to Instantly, live data" : "Not connected to Instantly"}
+          >
+            <Plug aria-hidden="true" className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-amber-500")} />
             {connected ? "Instantly · live" : threadsQuery.isLoading ? "Connecting…" : "Demo data"}
           </div>
           {!connected && threadsQuery.data?.error && (
