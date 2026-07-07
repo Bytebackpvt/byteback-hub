@@ -243,7 +243,7 @@ function PipelinePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <KanbanHelp />
+          <KanbanTour />
           <StageManager
             stages={stages}
             onSave={async (payload) => {
@@ -263,7 +263,7 @@ function PipelinePage() {
 
       </div>
 
-      <div className="flex-1 overflow-x-auto p-4">
+      <div className="flex-1 overflow-x-auto p-4" data-tour="kanban-board">
         <div className="flex h-full min-w-max gap-3">
           {stagesQuery.isLoading && stages.length === 0 ? (
             <div className="flex w-full items-center justify-center text-sm text-muted-foreground">
@@ -276,6 +276,7 @@ function PipelinePage() {
               return (
                 <div
                   key={stage.id}
+                  data-tour={idx === 0 ? "kanban-column" : undefined}
                   className={cn(
                     "flex w-72 shrink-0 flex-col rounded-xl border border-border/60 border-t-2 bg-muted/30",
                     stageAccent(stage.color),
@@ -315,9 +316,10 @@ function PipelinePage() {
                   </div>
 
                   <div className="flex-1 space-y-2 overflow-y-auto p-2">
-                    {leads.map((l) => (
+                    {leads.map((l, cardIdx) => (
                       <div
                         key={l.id}
+                        data-tour={idx === 0 && cardIdx === 0 ? "kanban-card" : undefined}
                         className="group rounded-lg border border-border/60 bg-card p-3 shadow-sm transition hover:shadow-md"
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -342,6 +344,7 @@ function PipelinePage() {
                           </span>
                           {next && connected && (
                             <button
+                              data-tour={idx === 0 && cardIdx === 0 ? "kanban-advance" : undefined}
                               onClick={() =>
                                 mutate.mutate({ leadId: l.id, status: next.slug })
                               }
