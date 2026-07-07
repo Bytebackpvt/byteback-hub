@@ -152,10 +152,16 @@ function DashboardPage() {
             </ol>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            Nothing urgent right now. Enjoy the quiet.
-          </p>
+          <div className="flex flex-col items-start gap-2">
+            <p className="text-sm text-muted-foreground">
+              Nothing urgent right now. Enjoy the quiet.
+            </p>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/app/inbox">Open inbox</Link>
+            </Button>
+          </div>
         )}
+
       </section>
 
 
