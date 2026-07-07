@@ -67,6 +67,7 @@ import {
   type PipelineStage,
   type StageAutomation,
 } from "@/lib/pipeline.functions";
+import { KanbanTour } from "@/components/kanban-tour";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/pipeline")({
