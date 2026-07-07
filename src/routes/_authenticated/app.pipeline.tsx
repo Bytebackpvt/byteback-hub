@@ -194,6 +194,9 @@ function PipelinePage() {
         /* automation is best-effort; don't block the drag */
       }
     },
+  });
+
+
 
 
   const byStage = useMemo(() => {
