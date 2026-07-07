@@ -166,10 +166,35 @@ function PipelinePage() {
       if (ctx?.prev) qc.setQueryData(["instantly", "leads"], ctx.prev);
       toast.error(err instanceof Error ? err.message : "Failed to update");
     },
-    onSuccess: () => {
+    onSuccess: async (_res, vars) => {
       toast.success("Stage updated");
+      const lead = liveLeads.find((l) => l.id === vars.leadId);
+      if (!lead) return;
+      try {
+        const res = await callRunAutomation({
+          data: {
+            stageSlug: vars.status,
+            lead: {
+              id: lead.id,
+              name: lead.name ?? "",
+              company: lead.company ?? "",
+              email: lead.email ?? "",
+            },
+          },
+        });
+        if (res.ran) {
+          const parts: string[] = [];
+          if (res.actions?.includes("task")) parts.push("task created");
+          if (res.actions?.includes("notify")) parts.push("notification sent");
+          if (parts.length) toast.success(`Automation: ${parts.join(" + ")}`);
+          qc.invalidateQueries({ queryKey: ["tasks"] });
+          qc.invalidateQueries({ queryKey: ["notifications"] });
+        }
+      } catch {
+        /* automation is best-effort; don't block the drag */
+      }
     },
-  });
+
 
   const byStage = useMemo(() => {
     const map = new Map<string, InstantlyLead[]>();
