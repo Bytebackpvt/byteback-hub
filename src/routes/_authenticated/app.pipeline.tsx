@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -12,6 +13,8 @@ import {
   Flag,
   Flame,
   GripVertical,
+  HelpCircle,
+
   Inbox,
   Loader2,
   Pencil,
@@ -29,6 +32,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
 import {
   Select,
   SelectContent,
@@ -233,21 +242,25 @@ function PipelinePage() {
               : "Demo mode · connect Instantly to move real leads"}
           </p>
         </div>
-        <StageManager
-          stages={stages}
-          onSave={async (payload) => {
-            await callUpsert({ data: payload });
-            qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
-          }}
-          onDelete={async (id) => {
-            await callDelete({ data: { id } });
-            qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
-          }}
-          onReorder={async (order) => {
-            await callReorder({ data: { order } });
-            qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
-          }}
-        />
+        <div className="flex items-center gap-2">
+          <KanbanHelp />
+          <StageManager
+            stages={stages}
+            onSave={async (payload) => {
+              await callUpsert({ data: payload });
+              qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
+            }}
+            onDelete={async (id) => {
+              await callDelete({ data: { id } });
+              qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
+            }}
+            onReorder={async (order) => {
+              await callReorder({ data: { order } });
+              qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
+            }}
+          />
+        </div>
+
       </div>
 
       <div className="flex-1 overflow-x-auto p-4">
@@ -823,5 +836,103 @@ function StageManager({
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+// ------------ Kanban onboarding tooltip ------------
+//
+// First-visit auto-opens a small popover explaining columns + cards.
+// Dismissal persists in localStorage; the "?" button always re-opens it.
+
+const KANBAN_TIP_KEY = "byteback.kanban.tip.seen.v1";
+
+function KanbanHelp() {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const seen = window.localStorage.getItem(KANBAN_TIP_KEY);
+    if (!seen) {
+      // Delay so it doesn't fight the initial page paint.
+      const t = window.setTimeout(() => setOpen(true), 600);
+      return () => window.clearTimeout(t);
+    }
+  }, []);
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next && typeof window !== "undefined") {
+      window.localStorage.setItem(KANBAN_TIP_KEY, "1");
+    }
+  }
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0"
+          aria-label="What is a Kanban board?"
+          title="What is a Kanban board?"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 p-0">
+        <div className="border-b border-border/60 bg-muted/40 px-4 py-3">
+          <div className="flex items-center gap-1.5 text-sm font-semibold">
+            <Zap className="h-3.5 w-3.5 text-brand" /> How this Kanban works
+          </div>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            A visual board — one glance and you know where every lead is.
+          </p>
+        </div>
+        <div className="space-y-3 px-4 py-3 text-xs">
+          <div className="flex gap-2">
+            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand/10 text-[10px] font-bold text-brand">
+              1
+            </div>
+            <div>
+              <div className="font-medium">Columns = stages</div>
+              <div className="text-muted-foreground">
+                Each column is a step in your pipeline (New → Interested → Meeting →
+                Won). Customize them from the top-right.
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand/10 text-[10px] font-bold text-brand">
+              2
+            </div>
+            <div>
+              <div className="font-medium">Cards = leads</div>
+              <div className="text-muted-foreground">
+                Each card is one lead with name, company, and last activity. Hover a
+                card to see the "→ next stage" shortcut.
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand/10 text-[10px] font-bold text-brand">
+              3
+            </div>
+            <div>
+              <div className="font-medium">Move to progress</div>
+              <div className="text-muted-foreground">
+                Click the arrow to advance a lead. If the stage has automation
+                (<Zap className="inline h-2.5 w-2.5 text-brand" />
+                ), a follow-up task and notification fire instantly.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end border-t border-border/60 bg-muted/20 px-3 py-2">
+          <Button size="sm" variant="ghost" onClick={() => handleOpenChange(false)}>
+            Got it
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
