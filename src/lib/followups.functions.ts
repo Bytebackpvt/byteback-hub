@@ -9,14 +9,14 @@ async function getOwnedWorkspaceId(
   userId: string,
 ): Promise<string | null> {
   const { data, error } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("owner_id", userId)
+    .from("workspace_members")
+    .select("workspace_id, created_at")
+    .eq("user_id", userId)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  return (data?.id as string | undefined) ?? null;
+  return (data?.workspace_id as string | undefined) ?? null;
 }
 
 // Rules: due date + priority derived from lead interest / reply sentiment.
@@ -138,7 +138,7 @@ export const autoScheduleFollowUps = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) => BatchInput.parse(raw))
   .handler(async ({ data, context }) => {
     const workspaceId = await getOwnedWorkspaceId(context.supabase, context.userId);
-    if (!workspaceId) throw new Error("No workspace");
+    if (!workspaceId) return { scheduled: 0 };
 
     const rows: Array<{
       workspace_id: string;
