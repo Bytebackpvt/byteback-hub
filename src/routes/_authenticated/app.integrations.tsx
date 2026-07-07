@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { CheckCircle2, Loader2, MessageSquare, Plug, Send, Trash2, Webhook, Zap } from "lucide-react";
+import { CheckCircle2, FileSpreadsheet, Loader2, MessageSquare, Plug, Send, Trash2, Webhook, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
   type IntegrationProvider,
   type IntegrationRow,
 } from "@/lib/integrations.functions";
+import { saveSheetsIntegration, testSheetsIntegration } from "@/lib/sheets.functions";
 
 export const Route = createFileRoute("/_authenticated/app/integrations")({
   head: () => ({ meta: [{ title: "Integrations — ByteBack" }, { name: "robots", content: "noindex" }] }),
@@ -24,12 +25,12 @@ export const Route = createFileRoute("/_authenticated/app/integrations")({
 });
 
 type Catalog = {
-  provider: IntegrationProvider;
+  provider: IntegrationProvider | "google_sheets";
   name: string;
   blurb: string;
   icon: typeof Webhook;
   status: "available" | "coming-soon";
-  kind: "webhook" | "oauth";
+  kind: "webhook" | "oauth" | "sheets";
   help?: string;
 };
 
@@ -80,6 +81,15 @@ const CATALOG: Catalog[] = [
     help: "Any HTTPS endpoint that accepts a JSON POST body works — great for internal tools or bespoke automations.",
   },
   {
+    provider: "google_sheets",
+    name: "Google Sheets",
+    blurb: "Auto-append every hot / lost lead as a row in a Google Sheet. No CRM subscription needed.",
+    icon: FileSpreadsheet,
+    status: "available",
+    kind: "sheets",
+    help: "Create a Google Sheet, add a tab named 'Leads' (or your choice), then paste the sheet URL below. We'll append a row for every hot or lost lead.",
+  },
+  {
     provider: "gmail",
     name: "Gmail",
     blurb: "Sync your Gmail inbox and reply to leads directly from ByteBack.",
@@ -123,7 +133,7 @@ function IntegrationsPage() {
 
       <div className="grid gap-3">
         {CATALOG.map((c) => (
-          <IntegrationCard key={c.provider} catalog={c} current={byProvider.get(c.provider)} />
+          <IntegrationCard key={c.provider} catalog={c} current={byProvider.get(c.provider as IntegrationProvider)} />
         ))}
       </div>
     </div>
@@ -146,23 +156,29 @@ function IntegrationCard({
   const callSave = useServerFn(saveWebhookIntegration);
   const callDelete = useServerFn(deleteIntegration);
   const callTest = useServerFn(testIntegration);
+  const callSaveSheets = useServerFn(saveSheetsIntegration);
+  const callTestSheets = useServerFn(testSheetsIntegration);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["integrations"] });
 
   const saveMut = useMutation({
     mutationFn: () =>
-      callSave({
-        data: {
-          provider: catalog.provider as
-            | "slack_webhook"
-            | "teams_webhook"
-            | "discord_webhook"
-            | "generic_webhook"
-            | "zapier_webhook",
-          webhook_url: url,
-          label: label || undefined,
-        },
-      }),
+      catalog.kind === "sheets"
+        ? callSaveSheets({
+            data: { spreadsheet_url_or_id: url, sheet_name: label || undefined },
+          })
+        : callSave({
+            data: {
+              provider: catalog.provider as
+                | "slack_webhook"
+                | "teams_webhook"
+                | "discord_webhook"
+                | "generic_webhook"
+                | "zapier_webhook",
+              webhook_url: url,
+              label: label || undefined,
+            },
+          }),
     onSuccess: () => {
       toast.success(`${catalog.name} connected`);
       setOpen(false);
@@ -183,7 +199,8 @@ function IntegrationCard({
   });
 
   const testMut = useMutation({
-    mutationFn: () => callTest({ data: { id: current!.id } }),
+    mutationFn: () =>
+      catalog.kind === "sheets" ? callTestSheets({}) : callTest({ data: { id: current!.id } }),
     onSuccess: () => toast.success(`Test sent to ${catalog.name}`),
     onError: (e) => toast.error((e as Error).message),
   });
@@ -245,27 +262,31 @@ function IntegrationCard({
         </div>
       </div>
 
-      {open && catalog.kind === "webhook" && (
+      {open && (catalog.kind === "webhook" || catalog.kind === "sheets") && (
         <div className="mt-4 space-y-3 rounded-lg border border-dashed border-border/70 bg-muted/30 p-3">
           {catalog.help && <p className="text-xs text-muted-foreground">{catalog.help}</p>}
           <div className="space-y-1.5">
             <Label htmlFor={`url-${catalog.provider}`} className="text-xs">
-              Webhook URL
+              {catalog.kind === "sheets" ? "Google Sheet URL" : "Webhook URL"}
             </Label>
             <Input
               id={`url-${catalog.provider}`}
-              placeholder="https://hooks.slack.com/services/…"
+              placeholder={
+                catalog.kind === "sheets"
+                  ? "https://docs.google.com/spreadsheets/d/…"
+                  : "https://hooks.slack.com/services/…"
+              }
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor={`label-${catalog.provider}`} className="text-xs">
-              Label (optional)
+              {catalog.kind === "sheets" ? "Tab name (default: Leads)" : "Label (optional)"}
             </Label>
             <Input
               id={`label-${catalog.provider}`}
-              placeholder="#sales-alerts"
+              placeholder={catalog.kind === "sheets" ? "Leads" : "#sales-alerts"}
               value={label}
               onChange={(e) => setLabel(e.target.value)}
             />
