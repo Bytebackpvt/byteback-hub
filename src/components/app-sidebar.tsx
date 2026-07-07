@@ -3,6 +3,7 @@ import {
   BarChart3,
   Bell,
   CheckSquare,
+  HelpCircle,
   Inbox,
   Kanban,
   LayoutDashboard,
@@ -36,16 +37,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWorkspace } from "@/lib/workspace.functions";
 import { useServerFn } from "@tanstack/react-start";
 
-const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string }[] = [
-  { to: "/app", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/app/inbox", label: "Inbox", icon: Inbox, badge: "12" },
-  { to: "/app/crm", label: "Contacts", icon: Users },
-  { to: "/app/pipeline", label: "Pipeline", icon: Kanban },
-  { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badge: "4" },
-  { to: "/app/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/app/team", label: "Team", icon: Shield },
-  { to: "/app/integrations", label: "Integrations", icon: Plug },
-  { to: "/app/notifications", label: "Notifications", icon: Bell },
+const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string; tour: string }[] = [
+  { to: "/app", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
+  { to: "/app/inbox", label: "Inbox", icon: Inbox, badge: "12", tour: "nav-inbox" },
+  { to: "/app/crm", label: "Contacts", icon: Users, tour: "nav-crm" },
+  { to: "/app/pipeline", label: "Pipeline", icon: Kanban, tour: "nav-pipeline" },
+  { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badge: "4", tour: "nav-tasks" },
+  { to: "/app/analytics", label: "Analytics", icon: BarChart3, tour: "nav-analytics" },
+  { to: "/app/team", label: "Team", icon: Shield, tour: "nav-team" },
+  { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
+  { to: "/app/notifications", label: "Notifications", icon: Bell, tour: "nav-notifications" },
+  { to: "/app/help", label: "Help", icon: HelpCircle, tour: "nav-help" },
 ];
 
 export function AppSidebar() {
@@ -86,7 +88,7 @@ export function AppSidebar() {
               {NAV.map((item) => {
                 const active = item.to === "/app" ? pathname === "/app" : pathname.startsWith(item.to);
                 return (
-                  <SidebarMenuItem key={item.to}>
+                  <SidebarMenuItem key={item.to} data-tour={item.tour}>
                     <SidebarMenuButton asChild isActive={active}>
                       <Link to={item.to} className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
