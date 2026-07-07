@@ -13,6 +13,8 @@ import {
   Flag,
   Flame,
   GripVertical,
+  HelpCircle,
+
   Inbox,
   Loader2,
   Pencil,
