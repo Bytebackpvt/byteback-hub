@@ -112,6 +112,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/favicon.ico" },
     ],
   }),
   shellComponent: RootShell,
@@ -155,6 +157,16 @@ function RootComponent() {
       (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub =
         sub.subscription;
     });
+
+    // Register the PWA service worker (production only, browser only).
+    if (
+      typeof window !== "undefined" &&
+      "serviceWorker" in navigator &&
+      import.meta.env.PROD
+    ) {
+      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
+
     return () => {
       (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub?.unsubscribe();
     };
