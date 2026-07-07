@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/app")({
 });
 
 function AppLayout() {
+  const tour = useGuidedTour();
   useEffect(() => {
     initNativeShell();
   }, []);
@@ -33,6 +34,16 @@ function AppLayout() {
             <SidebarTrigger />
             <span className="text-sm font-medium text-muted-foreground md:hidden">ByteBack</span>
             <div className="ml-auto flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={tour.reset}
+                title="Start guided tour"
+              >
+                <HelpCircle className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Tour</span>
+              </Button>
               <NotificationsBell />
             </div>
           </header>
@@ -42,6 +53,7 @@ function AppLayout() {
           </main>
         </div>
       </div>
+      <GuidedTour open={tour.open} onClose={tour.close} />
     </SidebarProvider>
   );
 }
