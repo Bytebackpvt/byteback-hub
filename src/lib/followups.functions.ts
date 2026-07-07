@@ -138,7 +138,7 @@ export const autoScheduleFollowUps = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) => BatchInput.parse(raw))
   .handler(async ({ data, context }) => {
     const workspaceId = await getOwnedWorkspaceId(context.supabase, context.userId);
-    if (!workspaceId) throw new Error("No workspace");
+    if (!workspaceId) return { scheduled: 0 };
 
     const rows: Array<{
       workspace_id: string;
