@@ -429,6 +429,24 @@ export type Database = {
           },
         ]
       }
+      user_ui_prefs: {
+        Row: {
+          prefs: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          prefs?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          prefs?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workspace_integrations: {
         Row: {
           config: Json
