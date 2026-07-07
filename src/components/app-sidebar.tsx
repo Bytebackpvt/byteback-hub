@@ -88,7 +88,7 @@ export function AppSidebar() {
               {NAV.map((item) => {
                 const active = item.to === "/app" ? pathname === "/app" : pathname.startsWith(item.to);
                 return (
-                  <SidebarMenuItem key={item.to}>
+                  <SidebarMenuItem key={item.to} data-tour={item.tour}>
                     <SidebarMenuButton asChild isActive={active}>
                       <Link to={item.to} className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
