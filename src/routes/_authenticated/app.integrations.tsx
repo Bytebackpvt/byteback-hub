@@ -156,23 +156,29 @@ function IntegrationCard({
   const callSave = useServerFn(saveWebhookIntegration);
   const callDelete = useServerFn(deleteIntegration);
   const callTest = useServerFn(testIntegration);
+  const callSaveSheets = useServerFn(saveSheetsIntegration);
+  const callTestSheets = useServerFn(testSheetsIntegration);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["integrations"] });
 
   const saveMut = useMutation({
     mutationFn: () =>
-      callSave({
-        data: {
-          provider: catalog.provider as
-            | "slack_webhook"
-            | "teams_webhook"
-            | "discord_webhook"
-            | "generic_webhook"
-            | "zapier_webhook",
-          webhook_url: url,
-          label: label || undefined,
-        },
-      }),
+      catalog.kind === "sheets"
+        ? callSaveSheets({
+            data: { spreadsheet_url_or_id: url, sheet_name: label || undefined },
+          })
+        : callSave({
+            data: {
+              provider: catalog.provider as
+                | "slack_webhook"
+                | "teams_webhook"
+                | "discord_webhook"
+                | "generic_webhook"
+                | "zapier_webhook",
+              webhook_url: url,
+              label: label || undefined,
+            },
+          }),
     onSuccess: () => {
       toast.success(`${catalog.name} connected`);
       setOpen(false);
@@ -193,7 +199,8 @@ function IntegrationCard({
   });
 
   const testMut = useMutation({
-    mutationFn: () => callTest({ data: { id: current!.id } }),
+    mutationFn: () =>
+      catalog.kind === "sheets" ? callTestSheets({}) : callTest({ data: { id: current!.id } }),
     onSuccess: () => toast.success(`Test sent to ${catalog.name}`),
     onError: (e) => toast.error((e as Error).message),
   });
