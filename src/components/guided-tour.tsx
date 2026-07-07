@@ -130,6 +130,27 @@ export function GuidedTour({ open, onClose }: { open: boolean; onClose: () => vo
   };
   const prev = () => setIndex((i) => Math.max(0, i - 1));
 
+  // Keyboard nav: Escape to close, ArrowRight/ArrowLeft to step
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        complete();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        next();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prev();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, index]);
+
+
   const pad = 8;
   const box = rect
     ? {
