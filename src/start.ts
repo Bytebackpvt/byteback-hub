@@ -2,6 +2,8 @@ import { createStart, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
 import { attachSupabaseAuth } from "@/lib/attach-supabase-auth";
+import { buildMissingAuthLog } from "@/lib/auth-audit";
+
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
