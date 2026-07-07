@@ -1,57 +1,52 @@
-# What's left to build
+## Phase 2E — Gmail (read + send), per user
 
-Phases 2A (AI & Lead Intelligence) and 2B (Follow-up & Notification Engine) are shipped, plus recent auth-hardening (bearer refresh/retry, MISSING_AUTH_HEADER logging + tests) and the Help Center / guided tour. Everything below is still open.
+Each user of your app needs to connect **their own** Gmail (not yours), so I'll build a custom Google OAuth flow. The Lovable Gmail connector goes to your account only, so it's not the right fit.
 
----
+## What I'll ship this turn
 
-## Phase 2C — Custom Pipelines & Statuses
-- [x] Schema: `pipeline_stages` with workspace scope, RLS + GRANTs (already shipped)
-- [x] Drag-and-drop Kanban board (dnd-kit-style), color + won/lost markers
-- [x] **Icons per stage** (11-icon picker: inbox, flame, calendar, trophy, star, flag, check, bell, zap, x, circle)
-- [x] **Per-stage automation** (`automation` jsonb): auto-create follow-up task (days offset, priority, `{name}`/`{company}` templates) and/or in-app notification
-- [x] Automation fires from `updateLeadStatus` via new `runStageAutomation` server fn (RLS-scoped, best-effort)
-- [ ] Multiple saved pipelines per workspace + switcher (not shipped — separate refactor)
+### 1. Generic OAuth connections framework
+New table `oauth_connections` (workspace + user scoped) with columns for provider, account email, encrypted `access_token` / `refresh_token`, `expires_at`, granted `scopes`, `status`. RLS: users manage only their own rows; service role for the refresh worker. Tokens encrypted with `pgcrypto` using a `TOKEN_ENC_KEY` secret so a leaked DB row can't be replayed.
 
+### 2. Google OAuth wiring
+- Public route `src/routes/api/public/oauth.google.callback.ts` — receives `?code`, exchanges for tokens, stores encrypted, redirects back to `/app/integrations?connected=gmail`.
+- Server fn `startGoogleOAuth` — returns the Google consent URL with `state` (signed HMAC of user + workspace + nonce) and scopes `gmail.readonly`, `gmail.send`, `gmail.modify`, `userinfo.email`.
+- Server fn `refreshGoogleToken` — refreshes when `expires_at` is near.
+- Server fn `disconnectGoogle` — revokes at Google + deletes row.
 
-## Phase 2D — Clickability & UX pass (in progress)
-- [x] Mobile viewport: `100vh`/`min-h-screen` → `dvh` across shell, auth, onboarding, root, index, inbox, crm, pipeline, tasks, analytics
-- [x] Guided tour a11y: dialog role, focus-on-open, Escape/←/→ keys, labeled backdrop `<button>`s
-- [x] Empty-state CTAs: dashboard (briefing/hot/tasks), inbox (clear filters), crm (clear search), tasks (add + generate)
-- [x] Clickable dashboard hot-reply rows with descriptive aria-labels
-- [x] Analytics "Connect Instantly" CTA link when disconnected
-- [x] Global `?` keyboard-shortcuts overlay (inputs excluded)
-- [x] Reduced-motion global CSS + focus-visible outline
-- [x] Integrations & Help: semantic list/region, FAQ aria-controls/aria-expanded, focus rings
-- [ ] Pipeline, Analytics — deeper interaction/a11y pass
-- [ ] Contrast sweep (audit remaining muted-foreground/50 usages)
+### 3. Gmail server functions
+- `listGmailThreads({ mailbox })` — recent inbox threads with subject/from/snippet.
+- `getGmailThread({ id })` — full message bodies + headers.
+- `sendGmailReply({ threadId, to, subject, body, inReplyTo })` — builds RFC 2822, base64url, `POST /messages/send`.
+- `markGmailRead({ id })` — removes `UNREAD` label.
 
+All call the Gmail REST API directly with the user's own access token, auto-refresh on 401.
 
+### 4. UI on the Integrations page
+Gmail card flips from "Coming soon" → "Connect Gmail" (opens Google consent in new tab). Once connected shows account email, "Test send", "Disconnect".
 
-## Phase 2E — Integration Framework + first providers
-- Generic OAuth connector table + encrypted token vault + refresh worker
-- Public callback route under `/api/public/oauth/*`
-- Providers to light up first: Gmail (read+send), Outlook, Slack notify, HubSpot contact sync
-- Generic inbound webhook API + Zapier / Make outbound triggers
+### 5. Inbox integration
+When a Gmail connection exists, Inbox surfaces a **Gmail** mailbox alongside Instantly — reads real threads, reply composer sends via `sendGmailReply`.
 
-## Phase 2F — Additional providers (one per turn)
-Salesforce, Pipedrive, Zoho, Freshsales, Close, Smartlead, Apollo, Lemlist, Saleshandy, Teams, Google Calendar, Meet, Zoom, IMAP/SMTP.
+## What you'll need to provide
 
-## Phase 2G — Mobile PWA
-- Installable manifest + service worker + offline shell (banner already exists)
-- Web Push wired end-to-end on mobile
-- Capacitor native push path for the iOS/Android shells already in the repo
+Google OAuth client credentials from Google Cloud Console:
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- Authorized redirect URI to paste into Google console:
+  `https://project--cc239d7b-1706-4226-973f-f2f4c63de486.lovable.app/api/public/oauth/google/callback`
 
----
+I'll also auto-generate a `TOKEN_ENC_KEY` (never leaves the server).
 
-## Smaller polish items still open
-- Delivery channels beyond in-app + email: browser push toggle in prefs, Slack/Teams/Telegram
-- "Accept / Reject" feedback loop UI on every AI suggestion (schema likely partial)
-- Help Center: expand FAQs, add searchable content, keep manual PDF in sync
-- Guided tour: cover Pipeline, Analytics, Integrations, Help pages
+## Technical notes (safe to skip)
 
----
+- OAuth `state` = HMAC(`user_id|workspace_id|nonce|ts`, `SESSION_SECRET`) with 10-minute TTL to prevent CSRF and cross-workspace binding.
+- Refresh happens lazily inside each Gmail server fn: if `expires_at - now < 60s`, refresh, save, retry once on 401.
+- Token encryption uses `pgcrypto.pgp_sym_encrypt(token, key)`; migration installs the extension in the `extensions` schema (Supabase default).
+- The framework table is generic enough to plug in Outlook, Slack, HubSpot next turn — only the provider-specific server fns and callback change.
 
-## Recommended next step
-Build **Phase 2C (Custom Pipelines & Statuses)** next — it unlocks per-status automations that Phase 2B already expects, and it's fully internal (no external OAuth).
+## Out of scope this turn
 
-Reply with the phase you want, or say "start" and I'll pick up 2C.
+- Outlook, Slack, HubSpot (framework will support them; next turn).
+- Realtime push (Gmail `watch` + Pub/Sub) — we'll poll on inbox open first.
+
+Ready? Say **go** and I'll start with the migration + secret request.
