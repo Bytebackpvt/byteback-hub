@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, PartyPopper, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -6,7 +7,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/stores/onboarding";
-import { supabase } from "@/integrations/supabase/client";
+import { finishOnboarding } from "@/lib/onboarding.functions";
 
 export const Route = createFileRoute("/onboarding/done")({
   component: DoneStep,
@@ -16,75 +17,20 @@ function DoneStep() {
   const navigate = useNavigate();
   const { workspaceName, workspaceSlug, invites, accounts, businessType, reset } = useOnboarding();
   const [saving, setSaving] = useState(false);
+  const finish = useServerFn(finishOnboarding);
 
   const goDashboard = async () => {
     setSaving(true);
     try {
-      const { data: userData, error: userErr } = await supabase.auth.getUser();
-      if (userErr) throw userErr;
-      const user = userData.user;
-      if (!user) throw new Error("Not signed in. Please log in again.");
-
-      // Reuse an existing workspace owned by this user if one is already there
-      // (the app auto-creates a default workspace the first time a protected
-      // query runs, so a naive insert here would collide on the slug).
-      const { data: existing, error: existingErr } = await supabase
-        .from("workspaces")
-        .select("id")
-        .eq("owner_id", user.id)
-        .maybeSingle();
-      if (existingErr) throw existingErr;
-
-      let workspaceId = existing?.id as string | undefined;
-
-      if (!workspaceId) {
-        const baseSlug =
-          (workspaceSlug || workspaceName || "workspace")
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/^-|-$/g, "") || "workspace";
-        const slug = `${baseSlug}-${user.id.slice(0, 6)}-${Date.now().toString(36)}`;
-        const { data: ws, error } = await supabase
-          .from("workspaces")
-          .insert({
-            owner_id: user.id,
-            name: workspaceName || "My Workspace",
-            slug,
-            business_type: businessType,
-          })
-          .select("id")
-          .single();
-        if (error) throw error;
-        workspaceId = ws.id;
-      } else if (workspaceName || businessType) {
-        await supabase
-          .from("workspaces")
-          .update({
-            ...(workspaceName ? { name: workspaceName } : {}),
-            ...(businessType ? { business_type: businessType } : {}),
-          })
-          .eq("id", workspaceId);
-      }
-
-      if (workspaceId && invites.length > 0) {
-        const { error: invErr } = await supabase.from("workspace_invites").insert(
-          invites.map((email) => ({ workspace_id: workspaceId, email })),
-        );
-        if (invErr) throw invErr;
-      }
-      if (workspaceId && accounts.length > 0) {
-        const { error: accErr } = await supabase.from("email_accounts").insert(
-          accounts.map((a) => ({ workspace_id: workspaceId, provider: a.provider, email: a.email })),
-        );
-        if (accErr) throw accErr;
-      }
-
-      const { error: profErr } = await supabase
-        .from("profiles")
-        .update({ onboarded: true })
-        .eq("id", user.id);
-      if (profErr) throw profErr;
-
+      await finish({
+        data: {
+          workspaceName: workspaceName || "My Workspace",
+          workspaceSlug: workspaceSlug || "",
+          businessType: businessType || "",
+          invites,
+          accounts: accounts.map((a) => ({ provider: a.provider, email: a.email })),
+        },
+      });
       reset();
       toast.success("Workspace ready. Welcome to ByteBack.");
       navigate({ to: "/app" });
