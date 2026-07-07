@@ -263,9 +263,15 @@ function DashboardPage() {
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…
             </div>
           ) : openTasks.length === 0 ? (
-            <p className="py-6 text-sm text-muted-foreground">
-              <CheckSquare className="mr-1.5 inline h-3.5 w-3.5" /> Inbox zero on tasks.
-            </p>
+            <div className="flex flex-col items-start gap-2 py-6">
+              <p className="text-sm text-muted-foreground">
+                <CheckSquare className="mr-1.5 inline h-3.5 w-3.5" /> Inbox zero on tasks.
+              </p>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/app/tasks">Add a task</Link>
+              </Button>
+            </div>
+
           ) : (
             <ul className="divide-y divide-border/50">
               {openTasks.slice(0, 5).map((t) => (
