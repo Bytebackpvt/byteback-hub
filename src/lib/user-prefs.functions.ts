@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 
 const SetInput = z.object({
   key: z.string().min(1).max(80),
@@ -17,7 +18,8 @@ export const getUiPrefs = createServerFn({ method: "GET" })
       .eq("user_id", userId)
       .maybeSingle();
     if (error) throw error;
-    return { prefs: (data?.prefs ?? {}) as Record<string, unknown> };
+    const prefs = (data?.prefs ?? {}) as Json;
+    return { prefs };
   });
 
 export const setUiPref = createServerFn({ method: "POST" })
@@ -30,11 +32,15 @@ export const setUiPref = createServerFn({ method: "POST" })
       .select("prefs")
       .eq("user_id", userId)
       .maybeSingle();
-    const current = (existing?.prefs ?? {}) as Record<string, unknown>;
-    const next = { ...current, [data.key]: data.value };
+    const current = (existing?.prefs ?? {}) as Record<string, Json>;
+    const next: Record<string, Json> = { ...current, [data.key]: data.value };
     const { error } = await supabase
       .from("user_ui_prefs")
-      .upsert({ user_id: userId, prefs: next, updated_at: new Date().toISOString() });
+      .upsert({
+        user_id: userId,
+        prefs: next as Json,
+        updated_at: new Date().toISOString(),
+      });
     if (error) throw error;
-    return { ok: true, prefs: next };
+    return { ok: true as const, prefs: next as Json };
   });
