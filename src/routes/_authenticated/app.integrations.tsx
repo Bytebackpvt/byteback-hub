@@ -25,12 +25,12 @@ export const Route = createFileRoute("/_authenticated/app/integrations")({
 });
 
 type Catalog = {
-  provider: IntegrationProvider;
+  provider: IntegrationProvider | "google_sheets";
   name: string;
   blurb: string;
   icon: typeof Webhook;
   status: "available" | "coming-soon";
-  kind: "webhook" | "oauth";
+  kind: "webhook" | "oauth" | "sheets";
   help?: string;
 };
 
