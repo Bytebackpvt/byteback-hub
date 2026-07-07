@@ -13,10 +13,12 @@ Phases 2A (AI & Lead Intelligence) and 2B (Follow-up & Notification Engine) are 
 - [ ] Multiple saved pipelines per workspace + switcher (not shipped — separate refactor)
 
 
-## Phase 2D — Clickability & UX pass
-- Audit every page; wire up stat cards, avatars, menus, empty-state CTAs (nothing decorative)
-- 2-click max for common actions, keyboard shortcuts, focus states
-- A11y pass: labels, roles, contrast, reduced-motion
+## Phase 2D — Clickability & UX pass (in progress)
+- [x] First pass: mobile viewport (`min-h-dvh`), guided-tour keyboard/ARIA (Escape, arrows, dialog role, labeled backdrop), dashboard empty-state CTAs, clickable hot-reply rows, CRM clear-search CTA
+- [ ] Remaining pages audit: Inbox, Pipeline, Tasks, Analytics, Notifications, Team, Integrations, Help
+- [ ] Global keyboard shortcuts overlay (?)
+- [ ] Reduced-motion + contrast audit
+
 
 ## Phase 2E — Integration Framework + first providers
 - Generic OAuth connector table + encrypted token vault + refresh worker
