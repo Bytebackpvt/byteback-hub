@@ -81,6 +81,15 @@ const CATALOG: Catalog[] = [
     help: "Any HTTPS endpoint that accepts a JSON POST body works — great for internal tools or bespoke automations.",
   },
   {
+    provider: "google_sheets",
+    name: "Google Sheets",
+    blurb: "Auto-append every hot / lost lead as a row in a Google Sheet. No CRM subscription needed.",
+    icon: FileSpreadsheet,
+    status: "available",
+    kind: "sheets",
+    help: "Create a Google Sheet, add a tab named 'Leads' (or your choice), then paste the sheet URL below. We'll append a row for every hot or lost lead.",
+  },
+  {
     provider: "gmail",
     name: "Gmail",
     blurb: "Sync your Gmail inbox and reply to leads directly from ByteBack.",
