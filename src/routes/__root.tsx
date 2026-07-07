@@ -43,6 +43,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    // Graceful fallback: bounce to sign-in when a protected server fn fails auth.
+    if (typeof error?.message === "string" && /Unauthorized/i.test(error.message)) {
+      if (typeof window !== "undefined" && window.location.pathname !== "/auth") {
+        window.location.replace("/auth");
+      }
+    }
   }, [error]);
 
   return (
@@ -75,6 +81,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     </div>
   );
 }
+
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -150,10 +157,10 @@ function RootComponent() {
     import("@/integrations/supabase/client").then(({ supabase }) => {
       const { data: sub } = supabase.auth.onAuthStateChange((event) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-        if (event === "SIGNED_OUT") {
-          queryClient.cancelQueries();
-          queryClient.clear();
-        }
+        // Any identity transition invalidates protected caches to prevent
+        // stale refetches under a different (or missing) session.
+        queryClient.cancelQueries();
+        queryClient.clear();
         router.invalidate();
         if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
       });
