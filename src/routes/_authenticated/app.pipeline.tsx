@@ -364,8 +364,15 @@ type StagePayload = {
   slug: string;
   label: string;
   color: string;
+  icon: string;
   is_won: boolean;
   is_lost: boolean;
+  automation: StageAutomation;
+};
+
+const EMPTY_AUTOMATION: StageAutomation = {
+  auto_task: { enabled: false, days_offset: 1, priority: "med", title: "Follow up with {name}" },
+  notify: { enabled: false, message: "{name} moved to this stage" },
 };
 
 function StageManager({
@@ -383,7 +390,16 @@ function StageManager({
   const [dragId, setDragId] = useState<string | null>(null);
 
   function startNew() {
-    setEditing({ id: null, slug: "", label: "", color: "sky", is_won: false, is_lost: false });
+    setEditing({
+      id: null,
+      slug: "",
+      label: "",
+      color: "sky",
+      icon: "circle",
+      is_won: false,
+      is_lost: false,
+      automation: EMPTY_AUTOMATION,
+    });
   }
   function startEdit(s: PipelineStage) {
     setEditing({
@@ -391,10 +407,16 @@ function StageManager({
       slug: s.slug,
       label: s.label,
       color: s.color,
+      icon: s.icon,
       is_won: s.is_won,
       is_lost: s.is_lost,
+      automation: {
+        auto_task: s.automation.auto_task ?? EMPTY_AUTOMATION.auto_task,
+        notify: s.automation.notify ?? EMPTY_AUTOMATION.notify,
+      },
     });
   }
+
 
   async function save() {
     if (!editing) return;
