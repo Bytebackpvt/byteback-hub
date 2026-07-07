@@ -407,11 +407,24 @@ function InboxPage() {
               />
             ))}
             {filtered.length === 0 && (
-              <div className="p-8 text-center text-sm text-muted-foreground">
-                <InboxIcon className="mx-auto mb-2 h-6 w-6 opacity-40" />
-                No matches.
+              <div className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
+                <InboxIcon className="h-6 w-6 opacity-40" aria-hidden="true" />
+                <p>{search || filter !== "all" ? "No threads match your filters." : "Inbox is empty."}</p>
+                {(search || filter !== "all") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearch("");
+                      setFilter("all");
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                )}
               </div>
             )}
+
           </div>
         </ScrollArea>
       </section>
