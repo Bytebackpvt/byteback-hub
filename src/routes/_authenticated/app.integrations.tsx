@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { CheckCircle2, Loader2, MessageSquare, Plug, Send, Trash2, Webhook, Zap } from "lucide-react";
+import { CheckCircle2, FileSpreadsheet, Loader2, MessageSquare, Plug, Send, Trash2, Webhook, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
   type IntegrationProvider,
   type IntegrationRow,
 } from "@/lib/integrations.functions";
+import { saveSheetsIntegration, testSheetsIntegration } from "@/lib/sheets.functions";
 
 export const Route = createFileRoute("/_authenticated/app/integrations")({
   head: () => ({ meta: [{ title: "Integrations — ByteBack" }, { name: "robots", content: "noindex" }] }),
