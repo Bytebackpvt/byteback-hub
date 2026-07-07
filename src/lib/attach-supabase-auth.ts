@@ -13,7 +13,7 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
 
     let token = (await supabase.auth.getSession()).data.session?.access_token;
 
-    if (!token && shouldWaitForHydratedSession()) {
+    if (!token) {
       token = await waitForAccessToken();
     }
 
@@ -21,10 +21,6 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
   },
 );
 
-function shouldWaitForHydratedSession() {
-  const path = window.location.pathname;
-  return path === "/app" || path.startsWith("/app/") || path.startsWith("/onboarding");
-}
 
 async function waitForAccessToken() {
   const deadline = Date.now() + 3_000;
