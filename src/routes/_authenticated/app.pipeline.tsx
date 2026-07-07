@@ -271,7 +271,10 @@ function PipelinePage() {
                   <div className="flex items-center justify-between border-b border-border/60 px-3 py-2.5">
                     <div>
                       <div className="flex items-center gap-2 text-sm font-semibold">
-                        <span className={cn("h-2 w-2 rounded-full", stageSwatch(stage.color))} />
+                        <StageIcon
+                          name={stage.icon}
+                          className={cn("h-3.5 w-3.5", stageSwatch(stage.color).replace("bg-", "text-"))}
+                        />
                         {stage.label}
                         {stage.is_won && (
                           <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
@@ -283,12 +286,21 @@ function PipelinePage() {
                             LOST
                           </span>
                         )}
+                        {(stage.automation.auto_task?.enabled || stage.automation.notify?.enabled) && (
+                          <span
+                            className="rounded bg-brand/10 px-1 py-0.5 text-[9px] font-bold text-brand"
+                            title="Automation enabled"
+                          >
+                            <Zap className="inline h-2.5 w-2.5" />
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
                         {leads.length} {leads.length === 1 ? "lead" : "leads"}
                       </div>
                     </div>
                   </div>
+
                   <div className="flex-1 space-y-2 overflow-y-auto p-2">
                     {leads.map((l) => (
                       <div
