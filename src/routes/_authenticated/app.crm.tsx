@@ -317,10 +317,20 @@ function CrmPage() {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                  No contacts match your search.
+                  {search ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <span>No contacts match "{search}".</span>
+                      <Button variant="outline" size="sm" onClick={() => setSearch("")}>
+                        Clear search
+                      </Button>
+                    </div>
+                  ) : (
+                    "No contacts yet. Connect a mailbox to start syncing leads."
+                  )}
                 </td>
               </tr>
             )}
+
           </tbody>
         </table>
       </div>

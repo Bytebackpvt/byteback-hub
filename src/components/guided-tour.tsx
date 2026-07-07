@@ -130,6 +130,27 @@ export function GuidedTour({ open, onClose }: { open: boolean; onClose: () => vo
   };
   const prev = () => setIndex((i) => Math.max(0, i - 1));
 
+  // Keyboard nav: Escape to close, ArrowRight/ArrowLeft to step
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        complete();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        next();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prev();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, index]);
+
+
   const pad = 8;
   const box = rect
     ? {
@@ -152,17 +173,33 @@ export function GuidedTour({ open, onClose }: { open: boolean; onClose: () => vo
     : { top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 340 };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100]" aria-live="polite">
+    <div
+      className="fixed inset-0 z-[100]"
+      aria-live="polite"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="guided-tour-title"
+    >
       {/* Dimmed backdrop with a cutout using 4 rectangles */}
       {box ? (
         <>
-          <div className="absolute inset-x-0 top-0 bg-black/60" style={{ height: box.top }} onClick={complete} />
-          <div
+          <button
+            type="button"
+            aria-label="Skip tour"
+            className="absolute inset-x-0 top-0 bg-black/60"
+            style={{ height: box.top }}
+            onClick={complete}
+          />
+          <button
+            type="button"
+            aria-label="Skip tour"
             className="absolute left-0 bg-black/60"
             style={{ top: box.top, height: box.height, width: box.left }}
             onClick={complete}
           />
-          <div
+          <button
+            type="button"
+            aria-label="Skip tour"
             className="absolute right-0 bg-black/60"
             style={{
               top: box.top,
@@ -171,7 +208,9 @@ export function GuidedTour({ open, onClose }: { open: boolean; onClose: () => vo
             }}
             onClick={complete}
           />
-          <div
+          <button
+            type="button"
+            aria-label="Skip tour"
             className="absolute inset-x-0 bg-black/60"
             style={{ top: box.top + box.height, bottom: 0 }}
             onClick={complete}
@@ -182,29 +221,37 @@ export function GuidedTour({ open, onClose }: { open: boolean; onClose: () => vo
           />
         </>
       ) : (
-        <div className="absolute inset-0 bg-black/60" onClick={complete} />
+        <button
+          type="button"
+          aria-label="Skip tour"
+          className="absolute inset-0 bg-black/60"
+          onClick={complete}
+        />
       )}
 
       <div
-        className="absolute rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl"
+        className="absolute rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl focus:outline-none"
         style={tooltipStyle}
+        tabIndex={-1}
+        ref={(el) => el?.focus()}
       >
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-brand">
               Step {index + 1} of {STEPS.length}
             </div>
-            <h3 className="mt-1 text-sm font-semibold">{step.title}</h3>
+            <h3 id="guided-tour-title" className="mt-1 text-sm font-semibold">{step.title}</h3>
           </div>
           <button
             onClick={complete}
-            className="rounded p-1 text-muted-foreground hover:bg-accent"
+            className="rounded p-1 text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Close tour"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{step.body}</p>
+
         <div className="mt-4 flex items-center justify-between">
           <button
             onClick={complete}

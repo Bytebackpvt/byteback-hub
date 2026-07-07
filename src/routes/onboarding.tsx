@@ -47,7 +47,7 @@ function OnboardingLayout() {
   const progress = ((currentIdx + 1) / STEPS.length) * 100;
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+    <div className="relative flex min-h-dvh flex-col bg-background text-foreground">
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[380px] bg-radial-brand" />
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <BrandLink />
