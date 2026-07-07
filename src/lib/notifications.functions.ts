@@ -199,28 +199,66 @@ export const scanForNotifications = createServerFn({ method: "POST" })
       .select("id, kind, title, body, link");
     if (error) throw error;
 
-    // Email delivery for high-signal alerts via Resend gateway.
-    const alertKinds = new Set<NotificationKind>(["hot_lead", "lost_lead", "followup"]);
     const insertedRows = (inserted ?? []) as Array<{
       kind: NotificationKind;
       title: string;
       body: string;
       link: string | null;
     }>;
-    const alerts = insertedRows.filter((r) => alertKinds.has(r.kind));
 
-    // Fan out to Slack/Zapier webhooks configured for this workspace.
-    if (alerts.length) {
+    // Load user preferences + quiet hours for delivery gating.
+    const { DEFAULT_PREFS, DEFAULT_QUIET_HOURS, isInQuietHours } = await import(
+      "./notification-prefs.functions"
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: prefRow } = await (context.supabase as any)
+      .from("notification_preferences")
+      .select("prefs, quiet_hours_enabled, quiet_hours_start, quiet_hours_end, timezone")
+      .eq("user_id", context.userId)
+      .eq("workspace_id", workspaceId)
+      .maybeSingle();
+    const prefs = { ...DEFAULT_PREFS, ...((prefRow?.prefs ?? {}) as typeof DEFAULT_PREFS) };
+    const quiet = {
+      enabled: Boolean(prefRow?.quiet_hours_enabled ?? DEFAULT_QUIET_HOURS.enabled),
+      start: Number(prefRow?.quiet_hours_start ?? DEFAULT_QUIET_HOURS.start),
+      end: Number(prefRow?.quiet_hours_end ?? DEFAULT_QUIET_HOURS.end),
+      timezone: (prefRow?.timezone as string | undefined) ?? DEFAULT_QUIET_HOURS.timezone,
+    };
+    const silenced = isInQuietHours(quiet);
+
+    // Map delivery kinds to preference kinds.
+    const prefKindFor = (k: NotificationKind): keyof typeof DEFAULT_PREFS | null => {
+      if (k === "hot_lead" || k === "lost_lead" || k === "followup") return k;
+      if (k === "new_reply") return "mention";
+      return null;
+    };
+    const wantsChannel = (
+      k: NotificationKind,
+      channel: "email" | "webhook",
+    ): boolean => {
+      const pk = prefKindFor(k);
+      if (!pk) return false;
+      return Boolean(prefs[pk]?.[channel]);
+    };
+
+    // Fan out to Slack/Zapier webhooks — filter by prefs.
+    const webhookAlerts = silenced
+      ? []
+      : insertedRows.filter((r) => wantsChannel(r.kind, "webhook"));
+    if (webhookAlerts.length) {
       const { deliverToWebhooks } = await import("./webhook-delivery.server");
-      await deliverToWebhooks(context.supabase, workspaceId, alerts);
+      await deliverToWebhooks(context.supabase, workspaceId, webhookAlerts);
     }
 
+    const emailAlerts = silenced
+      ? []
+      : insertedRows.filter((r) => wantsChannel(r.kind, "email"));
     const toEmail = (await context.supabase.auth.getUser()).data.user?.email;
     const apiKey = process.env.RESEND_API_KEY;
     const lovableKey = process.env.LOVABLE_API_KEY;
-    if (toEmail && apiKey && lovableKey && alerts.length) {
+    if (toEmail && apiKey && lovableKey && emailAlerts.length) {
       await Promise.all(
-        alerts.map((r) =>
+        emailAlerts.map((r) =>
           fetch("https://connector-gateway.lovable.dev/resend/emails", {
             method: "POST",
             headers: {
