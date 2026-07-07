@@ -17,9 +17,10 @@ export const finishOnboarding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => FinishInput.parse(raw))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: existing, error: exErr } = await supabase
+    const { data: existing, error: exErr } = await supabaseAdmin
       .from("workspaces")
       .select("id")
       .eq("owner_id", userId)
@@ -35,7 +36,7 @@ export const finishOnboarding = createServerFn({ method: "POST" })
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-|-$/g, "") || "workspace";
       const slug = `${baseSlug}-${userId.slice(0, 6)}-${Date.now().toString(36)}`;
-      const { data: ws, error } = await supabase
+      const { data: ws, error } = await supabaseAdmin
         .from("workspaces")
         .insert({
           owner_id: userId,
@@ -48,23 +49,24 @@ export const finishOnboarding = createServerFn({ method: "POST" })
       if (error) throw error;
       workspaceId = ws.id as string;
     } else if (data.workspaceName || data.businessType) {
-      await supabase
+      const { error: updateErr } = await supabaseAdmin
         .from("workspaces")
         .update({
           ...(data.workspaceName ? { name: data.workspaceName } : {}),
           ...(data.businessType ? { business_type: data.businessType } : {}),
         })
         .eq("id", workspaceId);
+      if (updateErr) throw updateErr;
     }
 
     if (workspaceId && data.invites.length > 0) {
-      const { error: invErr } = await supabase
+      const { error: invErr } = await supabaseAdmin
         .from("workspace_invites")
         .insert(data.invites.map((email) => ({ workspace_id: workspaceId!, email })));
       if (invErr) throw invErr;
     }
     if (workspaceId && data.accounts.length > 0) {
-      const { error: accErr } = await supabase
+      const { error: accErr } = await supabaseAdmin
         .from("email_accounts")
         .insert(
           data.accounts.map((a) => ({
@@ -76,7 +78,7 @@ export const finishOnboarding = createServerFn({ method: "POST" })
       if (accErr) throw accErr;
     }
 
-    const { error: profErr } = await supabase
+    const { error: profErr } = await supabaseAdmin
       .from("profiles")
       .update({ onboarded: true })
       .eq("id", userId);
