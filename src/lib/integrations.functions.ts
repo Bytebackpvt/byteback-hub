@@ -6,6 +6,9 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type IntegrationProvider =
   | "slack_webhook"
+  | "teams_webhook"
+  | "discord_webhook"
+  | "generic_webhook"
   | "gmail"
   | "outlook"
   | "hubspot"
@@ -75,7 +78,13 @@ export const listIntegrations = createServerFn({ method: "GET" })
   });
 
 const SaveInput = z.object({
-  provider: z.enum(["slack_webhook", "zapier_webhook"] as const),
+  provider: z.enum([
+    "slack_webhook",
+    "teams_webhook",
+    "discord_webhook",
+    "generic_webhook",
+    "zapier_webhook",
+  ] as const),
   label: z.string().max(120).optional(),
   webhook_url: z.string().url(),
 });
@@ -139,26 +148,28 @@ export const testIntegration = createServerFn({ method: "POST" })
     if (error) throw error;
     if (!row?.secret) throw new Error("Integration not found or missing webhook URL");
 
+    const testMessage =
+      "✅ ByteBack Inbox test — this channel is now connected and will receive lead alerts.";
+    const url = row.secret as string;
+    let body: string;
     if (row.provider === "slack_webhook") {
-      const res = await fetch(row.secret as string, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: "✅ ByteBack Inbox test — this channel is now connected and will receive lead alerts.",
-        }),
+      body = JSON.stringify({ text: testMessage });
+    } else if (row.provider === "teams_webhook") {
+      body = JSON.stringify({ text: testMessage });
+    } else if (row.provider === "discord_webhook") {
+      body = JSON.stringify({ content: testMessage });
+    } else {
+      body = JSON.stringify({
+        event: "byteback.test",
+        message: "ByteBack Inbox test event",
+        ts: new Date().toISOString(),
       });
-      if (!res.ok) throw new Error(`Slack rejected the webhook (${res.status})`);
-    } else if (row.provider === "zapier_webhook") {
-      const res = await fetch(row.secret as string, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event: "byteback.test",
-          message: "ByteBack Inbox test event",
-          ts: new Date().toISOString(),
-        }),
-      });
-      if (!res.ok) throw new Error(`Zapier rejected the webhook (${res.status})`);
     }
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+    });
+    if (!res.ok) throw new Error(`Webhook rejected the request (${res.status})`);
     return { ok: true as const };
   });
