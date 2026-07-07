@@ -149,7 +149,7 @@ function TasksPage() {
   const done = tasks.filter((t) => t.done);
 
   return (
-    <div className="mx-auto h-[calc(100vh-3rem)] max-w-3xl overflow-y-auto px-6 py-8">
+    <div className="mx-auto h-[calc(100dvh-3rem)] max-w-3xl overflow-y-auto px-6 py-8">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Tasks</h1>
@@ -177,11 +177,14 @@ function TasksPage() {
         className="mb-6 flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-card p-3"
       >
         <Input
+          id="task-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Add a task…"
           className="min-w-[200px] flex-1"
+          aria-label="New task title"
         />
+
         <Input
           type="date"
           value={due}
@@ -214,9 +217,31 @@ function TasksPage() {
           Could not load tasks.
         </div>
       ) : tasks.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-          No tasks yet. Add one above or generate from your inbox.
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          <p>No tasks yet.</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => document.getElementById("task-title")?.focus()}
+            >
+              <Plus className="h-3.5 w-3.5" /> Add a task
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => generateMut.mutate()}
+              disabled={generateMut.isPending || threadsQ.isLoading}
+            >
+              {generateMut.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              Generate from inbox
+            </Button>
+          </div>
         </div>
+
       ) : (
         <>
           <section>

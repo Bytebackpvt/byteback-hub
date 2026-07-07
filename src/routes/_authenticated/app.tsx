@@ -6,8 +6,10 @@ import { OfflineBanner } from "@/components/offline-banner";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { initNativeShell } from "@/lib/native";
 import { GuidedTour, useGuidedTour } from "@/components/guided-tour";
+import { ShortcutsOverlay } from "@/components/shortcuts-overlay";
 import { Button } from "@/components/ui/button";
 import { HelpCircle } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({
@@ -54,6 +56,8 @@ function AppLayout() {
         </div>
       </div>
       <GuidedTour open={tour.open} onClose={tour.close} />
+      <ShortcutsOverlay />
     </SidebarProvider>
+
   );
 }

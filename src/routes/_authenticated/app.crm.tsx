@@ -163,7 +163,7 @@ function CrmPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] flex-col">
+    <div className="flex h-[calc(100dvh-3rem)] flex-col">
       <div className="flex items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Contacts</h1>
