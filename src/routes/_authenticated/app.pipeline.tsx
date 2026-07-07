@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { toast } from "sonner";
 import {
@@ -13,7 +13,6 @@ import {
   Flag,
   Flame,
   GripVertical,
-  HelpCircle,
 
   Inbox,
   Loader2,
@@ -32,11 +31,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+
+
 
 import {
   Select,
@@ -67,6 +63,7 @@ import {
   type PipelineStage,
   type StageAutomation,
 } from "@/lib/pipeline.functions";
+import { KanbanTour } from "@/components/kanban-tour";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/pipeline")({
@@ -243,7 +240,7 @@ function PipelinePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <KanbanHelp />
+          <KanbanTour />
           <StageManager
             stages={stages}
             onSave={async (payload) => {
@@ -263,7 +260,7 @@ function PipelinePage() {
 
       </div>
 
-      <div className="flex-1 overflow-x-auto p-4">
+      <div className="flex-1 overflow-x-auto p-4" data-tour="kanban-board">
         <div className="flex h-full min-w-max gap-3">
           {stagesQuery.isLoading && stages.length === 0 ? (
             <div className="flex w-full items-center justify-center text-sm text-muted-foreground">
@@ -276,6 +273,7 @@ function PipelinePage() {
               return (
                 <div
                   key={stage.id}
+                  data-tour={idx === 0 ? "kanban-column" : undefined}
                   className={cn(
                     "flex w-72 shrink-0 flex-col rounded-xl border border-border/60 border-t-2 bg-muted/30",
                     stageAccent(stage.color),
@@ -315,9 +313,10 @@ function PipelinePage() {
                   </div>
 
                   <div className="flex-1 space-y-2 overflow-y-auto p-2">
-                    {leads.map((l) => (
+                    {leads.map((l, cardIdx) => (
                       <div
                         key={l.id}
+                        data-tour={idx === 0 && cardIdx === 0 ? "kanban-card" : undefined}
                         className="group rounded-lg border border-border/60 bg-card p-3 shadow-sm transition hover:shadow-md"
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -342,6 +341,7 @@ function PipelinePage() {
                           </span>
                           {next && connected && (
                             <button
+                              data-tour={idx === 0 && cardIdx === 0 ? "kanban-advance" : undefined}
                               onClick={() =>
                                 mutate.mutate({ leadId: l.id, status: next.slug })
                               }
@@ -839,100 +839,6 @@ function StageManager({
   );
 }
 
-// ------------ Kanban onboarding tooltip ------------
-//
-// First-visit auto-opens a small popover explaining columns + cards.
-// Dismissal persists in localStorage; the "?" button always re-opens it.
+// KanbanHelp has moved to src/components/kanban-tour.tsx (KanbanTour) —
+// an anchored, accessible multi-step tour with per-user dismissal.
 
-const KANBAN_TIP_KEY = "byteback.kanban.tip.seen.v1";
-
-function KanbanHelp() {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const seen = window.localStorage.getItem(KANBAN_TIP_KEY);
-    if (!seen) {
-      // Delay so it doesn't fight the initial page paint.
-      const t = window.setTimeout(() => setOpen(true), 600);
-      return () => window.clearTimeout(t);
-    }
-  }, []);
-
-  function handleOpenChange(next: boolean) {
-    setOpen(next);
-    if (!next && typeof window !== "undefined") {
-      window.localStorage.setItem(KANBAN_TIP_KEY, "1");
-    }
-  }
-
-  return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-8 w-8 p-0"
-          aria-label="What is a Kanban board?"
-          title="What is a Kanban board?"
-        >
-          <HelpCircle className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
-        <div className="border-b border-border/60 bg-muted/40 px-4 py-3">
-          <div className="flex items-center gap-1.5 text-sm font-semibold">
-            <Zap className="h-3.5 w-3.5 text-brand" /> How this Kanban works
-          </div>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            A visual board — one glance and you know where every lead is.
-          </p>
-        </div>
-        <div className="space-y-3 px-4 py-3 text-xs">
-          <div className="flex gap-2">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand/10 text-[10px] font-bold text-brand">
-              1
-            </div>
-            <div>
-              <div className="font-medium">Columns = stages</div>
-              <div className="text-muted-foreground">
-                Each column is a step in your pipeline (New → Interested → Meeting →
-                Won). Customize them from the top-right.
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand/10 text-[10px] font-bold text-brand">
-              2
-            </div>
-            <div>
-              <div className="font-medium">Cards = leads</div>
-              <div className="text-muted-foreground">
-                Each card is one lead with name, company, and last activity. Hover a
-                card to see the "→ next stage" shortcut.
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand/10 text-[10px] font-bold text-brand">
-              3
-            </div>
-            <div>
-              <div className="font-medium">Move to progress</div>
-              <div className="text-muted-foreground">
-                Click the arrow to advance a lead. If the stage has automation
-                (<Zap className="inline h-2.5 w-2.5 text-brand" />
-                ), a follow-up task and notification fire instantly.
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex justify-end border-t border-border/60 bg-muted/20 px-3 py-2">
-          <Button size="sm" variant="ghost" onClick={() => handleOpenChange(false)}>
-            Got it
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
