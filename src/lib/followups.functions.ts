@@ -163,9 +163,22 @@ export const autoScheduleFollowUps = createServerFn({ method: "POST" })
       });
     }
     if (rows.length === 0) return { scheduled: 0 };
+    // Partial unique index (source='ai') can't be used by PostgREST onConflict,
+    // so pre-filter thread_ids that already have an AI task.
+    const threadIds = rows.map((r) => r.thread_id);
+    const { data: existing, error: existingErr } = await context.supabase
+      .from("tasks")
+      .select("thread_id")
+      .eq("workspace_id", workspaceId)
+      .eq("source", "ai")
+      .in("thread_id", threadIds);
+    if (existingErr) throw existingErr;
+    const taken = new Set((existing ?? []).map((r) => r.thread_id as string));
+    const toInsert = rows.filter((r) => !taken.has(r.thread_id));
+    if (toInsert.length === 0) return { scheduled: 0 };
     const { data: inserted, error } = await context.supabase
       .from("tasks")
-      .upsert(rows, { onConflict: "workspace_id,thread_id", ignoreDuplicates: true })
+      .insert(toInsert)
       .select("id");
     if (error) throw error;
     return { scheduled: inserted?.length ?? 0 };
