@@ -5,19 +5,37 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowRight,
+  Bell,
+  Calendar,
+  CheckCircle2,
+  Circle,
+  Flag,
+  Flame,
   GripVertical,
+  Inbox,
   Loader2,
   Pencil,
   Plug,
   Plus,
   Settings2,
+  Star,
   Trash2,
+  Trophy,
+  X,
+  Zap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -35,14 +53,37 @@ import {
   deletePipelineStage,
   listPipelineStages,
   reorderPipelineStages,
+  runStageAutomation,
   upsertPipelineStage,
   type PipelineStage,
+  type StageAutomation,
 } from "@/lib/pipeline.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/pipeline")({
   component: PipelinePage,
 });
+
+const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  circle: Circle,
+  inbox: Inbox,
+  flame: Flame,
+  calendar: Calendar,
+  trophy: Trophy,
+  x: X,
+  star: Star,
+  flag: Flag,
+  check: CheckCircle2,
+  bell: Bell,
+  zap: Zap,
+};
+const ICON_IDS = Object.keys(ICONS);
+
+function StageIcon({ name, className }: { name: string; className?: string }) {
+  const C = ICONS[name] ?? Circle;
+  return <C className={className} />;
+}
+
 
 const COLOR_OPTIONS: Array<{ id: string; className: string; label: string }> = [
   { id: "sky", className: "bg-sky-500 border-t-sky-500", label: "Sky" },
@@ -80,6 +121,8 @@ function PipelinePage() {
   const callUpsert = useServerFn(upsertPipelineStage);
   const callDelete = useServerFn(deletePipelineStage);
   const callReorder = useServerFn(reorderPipelineStages);
+  const callRunAutomation = useServerFn(runStageAutomation);
+
 
   const stagesQuery = useQuery({
     queryKey: ["pipeline", "stages"],
@@ -123,10 +166,38 @@ function PipelinePage() {
       if (ctx?.prev) qc.setQueryData(["instantly", "leads"], ctx.prev);
       toast.error(err instanceof Error ? err.message : "Failed to update");
     },
-    onSuccess: () => {
+    onSuccess: async (_res, vars) => {
       toast.success("Stage updated");
+      const lead = liveLeads.find((l) => l.id === vars.leadId);
+      if (!lead) return;
+      try {
+        const res = await callRunAutomation({
+          data: {
+            stageSlug: vars.status,
+            lead: {
+              id: lead.id,
+              name: lead.name ?? "",
+              company: lead.company ?? "",
+              email: lead.email ?? "",
+            },
+          },
+        });
+        if (res.ran) {
+          const parts: string[] = [];
+          if (res.actions?.includes("task")) parts.push("task created");
+          if (res.actions?.includes("notify")) parts.push("notification sent");
+          if (parts.length) toast.success(`Automation: ${parts.join(" + ")}`);
+          qc.invalidateQueries({ queryKey: ["tasks"] });
+          qc.invalidateQueries({ queryKey: ["notifications"] });
+        }
+      } catch {
+        /* automation is best-effort; don't block the drag */
+      }
     },
   });
+
+
+
 
   const byStage = useMemo(() => {
     const map = new Map<string, InstantlyLead[]>();
@@ -200,7 +271,10 @@ function PipelinePage() {
                   <div className="flex items-center justify-between border-b border-border/60 px-3 py-2.5">
                     <div>
                       <div className="flex items-center gap-2 text-sm font-semibold">
-                        <span className={cn("h-2 w-2 rounded-full", stageSwatch(stage.color))} />
+                        <StageIcon
+                          name={stage.icon}
+                          className={cn("h-3.5 w-3.5", stageSwatch(stage.color).replace("bg-", "text-"))}
+                        />
                         {stage.label}
                         {stage.is_won && (
                           <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
@@ -212,12 +286,21 @@ function PipelinePage() {
                             LOST
                           </span>
                         )}
+                        {(stage.automation.auto_task?.enabled || stage.automation.notify?.enabled) && (
+                          <span
+                            className="rounded bg-brand/10 px-1 py-0.5 text-[9px] font-bold text-brand"
+                            title="Automation enabled"
+                          >
+                            <Zap className="inline h-2.5 w-2.5" />
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
                         {leads.length} {leads.length === 1 ? "lead" : "leads"}
                       </div>
                     </div>
                   </div>
+
                   <div className="flex-1 space-y-2 overflow-y-auto p-2">
                     {leads.map((l) => (
                       <div
@@ -281,8 +364,15 @@ type StagePayload = {
   slug: string;
   label: string;
   color: string;
+  icon: string;
   is_won: boolean;
   is_lost: boolean;
+  automation: StageAutomation;
+};
+
+const EMPTY_AUTOMATION: StageAutomation = {
+  auto_task: { enabled: false, days_offset: 1, priority: "med", title: "Follow up with {name}" },
+  notify: { enabled: false, message: "{name} moved to this stage" },
 };
 
 function StageManager({
@@ -300,7 +390,16 @@ function StageManager({
   const [dragId, setDragId] = useState<string | null>(null);
 
   function startNew() {
-    setEditing({ id: null, slug: "", label: "", color: "sky", is_won: false, is_lost: false });
+    setEditing({
+      id: null,
+      slug: "",
+      label: "",
+      color: "sky",
+      icon: "circle",
+      is_won: false,
+      is_lost: false,
+      automation: EMPTY_AUTOMATION,
+    });
   }
   function startEdit(s: PipelineStage) {
     setEditing({
@@ -308,10 +407,16 @@ function StageManager({
       slug: s.slug,
       label: s.label,
       color: s.color,
+      icon: s.icon,
       is_won: s.is_won,
       is_lost: s.is_lost,
+      automation: {
+        auto_task: s.automation.auto_task ?? EMPTY_AUTOMATION.auto_task,
+        notify: s.automation.notify ?? EMPTY_AUTOMATION.notify,
+      },
     });
   }
+
 
   async function save() {
     if (!editing) return;
@@ -369,7 +474,11 @@ function StageManager({
               )}
             >
               <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" />
-              <span className={cn("h-2.5 w-2.5 rounded-full", stageSwatch(s.color))} />
+              <StageIcon
+                name={s.icon}
+                className={cn("h-3.5 w-3.5", stageSwatch(s.color).replace("bg-", "text-"))}
+              />
+
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{s.label}</div>
                 <div className="truncate text-[10px] text-muted-foreground">
@@ -470,6 +579,29 @@ function StageManager({
                   ))}
                 </div>
               </div>
+              <div>
+                <Label className="text-xs">Icon</Label>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {ICON_IDS.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setEditing((prev) => (prev ? { ...prev, icon: id } : prev))}
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-md border border-border/60 transition",
+                        editing.icon === id
+                          ? "border-foreground bg-muted"
+                          : "hover:bg-muted/60",
+                      )}
+                      aria-label={`Icon ${id}`}
+                      title={id}
+                    >
+                      <StageIcon name={id} className="h-3.5 w-3.5" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-xs">Won stage</Label>
@@ -498,6 +630,186 @@ function StageManager({
                   }
                 />
               </div>
+
+              <div className="rounded-md border border-border/60 bg-background p-3">
+                <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
+                  <Zap className="h-3 w-3 text-brand" /> Automation
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-xs">Auto-create follow-up task</Label>
+                      <p className="text-[10px] text-muted-foreground">
+                        When a lead lands here.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={Boolean(editing.automation.auto_task?.enabled)}
+                      onCheckedChange={(v) =>
+                        setEditing((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                automation: {
+                                  ...prev.automation,
+                                  auto_task: {
+                                    ...(prev.automation.auto_task ?? EMPTY_AUTOMATION.auto_task!),
+                                    enabled: v,
+                                  },
+                                },
+                              }
+                            : prev,
+                        )
+                      }
+                    />
+                  </div>
+
+                  {editing.automation.auto_task?.enabled && (
+                    <div className="grid grid-cols-2 gap-2 rounded-md bg-muted/40 p-2">
+                      <div>
+                        <Label className="text-[10px]">Due in (days)</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={365}
+                          value={editing.automation.auto_task.days_offset}
+                          onChange={(e) =>
+                            setEditing((prev) =>
+                              prev && prev.automation.auto_task
+                                ? {
+                                    ...prev,
+                                    automation: {
+                                      ...prev.automation,
+                                      auto_task: {
+                                        ...prev.automation.auto_task,
+                                        days_offset: Math.max(
+                                          0,
+                                          Math.min(365, Number(e.target.value) || 0),
+                                        ),
+                                      },
+                                    },
+                                  }
+                                : prev,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px]">Priority</Label>
+                        <Select
+                          value={editing.automation.auto_task.priority}
+                          onValueChange={(v) =>
+                            setEditing((prev) =>
+                              prev && prev.automation.auto_task
+                                ? {
+                                    ...prev,
+                                    automation: {
+                                      ...prev.automation,
+                                      auto_task: {
+                                        ...prev.automation.auto_task,
+                                        priority: v as "high" | "med" | "low",
+                                      },
+                                    },
+                                  }
+                                : prev,
+                            )
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="med">Medium</SelectItem>
+                            <SelectItem value="low">Low</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-[10px]">
+                          Title template ({"{name}"}, {"{company}"})
+                        </Label>
+                        <Input
+                          value={editing.automation.auto_task.title}
+                          onChange={(e) =>
+                            setEditing((prev) =>
+                              prev && prev.automation.auto_task
+                                ? {
+                                    ...prev,
+                                    automation: {
+                                      ...prev.automation,
+                                      auto_task: {
+                                        ...prev.automation.auto_task,
+                                        title: e.target.value,
+                                      },
+                                    },
+                                  }
+                                : prev,
+                            )
+                          }
+                          placeholder="Follow up with {name}"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-xs">Send notification</Label>
+                      <p className="text-[10px] text-muted-foreground">
+                        In-app bell alert on stage change.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={Boolean(editing.automation.notify?.enabled)}
+                      onCheckedChange={(v) =>
+                        setEditing((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                automation: {
+                                  ...prev.automation,
+                                  notify: {
+                                    ...(prev.automation.notify ?? EMPTY_AUTOMATION.notify!),
+                                    enabled: v,
+                                  },
+                                },
+                              }
+                            : prev,
+                        )
+                      }
+                    />
+                  </div>
+
+                  {editing.automation.notify?.enabled && (
+                    <div>
+                      <Label className="text-[10px]">Message</Label>
+                      <Input
+                        value={editing.automation.notify.message ?? ""}
+                        onChange={(e) =>
+                          setEditing((prev) =>
+                            prev && prev.automation.notify
+                              ? {
+                                  ...prev,
+                                  automation: {
+                                    ...prev.automation,
+                                    notify: {
+                                      ...prev.automation.notify,
+                                      message: e.target.value,
+                                    },
+                                  },
+                                }
+                              : prev,
+                          )
+                        }
+                        placeholder="{name} moved to this stage"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>
                   Cancel

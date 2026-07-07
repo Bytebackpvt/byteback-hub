@@ -298,8 +298,10 @@ export type Database = {
       }
       pipeline_stages: {
         Row: {
+          automation: Json
           color: string
           created_at: string
+          icon: string
           id: string
           is_lost: boolean
           is_won: boolean
@@ -310,8 +312,10 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          automation?: Json
           color?: string
           created_at?: string
+          icon?: string
           id?: string
           is_lost?: boolean
           is_won?: boolean
@@ -322,8 +326,10 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          automation?: Json
           color?: string
           created_at?: string
+          icon?: string
           id?: string
           is_lost?: boolean
           is_won?: boolean
