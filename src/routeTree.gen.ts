@@ -29,6 +29,7 @@ import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_auth
 import { Route as AuthenticatedAppInboxRouteImport } from './routes/_authenticated/app.inbox'
 import { Route as AuthenticatedAppCrmRouteImport } from './routes/_authenticated/app.crm'
 import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authenticated/app.analytics'
+import { Route as ApiPublicCronEscalateRouteImport } from './routes/api/public/cron.escalate'
 import { Route as ApiPublicCronDailyDigestRouteImport } from './routes/api/public/cron.daily-digest'
 
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -134,6 +135,11 @@ const AuthenticatedAppAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const ApiPublicCronEscalateRoute = ApiPublicCronEscalateRouteImport.update({
+  id: '/api/public/cron/escalate',
+  path: '/api/public/cron/escalate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronDailyDigestRoute =
   ApiPublicCronDailyDigestRouteImport.update({
     id: '/api/public/cron/daily-digest',
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/app/team': typeof AuthenticatedAppTeamRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
+  '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/app/team': typeof AuthenticatedAppTeamRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
+  '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/_authenticated/app/team': typeof AuthenticatedAppTeamRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
+  '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/app/team'
     | '/app/'
     | '/api/public/cron/daily-digest'
+    | '/api/public/cron/escalate'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/app/team'
     | '/app'
     | '/api/public/cron/daily-digest'
+    | '/api/public/cron/escalate'
   id:
     | '__root__'
     | '/'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/team'
     | '/_authenticated/app/'
     | '/api/public/cron/daily-digest'
+    | '/api/public/cron/escalate'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -281,6 +293,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   ApiPublicCronDailyDigestRoute: typeof ApiPublicCronDailyDigestRoute
+  ApiPublicCronEscalateRoute: typeof ApiPublicCronEscalateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -425,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppAnalyticsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/api/public/cron/escalate': {
+      id: '/api/public/cron/escalate'
+      path: '/api/public/cron/escalate'
+      fullPath: '/api/public/cron/escalate'
+      preLoaderRoute: typeof ApiPublicCronEscalateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/daily-digest': {
       id: '/api/public/cron/daily-digest'
       path: '/api/public/cron/daily-digest'
@@ -501,6 +521,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   ApiPublicCronDailyDigestRoute: ApiPublicCronDailyDigestRoute,
+  ApiPublicCronEscalateRoute: ApiPublicCronEscalateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
