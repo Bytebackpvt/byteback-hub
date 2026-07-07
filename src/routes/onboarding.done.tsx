@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, PartyPopper, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -6,7 +7,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/stores/onboarding";
-import { supabase } from "@/integrations/supabase/client";
+import { finishOnboarding } from "@/lib/onboarding.functions";
 
 export const Route = createFileRoute("/onboarding/done")({
   component: DoneStep,
