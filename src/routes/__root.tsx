@@ -158,14 +158,8 @@ function RootComponent() {
         sub.subscription;
     });
 
-    // Register the PWA service worker (production only, browser only).
-    if (
-      typeof window !== "undefined" &&
-      "serviceWorker" in navigator &&
-      import.meta.env.PROD
-    ) {
-      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-    }
+
+
 
     return () => {
       (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub?.unsubscribe();
