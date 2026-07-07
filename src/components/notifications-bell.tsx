@@ -107,7 +107,15 @@ export function NotificationsBell() {
 
   const { data } = useQuery({
     queryKey: ["notifications"],
-    queryFn: () => callList(),
+    queryFn: async () => {
+      const { data: s } = await supabase.auth.getSession();
+      if (!s.session?.access_token) return { notifications: [], unread: 0 };
+      try {
+        return await callList();
+      } catch {
+        return { notifications: [], unread: 0 };
+      }
+    },
     enabled: sessionReady,
     refetchInterval: 60_000,
     staleTime: 30_000,
