@@ -195,6 +195,10 @@ export type Database = {
           created_at: string
           id: string
           prefs: Json
+          quiet_hours_enabled: boolean
+          quiet_hours_end: number
+          quiet_hours_start: number
+          timezone: string
           updated_at: string
           user_id: string
           workspace_id: string
@@ -203,6 +207,10 @@ export type Database = {
           created_at?: string
           id?: string
           prefs?: Json
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: number
+          quiet_hours_start?: number
+          timezone?: string
           updated_at?: string
           user_id: string
           workspace_id: string
@@ -211,6 +219,10 @@ export type Database = {
           created_at?: string
           id?: string
           prefs?: Json
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: number
+          quiet_hours_start?: number
+          timezone?: string
           updated_at?: string
           user_id?: string
           workspace_id?: string
