@@ -29,6 +29,7 @@ import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_auth
 import { Route as AuthenticatedAppInboxRouteImport } from './routes/_authenticated/app.inbox'
 import { Route as AuthenticatedAppCrmRouteImport } from './routes/_authenticated/app.crm'
 import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authenticated/app.analytics'
+import { Route as ApiPublicCronDailyDigestRouteImport } from './routes/api/public/cron.daily-digest'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -133,6 +134,12 @@ const AuthenticatedAppAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const ApiPublicCronDailyDigestRoute =
+  ApiPublicCronDailyDigestRouteImport.update({
+    id: '/api/public/cron/daily-digest',
+    path: '/api/public/cron/daily-digest',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -173,6 +181,7 @@ export interface FileRoutesByTo {
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -196,6 +205,7 @@ export interface FileRoutesById {
   '/_authenticated/app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/app/team': typeof AuthenticatedAppTeamRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/app/tasks'
     | '/app/team'
     | '/app/'
+    | '/api/public/cron/daily-digest'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/app/tasks'
     | '/app/team'
     | '/app'
+    | '/api/public/cron/daily-digest'
   id:
     | '__root__'
     | '/'
@@ -260,6 +272,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/tasks'
     | '/_authenticated/app/team'
     | '/_authenticated/app/'
+    | '/api/public/cron/daily-digest'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -267,6 +280,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
+  ApiPublicCronDailyDigestRoute: typeof ApiPublicCronDailyDigestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -411,6 +425,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppAnalyticsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/api/public/cron/daily-digest': {
+      id: '/api/public/cron/daily-digest'
+      path: '/api/public/cron/daily-digest'
+      fullPath: '/api/public/cron/daily-digest'
+      preLoaderRoute: typeof ApiPublicCronDailyDigestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -479,6 +500,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
+  ApiPublicCronDailyDigestRoute: ApiPublicCronDailyDigestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
