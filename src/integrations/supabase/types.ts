@@ -296,6 +296,68 @@ export type Database = {
           },
         ]
       }
+      oauth_connections: {
+        Row: {
+          access_token_enc: string | null
+          account_email: string | null
+          account_label: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          last_error: string | null
+          meta: Json
+          provider: string
+          refresh_token_enc: string | null
+          scopes: string[]
+          status: string
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          access_token_enc?: string | null
+          account_email?: string | null
+          account_label?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_error?: string | null
+          meta?: Json
+          provider: string
+          refresh_token_enc?: string | null
+          scopes?: string[]
+          status?: string
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          access_token_enc?: string | null
+          account_email?: string | null
+          account_label?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_error?: string | null
+          meta?: Json
+          provider?: string
+          refresh_token_enc?: string | null
+          scopes?: string[]
+          status?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_connections_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_stages: {
         Row: {
           automation: Json
