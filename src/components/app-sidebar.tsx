@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
+  Bell,
   CheckSquare,
   Inbox,
   Kanban,
@@ -44,6 +45,7 @@ const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string }[] =
   { to: "/app/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/app/team", label: "Team", icon: Shield },
   { to: "/app/integrations", label: "Integrations", icon: Plug },
+  { to: "/app/notifications", label: "Notifications", icon: Bell },
 ];
 
 export function AppSidebar() {
