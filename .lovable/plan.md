@@ -14,10 +14,15 @@ Phases 2A (AI & Lead Intelligence) and 2B (Follow-up & Notification Engine) are 
 
 
 ## Phase 2D — Clickability & UX pass (in progress)
-- [x] First pass: mobile viewport (`min-h-dvh`), guided-tour keyboard/ARIA (Escape, arrows, dialog role, labeled backdrop), dashboard empty-state CTAs, clickable hot-reply rows, CRM clear-search CTA
-- [ ] Remaining pages audit: Inbox, Pipeline, Tasks, Analytics, Notifications, Team, Integrations, Help
-- [ ] Global keyboard shortcuts overlay (?)
-- [ ] Reduced-motion + contrast audit
+- [x] Mobile viewport: `100vh`/`min-h-screen` → `dvh` across shell, auth, onboarding, root, index, inbox, crm, pipeline, tasks, analytics
+- [x] Guided tour a11y: dialog role, focus-on-open, Escape/←/→ keys, labeled backdrop `<button>`s
+- [x] Empty-state CTAs: dashboard (briefing/hot/tasks), inbox (clear filters), crm (clear search), tasks (add + generate)
+- [x] Clickable dashboard hot-reply rows with descriptive aria-labels
+- [x] Analytics "Connect Instantly" CTA link when disconnected
+- [x] Global `?` keyboard-shortcuts overlay (inputs excluded)
+- [ ] Pipeline, Analytics, Integrations, Help — deeper interaction/a11y pass
+- [ ] Reduced-motion + contrast sweep
+
 
 
 ## Phase 2E — Integration Framework + first providers
