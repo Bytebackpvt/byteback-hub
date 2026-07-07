@@ -5,19 +5,37 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowRight,
+  Bell,
+  Calendar,
+  CheckCircle2,
+  Circle,
+  Flag,
+  Flame,
   GripVertical,
+  Inbox,
   Loader2,
   Pencil,
   Plug,
   Plus,
   Settings2,
+  Star,
   Trash2,
+  Trophy,
+  X,
+  Zap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -35,14 +53,37 @@ import {
   deletePipelineStage,
   listPipelineStages,
   reorderPipelineStages,
+  runStageAutomation,
   upsertPipelineStage,
   type PipelineStage,
+  type StageAutomation,
 } from "@/lib/pipeline.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/pipeline")({
   component: PipelinePage,
 });
+
+const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  circle: Circle,
+  inbox: Inbox,
+  flame: Flame,
+  calendar: Calendar,
+  trophy: Trophy,
+  x: X,
+  star: Star,
+  flag: Flag,
+  check: CheckCircle2,
+  bell: Bell,
+  zap: Zap,
+};
+const ICON_IDS = Object.keys(ICONS);
+
+function StageIcon({ name, className }: { name: string; className?: string }) {
+  const C = ICONS[name] ?? Circle;
+  return <C className={className} />;
+}
+
 
 const COLOR_OPTIONS: Array<{ id: string; className: string; label: string }> = [
   { id: "sky", className: "bg-sky-500 border-t-sky-500", label: "Sky" },
