@@ -9,14 +9,14 @@ async function getOwnedWorkspaceId(
   userId: string,
 ): Promise<string | null> {
   const { data, error } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("owner_id", userId)
+    .from("workspace_members")
+    .select("workspace_id, created_at")
+    .eq("user_id", userId)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  return (data?.id as string | undefined) ?? null;
+  return (data?.workspace_id as string | undefined) ?? null;
 }
 
 // Rules: due date + priority derived from lead interest / reply sentiment.
