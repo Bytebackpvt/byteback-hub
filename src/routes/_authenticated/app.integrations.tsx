@@ -124,7 +124,7 @@ function IntegrationsPage() {
 
       <div className="grid gap-3">
         {CATALOG.map((c) => (
-          <IntegrationCard key={c.provider} catalog={c} current={byProvider.get(c.provider)} />
+          <IntegrationCard key={c.provider} catalog={c} current={byProvider.get(c.provider as IntegrationProvider)} />
         ))}
       </div>
     </div>
