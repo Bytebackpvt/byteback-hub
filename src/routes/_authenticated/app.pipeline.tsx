@@ -232,11 +232,14 @@ function PipelinePage() {
           <h1 className="text-xl font-semibold tracking-tight">Pipeline</h1>
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Plug
-              className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-muted-foreground/50")}
+              aria-hidden="true"
+              className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-amber-500")}
             />
-            {connected
-              ? `${totals.total} live leads · ${totals.won} won · custom stages`
-              : "Demo mode · connect Instantly to move real leads"}
+            <span aria-label={connected ? "Connected to Instantly" : "Not connected to Instantly"}>
+              {connected
+                ? `${totals.total} live leads · ${totals.won} won · custom stages`
+                : "Demo mode · connect Instantly to move real leads"}
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-2">

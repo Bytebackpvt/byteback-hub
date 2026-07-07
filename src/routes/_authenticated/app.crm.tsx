@@ -169,16 +169,16 @@ function CrmPage() {
           <h1 className="text-xl font-semibold tracking-tight">Contacts</h1>
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
             <Plug
-              className={cn(
-                "h-3 w-3",
-                connected ? "text-emerald-500" : "text-muted-foreground/50",
-              )}
+              aria-hidden="true"
+              className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-amber-500")}
             />
-            {connected
-              ? `${rows.length} live leads from Instantly · AI scores saved to your workspace`
-              : leadsQuery.isLoading
-                ? "Loading leads…"
-                : "Demo contacts — connect Instantly to see real leads"}
+            <span aria-label={connected ? "Connected to Instantly" : "Not connected to Instantly"}>
+              {connected
+                ? `${rows.length} live leads from Instantly · AI scores saved to your workspace`
+                : leadsQuery.isLoading
+                  ? "Loading leads…"
+                  : "Demo contacts — connect Instantly to see real leads"}
+            </span>
           </p>
         </div>
         <div className="flex gap-2">
