@@ -306,7 +306,7 @@ function InboxPage() {
   }
 
   return (
-    <div className="grid h-[calc(100vh-3rem)] grid-cols-[240px_360px_1fr]">
+    <div className="grid h-[calc(100dvh-3rem)] grid-cols-[240px_360px_1fr]">
       {/* Mailboxes column */}
       <aside className="flex flex-col border-r border-border/60 bg-muted/20">
         <div className="border-b border-border/60 p-3">
