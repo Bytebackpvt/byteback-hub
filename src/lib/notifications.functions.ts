@@ -250,6 +250,15 @@ export const scanForNotifications = createServerFn({ method: "POST" })
       await deliverToWebhooks(context.supabase, workspaceId, webhookAlerts);
     }
 
+    // Google Sheets sync — hot/lost leads only, unconditional when configured.
+    const sheetsAlerts = insertedRows.filter(
+      (r) => r.kind === "hot_lead" || r.kind === "lost_lead",
+    );
+    if (sheetsAlerts.length) {
+      const { deliverToSheets } = await import("./sheets-delivery.server");
+      await deliverToSheets(context.supabase, workspaceId, sheetsAlerts);
+    }
+
     const emailAlerts = silenced
       ? []
       : insertedRows.filter((r) => wantsChannel(r.kind, "email"));
