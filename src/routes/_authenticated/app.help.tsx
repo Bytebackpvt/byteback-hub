@@ -101,19 +101,23 @@ function HelpPage() {
         />
       </div>
 
-      <section className="rounded-xl border border-border bg-card">
+      <section aria-labelledby="faq-heading" className="rounded-xl border border-border bg-card">
         <div className="border-b border-border px-5 py-3">
-          <h2 className="text-sm font-semibold">Frequently asked questions</h2>
+          <h2 id="faq-heading" className="text-sm font-semibold">Frequently asked questions</h2>
         </div>
         <ul className="divide-y divide-border">
           {FAQS.map((f, i) => {
             const isOpen = openIdx === i;
+            const panelId = `faq-panel-${i}`;
+            const btnId = `faq-btn-${i}`;
             return (
               <li key={f.q}>
                 <button
-                  className="flex w-full items-center justify-between gap-4 px-5 py-3.5 text-left transition hover:bg-accent/40"
+                  id={btnId}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-3.5 text-left transition hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => setOpenIdx(isOpen ? null : i)}
                   aria-expanded={isOpen}
+                  aria-controls={panelId}
                 >
                   <span className="text-sm font-medium">{f.q}</span>
                   <ChevronDown
@@ -121,10 +125,16 @@ function HelpPage() {
                       "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
                       isOpen && "rotate-180",
                     )}
+                    aria-hidden
                   />
                 </button>
                 {isOpen && (
-                  <div className="px-5 pb-4 text-sm leading-relaxed text-muted-foreground">
+                  <div
+                    id={panelId}
+                    role="region"
+                    aria-labelledby={btnId}
+                    className="px-5 pb-4 text-sm leading-relaxed text-muted-foreground"
+                  >
                     {f.a}
                   </div>
                 )}

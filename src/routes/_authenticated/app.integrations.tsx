@@ -131,11 +131,16 @@ function IntegrationsPage() {
         </p>
       </header>
 
-      <div className="grid gap-3">
-        {CATALOG.map((c) => (
-          <IntegrationCard key={c.provider} catalog={c} current={byProvider.get(c.provider as IntegrationProvider)} />
-        ))}
-      </div>
+      <section aria-labelledby="integrations-list-heading">
+        <h2 id="integrations-list-heading" className="sr-only">Available integrations</h2>
+        <ul className="grid gap-3">
+          {CATALOG.map((c) => (
+            <li key={c.provider}>
+              <IntegrationCard catalog={c} current={byProvider.get(c.provider as IntegrationProvider)} />
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

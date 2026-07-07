@@ -20,8 +20,10 @@ Phases 2A (AI & Lead Intelligence) and 2B (Follow-up & Notification Engine) are 
 - [x] Clickable dashboard hot-reply rows with descriptive aria-labels
 - [x] Analytics "Connect Instantly" CTA link when disconnected
 - [x] Global `?` keyboard-shortcuts overlay (inputs excluded)
-- [ ] Pipeline, Analytics, Integrations, Help — deeper interaction/a11y pass
-- [ ] Reduced-motion + contrast sweep
+- [x] Reduced-motion global CSS + focus-visible outline
+- [x] Integrations & Help: semantic list/region, FAQ aria-controls/aria-expanded, focus rings
+- [ ] Pipeline, Analytics — deeper interaction/a11y pass
+- [ ] Contrast sweep (audit remaining muted-foreground/50 usages)
 
 
 
