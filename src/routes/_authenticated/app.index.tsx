@@ -209,33 +209,42 @@ function DashboardPage() {
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…
             </div>
           ) : hot.length === 0 ? (
-            <p className="py-6 text-sm text-muted-foreground">
-              <Mail className="mr-1.5 inline h-3.5 w-3.5" /> No hot threads.
-            </p>
+            <div className="flex flex-col items-start gap-2 py-6">
+              <p className="text-sm text-muted-foreground">
+                <Mail className="mr-1.5 inline h-3.5 w-3.5" /> No hot threads right now.
+              </p>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/app/inbox">Open inbox</Link>
+              </Button>
+            </div>
           ) : (
             <ul className="divide-y divide-border/50">
               {hot.map((t) => (
-                <li key={t.id} className="flex items-center gap-3 py-2.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">
-                      {t.from.name}{" "}
-                      <span className="text-muted-foreground">· {t.from.company}</span>
-                    </div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {t.subject}
-                    </div>
-                  </div>
+                <li key={t.id}>
                   <Link
                     to="/app/inbox"
-                    className="shrink-0 text-xs text-brand hover:underline"
+                    className="flex items-center gap-3 rounded-md py-2.5 px-1 -mx-1 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={`Open thread from ${t.from.name} at ${t.from.company}: ${t.subject}`}
                   >
-                    <Reply className="inline h-3 w-3" /> Reply
+                    <span className="h-1.5 w-1.5 rounded-full bg-rose-500" aria-hidden="true" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">
+                        {t.from.name}{" "}
+                        <span className="text-muted-foreground">· {t.from.company}</span>
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {t.subject}
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-xs text-brand">
+                      <Reply className="inline h-3 w-3" aria-hidden="true" /> Reply
+                    </span>
                   </Link>
                 </li>
               ))}
             </ul>
           )}
+
         </section>
 
         {/* Priority tasks */}
