@@ -5,11 +5,13 @@ Phases 2A (AI & Lead Intelligence) and 2B (Follow-up & Notification Engine) are 
 ---
 
 ## Phase 2C — Custom Pipelines & Statuses
-- Schema: `pipelines`, `pipeline_stages`, `lead_statuses` (workspace-scoped, RLS + GRANTs)
-- Drag-and-drop Kanban board (dnd-kit), color + icon per stage/status
-- Multiple saved pipelines per workspace, switcher in `/app/pipeline`
-- Per-status automation hooks that call into the follow-up engine (auto-task, auto-notify, escalation timer)
-- Migration to move today's hardcoded stages into the new tables
+- [x] Schema: `pipeline_stages` with workspace scope, RLS + GRANTs (already shipped)
+- [x] Drag-and-drop Kanban board (dnd-kit-style), color + won/lost markers
+- [x] **Icons per stage** (11-icon picker: inbox, flame, calendar, trophy, star, flag, check, bell, zap, x, circle)
+- [x] **Per-stage automation** (`automation` jsonb): auto-create follow-up task (days offset, priority, `{name}`/`{company}` templates) and/or in-app notification
+- [x] Automation fires from `updateLeadStatus` via new `runStageAutomation` server fn (RLS-scoped, best-effort)
+- [ ] Multiple saved pipelines per workspace + switcher (not shipped — separate refactor)
+
 
 ## Phase 2D — Clickability & UX pass
 - Audit every page; wire up stat cards, avatars, menus, empty-state CTAs (nothing decorative)
