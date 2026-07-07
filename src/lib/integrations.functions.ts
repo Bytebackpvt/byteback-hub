@@ -6,6 +6,9 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type IntegrationProvider =
   | "slack_webhook"
+  | "teams_webhook"
+  | "discord_webhook"
+  | "generic_webhook"
   | "gmail"
   | "outlook"
   | "hubspot"
