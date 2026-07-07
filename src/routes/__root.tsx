@@ -157,10 +157,10 @@ function RootComponent() {
     import("@/integrations/supabase/client").then(({ supabase }) => {
       const { data: sub } = supabase.auth.onAuthStateChange((event) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-        if (event === "SIGNED_OUT") {
-          queryClient.cancelQueries();
-          queryClient.clear();
-        }
+        // Any identity transition invalidates protected caches to prevent
+        // stale refetches under a different (or missing) session.
+        queryClient.cancelQueries();
+        queryClient.clear();
         router.invalidate();
         if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
       });
