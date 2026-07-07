@@ -177,11 +177,14 @@ function TasksPage() {
         className="mb-6 flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-card p-3"
       >
         <Input
+          id="task-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Add a task…"
           className="min-w-[200px] flex-1"
+          aria-label="New task title"
         />
+
         <Input
           type="date"
           value={due}
