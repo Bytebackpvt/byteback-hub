@@ -56,6 +56,8 @@ function AppLayout() {
         </div>
       </div>
       <GuidedTour open={tour.open} onClose={tour.close} />
+      <ShortcutsOverlay />
     </SidebarProvider>
+
   );
 }
