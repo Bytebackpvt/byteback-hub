@@ -110,18 +110,29 @@ function AnalyticsPage() {
       : ANALYTICS.categoryBreakdown;
 
   return (
-    <div className="mx-auto h-[calc(100vh-3rem)] max-w-6xl overflow-y-auto px-6 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
-        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <Plug className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-muted-foreground/50")} />
-          {connected
-            ? "Live from Instantly · all campaigns"
-            : q.isLoading
-              ? "Loading analytics…"
-              : "Demo data · connect Instantly to see live campaign stats"}
-        </p>
+    <div className="mx-auto h-[calc(100dvh-3rem)] max-w-6xl overflow-y-auto px-6 py-8">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Plug className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-muted-foreground/50")} />
+            {connected
+              ? "Live from Instantly · all campaigns"
+              : q.isLoading
+                ? "Loading analytics…"
+                : "Demo data · connect Instantly to see live campaign stats"}
+          </p>
+        </div>
+        {!connected && !q.isLoading && (
+          <Link
+            to="/app/integrations"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Plug className="h-3.5 w-3.5" /> Connect Instantly
+          </Link>
+        )}
       </div>
+
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((s) => (
