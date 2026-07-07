@@ -630,6 +630,186 @@ function StageManager({
                   }
                 />
               </div>
+
+              <div className="rounded-md border border-border/60 bg-background p-3">
+                <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
+                  <Zap className="h-3 w-3 text-brand" /> Automation
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-xs">Auto-create follow-up task</Label>
+                      <p className="text-[10px] text-muted-foreground">
+                        When a lead lands here.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={Boolean(editing.automation.auto_task?.enabled)}
+                      onCheckedChange={(v) =>
+                        setEditing((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                automation: {
+                                  ...prev.automation,
+                                  auto_task: {
+                                    ...(prev.automation.auto_task ?? EMPTY_AUTOMATION.auto_task!),
+                                    enabled: v,
+                                  },
+                                },
+                              }
+                            : prev,
+                        )
+                      }
+                    />
+                  </div>
+
+                  {editing.automation.auto_task?.enabled && (
+                    <div className="grid grid-cols-2 gap-2 rounded-md bg-muted/40 p-2">
+                      <div>
+                        <Label className="text-[10px]">Due in (days)</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={365}
+                          value={editing.automation.auto_task.days_offset}
+                          onChange={(e) =>
+                            setEditing((prev) =>
+                              prev && prev.automation.auto_task
+                                ? {
+                                    ...prev,
+                                    automation: {
+                                      ...prev.automation,
+                                      auto_task: {
+                                        ...prev.automation.auto_task,
+                                        days_offset: Math.max(
+                                          0,
+                                          Math.min(365, Number(e.target.value) || 0),
+                                        ),
+                                      },
+                                    },
+                                  }
+                                : prev,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px]">Priority</Label>
+                        <Select
+                          value={editing.automation.auto_task.priority}
+                          onValueChange={(v) =>
+                            setEditing((prev) =>
+                              prev && prev.automation.auto_task
+                                ? {
+                                    ...prev,
+                                    automation: {
+                                      ...prev.automation,
+                                      auto_task: {
+                                        ...prev.automation.auto_task,
+                                        priority: v as "high" | "med" | "low",
+                                      },
+                                    },
+                                  }
+                                : prev,
+                            )
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="med">Medium</SelectItem>
+                            <SelectItem value="low">Low</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-[10px]">
+                          Title template ({"{name}"}, {"{company}"})
+                        </Label>
+                        <Input
+                          value={editing.automation.auto_task.title}
+                          onChange={(e) =>
+                            setEditing((prev) =>
+                              prev && prev.automation.auto_task
+                                ? {
+                                    ...prev,
+                                    automation: {
+                                      ...prev.automation,
+                                      auto_task: {
+                                        ...prev.automation.auto_task,
+                                        title: e.target.value,
+                                      },
+                                    },
+                                  }
+                                : prev,
+                            )
+                          }
+                          placeholder="Follow up with {name}"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-xs">Send notification</Label>
+                      <p className="text-[10px] text-muted-foreground">
+                        In-app bell alert on stage change.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={Boolean(editing.automation.notify?.enabled)}
+                      onCheckedChange={(v) =>
+                        setEditing((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                automation: {
+                                  ...prev.automation,
+                                  notify: {
+                                    ...(prev.automation.notify ?? EMPTY_AUTOMATION.notify!),
+                                    enabled: v,
+                                  },
+                                },
+                              }
+                            : prev,
+                        )
+                      }
+                    />
+                  </div>
+
+                  {editing.automation.notify?.enabled && (
+                    <div>
+                      <Label className="text-[10px]">Message</Label>
+                      <Input
+                        value={editing.automation.notify.message ?? ""}
+                        onChange={(e) =>
+                          setEditing((prev) =>
+                            prev && prev.automation.notify
+                              ? {
+                                  ...prev,
+                                  automation: {
+                                    ...prev.automation,
+                                    notify: {
+                                      ...prev.automation.notify,
+                                      message: e.target.value,
+                                    },
+                                  },
+                                }
+                              : prev,
+                          )
+                        }
+                        placeholder="{name} moved to this stage"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>
                   Cancel
