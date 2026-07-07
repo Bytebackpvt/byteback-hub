@@ -4,8 +4,6 @@ import {
   Bell,
   CheckSquare,
   HelpCircle,
-  Bell,
-  CheckSquare,
   Inbox,
   Kanban,
   LayoutDashboard,
