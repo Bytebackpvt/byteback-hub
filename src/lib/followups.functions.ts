@@ -89,22 +89,29 @@ export const scheduleFollowUp = createServerFn({ method: "POST" })
     if (!plan) return { scheduled: false as const, reason: "No follow-up for this category" };
 
     const title = `${plan.verb} ${data.fromName}`;
-    const { data: row, error } = await context.supabase
+    const payload = {
+      workspace_id: workspaceId,
+      title: title.slice(0, 300),
+      priority: plan.priority,
+      due: plan.due,
+      linked_to: `${data.company || data.fromName} · ${data.category}`,
+      source: "ai" as const,
+      thread_id: data.threadId,
+    };
+    // Partial unique index (source='ai') isn't usable via PostgREST onConflict;
+    // find-then-update/insert instead.
+    const { data: existing, error: findErr } = await context.supabase
       .from("tasks")
-      .upsert(
-        {
-          workspace_id: workspaceId,
-          title: title.slice(0, 300),
-          priority: plan.priority,
-          due: plan.due,
-          linked_to: `${data.company || data.fromName} · ${data.category}`,
-          source: "ai" as const,
-          thread_id: data.threadId,
-        },
-        { onConflict: "workspace_id,thread_id", ignoreDuplicates: false },
-      )
-      .select("id, title, due, priority")
-      .single();
+      .select("id")
+      .eq("workspace_id", workspaceId)
+      .eq("source", "ai")
+      .eq("thread_id", data.threadId)
+      .maybeSingle();
+    if (findErr) throw findErr;
+    const q = existing
+      ? context.supabase.from("tasks").update(payload).eq("id", existing.id)
+      : context.supabase.from("tasks").insert(payload);
+    const { data: row, error } = await q.select("id, title, due, priority").single();
     if (error) throw error;
     return { scheduled: true as const, task: row };
   });
