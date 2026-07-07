@@ -153,7 +153,12 @@ function IntegrationCard({
     mutationFn: () =>
       callSave({
         data: {
-          provider: catalog.provider as "slack_webhook" | "zapier_webhook",
+          provider: catalog.provider as
+            | "slack_webhook"
+            | "teams_webhook"
+            | "discord_webhook"
+            | "generic_webhook"
+            | "zapier_webhook",
           webhook_url: url,
           label: label || undefined,
         },
