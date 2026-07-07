@@ -474,7 +474,11 @@ function StageManager({
               )}
             >
               <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" />
-              <span className={cn("h-2.5 w-2.5 rounded-full", stageSwatch(s.color))} />
+              <StageIcon
+                name={s.icon}
+                className={cn("h-3.5 w-3.5", stageSwatch(s.color).replace("bg-", "text-"))}
+              />
+
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{s.label}</div>
                 <div className="truncate text-[10px] text-muted-foreground">
