@@ -1,0 +1,14 @@
+{
+  "name": "ByteBack Inbox AI",
+  "short_name": "ByteBack",
+  "description": "One inbox. Every lead. Zero missed opportunities.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0b12",
+  "theme_color": "#0b0b12",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon" }
+  ]
+}
