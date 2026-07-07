@@ -315,11 +315,12 @@ export const runStageAutomation = createServerFn({ method: "POST" })
         user_id: context.userId,
         title: `Stage: ${stage.label}`,
         body: msg,
-        kind: "stage_change",
+        kind: "info",
         link: "/app/pipeline",
-      } as never);
+      });
       if (!error) actions.push("notify");
     }
+
 
     return { ran: actions.length > 0, actions };
   });
