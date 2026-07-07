@@ -149,7 +149,7 @@ function TasksPage() {
   const done = tasks.filter((t) => t.done);
 
   return (
-    <div className="mx-auto h-[calc(100vh-3rem)] max-w-3xl overflow-y-auto px-6 py-8">
+    <div className="mx-auto h-[calc(100dvh-3rem)] max-w-3xl overflow-y-auto px-6 py-8">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Tasks</h1>
