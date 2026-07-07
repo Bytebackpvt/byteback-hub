@@ -579,6 +579,29 @@ function StageManager({
                   ))}
                 </div>
               </div>
+              <div>
+                <Label className="text-xs">Icon</Label>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {ICON_IDS.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setEditing((prev) => (prev ? { ...prev, icon: id } : prev))}
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-md border border-border/60 transition",
+                        editing.icon === id
+                          ? "border-foreground bg-muted"
+                          : "hover:bg-muted/60",
+                      )}
+                      aria-label={`Icon ${id}`}
+                      title={id}
+                    >
+                      <StageIcon name={id} className="h-3.5 w-3.5" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-xs">Won stage</Label>
