@@ -1,20 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { Bell, Loader2, Mail, Webhook } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Bell, Loader2, Mail, Moon, Webhook } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getNotificationPreferences,
   saveNotificationPreferences,
   NOTIFICATION_KINDS,
   NOTIFICATION_CHANNELS,
+  DEFAULT_QUIET_HOURS,
   type NotificationChannel,
   type NotificationKind,
   type PrefMap,
+  type QuietHours,
 } from "@/lib/notification-prefs.functions";
 
 export const Route = createFileRoute("/_authenticated/app/notifications")({
@@ -59,6 +69,29 @@ const CHANNEL_META: Record<
   webhook: { label: "Webhook", icon: Webhook },
 };
 
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const formatHour = (h: number) => `${String(h).padStart(2, "0")}:00`;
+
+// A short curated list — users can also see whatever timezone was saved for them.
+const TIMEZONES = [
+  "UTC",
+  "America/Los_Angeles",
+  "America/Denver",
+  "America/Chicago",
+  "America/New_York",
+  "America/Sao_Paulo",
+  "Europe/London",
+  "Europe/Berlin",
+  "Europe/Madrid",
+  "Europe/Istanbul",
+  "Africa/Johannesburg",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+];
+
 function NotificationsSettings() {
   const qc = useQueryClient();
   const callGet = useServerFn(getNotificationPreferences);
@@ -71,12 +104,15 @@ function NotificationsSettings() {
   });
 
   const [prefs, setPrefs] = useState<PrefMap | null>(null);
+  const [quiet, setQuiet] = useState<QuietHours>(DEFAULT_QUIET_HOURS);
   useEffect(() => {
     if (q.data?.prefs) setPrefs(q.data.prefs);
-  }, [q.data?.prefs]);
+    if (q.data?.quiet) setQuiet(q.data.quiet);
+  }, [q.data?.prefs, q.data?.quiet]);
 
   const saveMut = useMutation({
-    mutationFn: (next: PrefMap) => callSave({ data: { prefs: next } }),
+    mutationFn: (payload: { prefs: PrefMap; quiet: QuietHours }) =>
+      callSave({ data: payload }),
     onSuccess: () => {
       toast.success("Notification preferences saved");
       qc.invalidateQueries({ queryKey: ["notification-prefs"] });
@@ -92,9 +128,16 @@ function NotificationsSettings() {
     });
   };
 
+  const tzOptions = useMemo(() => {
+    const set = new Set(TIMEZONES);
+    if (quiet.timezone) set.add(quiet.timezone);
+    return Array.from(set);
+  }, [quiet.timezone]);
+
   const dirty =
     prefs && q.data?.prefs
-      ? JSON.stringify(prefs) !== JSON.stringify(q.data.prefs)
+      ? JSON.stringify(prefs) !== JSON.stringify(q.data.prefs) ||
+        JSON.stringify(quiet) !== JSON.stringify(q.data.quiet)
       : false;
 
   return (
@@ -156,12 +199,96 @@ function NotificationsSettings() {
         )}
       </div>
 
+      <section className="rounded-xl border border-border/70 bg-card p-4 md:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Moon className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-base font-semibold">Quiet hours</h2>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Silence email and webhook alerts during these hours (in-app notifications
+              still appear).
+            </p>
+          </div>
+          <Switch
+            checked={quiet.enabled}
+            onCheckedChange={(v) => setQuiet((s) => ({ ...s, enabled: v }))}
+            aria-label="Enable quiet hours"
+          />
+        </div>
+
+        <div
+          className={`mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3 ${
+            quiet.enabled ? "" : "pointer-events-none opacity-50"
+          }`}
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="qh-start">From</Label>
+            <Select
+              value={String(quiet.start)}
+              onValueChange={(v) => setQuiet((s) => ({ ...s, start: Number(v) }))}
+            >
+              <SelectTrigger id="qh-start">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {HOURS.map((h) => (
+                  <SelectItem key={h} value={String(h)}>
+                    {formatHour(h)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="qh-end">Until</Label>
+            <Select
+              value={String(quiet.end)}
+              onValueChange={(v) => setQuiet((s) => ({ ...s, end: Number(v) }))}
+            >
+              <SelectTrigger id="qh-end">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {HOURS.map((h) => (
+                  <SelectItem key={h} value={String(h)}>
+                    {formatHour(h)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="qh-tz">Timezone</Label>
+            <Select
+              value={quiet.timezone}
+              onValueChange={(v) => setQuiet((s) => ({ ...s, timezone: v }))}
+            >
+              <SelectTrigger id="qh-tz">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {tzOptions.map((tz) => (
+                  <SelectItem key={tz} value={tz}>
+                    {tz}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </section>
+
       <div className="flex items-center justify-end gap-2">
         {dirty && (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => q.data?.prefs && setPrefs(q.data.prefs)}
+            onClick={() => {
+              if (q.data?.prefs) setPrefs(q.data.prefs);
+              if (q.data?.quiet) setQuiet(q.data.quiet);
+            }}
             disabled={saveMut.isPending}
           >
             Discard
@@ -169,7 +296,7 @@ function NotificationsSettings() {
         )}
         <Button
           size="sm"
-          onClick={() => prefs && saveMut.mutate(prefs)}
+          onClick={() => prefs && saveMut.mutate({ prefs, quiet })}
           disabled={!dirty || saveMut.isPending}
         >
           {saveMut.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
