@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { CheckCircle2, Loader2, Plug, Send, Trash2, Webhook, Zap } from "lucide-react";
+import { CheckCircle2, Loader2, MessageSquare, Plug, Send, Trash2, Webhook, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,24 @@ const CATALOG: Catalog[] = [
     help: "Create an Incoming Webhook at api.slack.com/apps → Incoming Webhooks → Add New Webhook to Workspace, then paste the URL.",
   },
   {
+    provider: "teams_webhook",
+    name: "Microsoft Teams",
+    blurb: "Deliver ByteBack alerts to a Teams channel via Incoming Webhook.",
+    icon: MessageSquare,
+    status: "available",
+    kind: "webhook",
+    help: "In Teams, open a channel → Connectors → Incoming Webhook → Configure. Paste the generated URL here.",
+  },
+  {
+    provider: "discord_webhook",
+    name: "Discord",
+    blurb: "Send hot-lead notifications straight into a Discord channel.",
+    icon: MessageSquare,
+    status: "available",
+    kind: "webhook",
+    help: "In Discord, open Channel Settings → Integrations → Webhooks → New Webhook, then copy the webhook URL.",
+  },
+  {
     provider: "zapier_webhook",
     name: "Zapier / Make",
     blurb: "Forward every lead alert to a Zap or Make scenario for custom automations.",
@@ -51,6 +69,15 @@ const CATALOG: Catalog[] = [
     status: "available",
     kind: "webhook",
     help: "In Zapier, create a Zap with 'Webhooks by Zapier → Catch Hook', copy the custom URL, and paste it here.",
+  },
+  {
+    provider: "generic_webhook",
+    name: "Custom webhook",
+    blurb: "POST every ByteBack event as JSON to any HTTPS endpoint you control.",
+    icon: Webhook,
+    status: "available",
+    kind: "webhook",
+    help: "Any HTTPS endpoint that accepts a JSON POST body works — great for internal tools or bespoke automations.",
   },
   {
     provider: "gmail",
