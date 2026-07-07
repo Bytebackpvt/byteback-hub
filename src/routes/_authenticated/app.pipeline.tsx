@@ -233,21 +233,25 @@ function PipelinePage() {
               : "Demo mode · connect Instantly to move real leads"}
           </p>
         </div>
-        <StageManager
-          stages={stages}
-          onSave={async (payload) => {
-            await callUpsert({ data: payload });
-            qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
-          }}
-          onDelete={async (id) => {
-            await callDelete({ data: { id } });
-            qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
-          }}
-          onReorder={async (order) => {
-            await callReorder({ data: { order } });
-            qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
-          }}
-        />
+        <div className="flex items-center gap-2">
+          <KanbanHelp />
+          <StageManager
+            stages={stages}
+            onSave={async (payload) => {
+              await callUpsert({ data: payload });
+              qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
+            }}
+            onDelete={async (id) => {
+              await callDelete({ data: { id } });
+              qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
+            }}
+            onReorder={async (order) => {
+              await callReorder({ data: { order } });
+              qc.invalidateQueries({ queryKey: ["pipeline", "stages"] });
+            }}
+          />
+        </div>
+
       </div>
 
       <div className="flex-1 overflow-x-auto p-4">
