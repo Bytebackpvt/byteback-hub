@@ -252,7 +252,8 @@ export const getRadarSummary = createServerFn({ method: "POST" })
           totalValue: items.reduce((s, i) => s + i.value, 0),
         };
       })
-      .filter((b) => b.items.length > 0);
+      .filter((b) => b.items.length > 0)
+      .filter((b) => !bucketFilter || bucketFilter.has(b.key));
 
     const hotUnreplied = grouped.get("hot_unreplied")?.length ?? 0;
     const totalPotential = buckets.reduce((s, b) => s + b.totalValue, 0);
