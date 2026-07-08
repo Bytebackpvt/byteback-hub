@@ -10,6 +10,7 @@ import {
   Inbox,
   Loader2,
   Mail,
+  Radar,
   Reply,
   Sparkles,
   TrendingUp,
@@ -23,6 +24,7 @@ import {
   listInstantlyThreads,
 } from "@/lib/instantly.functions";
 import { listTasks } from "@/lib/tasks.functions";
+import { getRadarSummary } from "@/lib/radar.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/")({
