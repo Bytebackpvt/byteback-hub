@@ -31,6 +31,7 @@ import { Route as AuthenticatedAppMemoryRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_authenticated/app.integrations'
 import { Route as AuthenticatedAppInboxRouteImport } from './routes/_authenticated/app.inbox'
 import { Route as AuthenticatedAppHelpRouteImport } from './routes/_authenticated/app.help'
+import { Route as AuthenticatedAppEmailSourcesRouteImport } from './routes/_authenticated/app.email-sources'
 import { Route as AuthenticatedAppCrmRouteImport } from './routes/_authenticated/app.crm'
 import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authenticated/app.analytics'
 import { Route as AuthenticatedAppIntegrationsIndexRouteImport } from './routes/_authenticated/app.integrations.index'
@@ -156,6 +157,12 @@ const AuthenticatedAppHelpRoute = AuthenticatedAppHelpRouteImport.update({
   path: '/help',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppEmailSourcesRoute =
+  AuthenticatedAppEmailSourcesRouteImport.update({
+    id: '/email-sources',
+    path: '/email-sources',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppCrmRoute = AuthenticatedAppCrmRouteImport.update({
   id: '/crm',
   path: '/crm',
@@ -238,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/': typeof OnboardingIndexRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsRoute
   '/app/crm': typeof AuthenticatedAppCrmRoute
+  '/app/email-sources': typeof AuthenticatedAppEmailSourcesRoute
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
@@ -271,6 +279,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingIndexRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsRoute
   '/app/crm': typeof AuthenticatedAppCrmRoute
+  '/app/email-sources': typeof AuthenticatedAppEmailSourcesRoute
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
   '/app/memory': typeof AuthenticatedAppMemoryRoute
@@ -307,6 +316,7 @@ export interface FileRoutesById {
   '/onboarding/': typeof OnboardingIndexRoute
   '/_authenticated/app/analytics': typeof AuthenticatedAppAnalyticsRoute
   '/_authenticated/app/crm': typeof AuthenticatedAppCrmRoute
+  '/_authenticated/app/email-sources': typeof AuthenticatedAppEmailSourcesRoute
   '/_authenticated/app/help': typeof AuthenticatedAppHelpRoute
   '/_authenticated/app/inbox': typeof AuthenticatedAppInboxRoute
   '/_authenticated/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
@@ -344,6 +354,7 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/app/analytics'
     | '/app/crm'
+    | '/app/email-sources'
     | '/app/help'
     | '/app/inbox'
     | '/app/integrations'
@@ -377,6 +388,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/app/analytics'
     | '/app/crm'
+    | '/app/email-sources'
     | '/app/help'
     | '/app/inbox'
     | '/app/memory'
@@ -412,6 +424,7 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/_authenticated/app/analytics'
     | '/_authenticated/app/crm'
+    | '/_authenticated/app/email-sources'
     | '/_authenticated/app/help'
     | '/_authenticated/app/inbox'
     | '/_authenticated/app/integrations'
@@ -603,6 +616,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppHelpRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/email-sources': {
+      id: '/_authenticated/app/email-sources'
+      path: '/email-sources'
+      fullPath: '/app/email-sources'
+      preLoaderRoute: typeof AuthenticatedAppEmailSourcesRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/crm': {
       id: '/_authenticated/app/crm'
       path: '/crm'
@@ -732,6 +752,7 @@ const AuthenticatedAppNotificationsRouteWithChildren =
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAnalyticsRoute: typeof AuthenticatedAppAnalyticsRoute
   AuthenticatedAppCrmRoute: typeof AuthenticatedAppCrmRoute
+  AuthenticatedAppEmailSourcesRoute: typeof AuthenticatedAppEmailSourcesRoute
   AuthenticatedAppHelpRoute: typeof AuthenticatedAppHelpRoute
   AuthenticatedAppInboxRoute: typeof AuthenticatedAppInboxRoute
   AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRouteWithChildren
@@ -748,6 +769,7 @@ interface AuthenticatedAppRouteChildren {
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppAnalyticsRoute: AuthenticatedAppAnalyticsRoute,
   AuthenticatedAppCrmRoute: AuthenticatedAppCrmRoute,
+  AuthenticatedAppEmailSourcesRoute: AuthenticatedAppEmailSourcesRoute,
   AuthenticatedAppHelpRoute: AuthenticatedAppHelpRoute,
   AuthenticatedAppInboxRoute: AuthenticatedAppInboxRoute,
   AuthenticatedAppIntegrationsRoute:

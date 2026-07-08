@@ -6,6 +6,7 @@ import {
   CheckSquare,
   HelpCircle,
   Inbox,
+  Mail,
   Kanban,
   LayoutDashboard,
   LogOut,

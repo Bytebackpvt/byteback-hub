@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { runInstantlySync } from "@/lib/sync.functions";
+import { syncAllGmail } from "@/lib/gmail.functions";
 
 /**
  * Public cron endpoint — runs the AI Sync Engine for every workspace that
@@ -63,7 +64,14 @@ export const Route = createFileRoute("/api/public/cron/sync")({
           }
         }
 
-        return Response.json({ ok: true, at: new Date().toISOString(), results });
+        let gmail: { connections: number; processed: number } | { error: string } = { connections: 0, processed: 0 };
+        try {
+          gmail = await syncAllGmail();
+        } catch (e) {
+          gmail = { error: e instanceof Error ? e.message : "gmail sync failed" };
+        }
+
+        return Response.json({ ok: true, at: new Date().toISOString(), results, gmail });
       },
     },
   },
