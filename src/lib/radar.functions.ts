@@ -134,9 +134,17 @@ async function getWorkspaceId(
   return ws ?? null;
 }
 
-export const getRadarSummary = createServerFn({ method: "GET" })
+const RadarInput = z
+  .object({
+    sinceHours: z.number().int().min(1).max(24 * 30).optional(),
+    buckets: z.array(z.string()).optional(),
+  })
+  .optional();
+
+export const getRadarSummary = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((raw: unknown) => RadarInput.parse(raw))
+  .handler(async ({ data, context }) => {
     const workspaceId = await getWorkspaceId(
       context.supabase as unknown as SupabaseClient<Database>,
       context.userId,
@@ -151,15 +159,22 @@ export const getRadarSummary = createServerFn({ method: "GET" })
     if (!workspaceId) return { summary: empty };
 
     const nowIso = new Date().toISOString();
+    const sinceIso = data?.sinceHours
+      ? new Date(Date.now() - data.sinceHours * 3600 * 1000).toISOString()
+      : null;
+    const bucketFilter = data?.buckets && data.buckets.length ? new Set(data.buckets) : null;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let notifQ = (context.supabase as any)
+      .from("notifications")
+      .select("id, kind, title, body, link, thread_key, read_at, created_at, meta")
+      .is("archived_at", null)
+      .or(`snoozed_until.is.null,snoozed_until.lte.${nowIso}`)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (sinceIso) notifQ = notifQ.gte("created_at", sinceIso);
     const [notifRes, taskRes] = await Promise.all([
-      (context.supabase as any)
-        .from("notifications")
-        .select("id, kind, title, body, link, thread_key, read_at, created_at, meta")
-        .is("archived_at", null)
-        .or(`snoozed_until.is.null,snoozed_until.lte.${nowIso}`)
-        .order("created_at", { ascending: false })
-        .limit(200),
+      notifQ,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (context.supabase as any)
         .from("tasks")
