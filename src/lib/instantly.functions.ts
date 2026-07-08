@@ -4,11 +4,26 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const BASE = "https://api.instantly.ai/api/v2";
 
+// Only these accounts (workspace owners) can see the shared Instantly workspace.
+// Other users see an empty/not-connected state and must connect their own tool.
+const INSTANTLY_ALLOWED_EMAILS = new Set(
+  (process.env.INSTANTLY_ALLOWED_EMAILS ?? "anjali@byteback.co.in,abhishek.rathore@byteback.co.in")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+function isInstantlyAllowed(claims: unknown): boolean {
+  const email = (claims as { email?: string } | null)?.email?.toLowerCase();
+  return !!email && INSTANTLY_ALLOWED_EMAILS.has(email);
+}
+
 function getKey() {
   const key = process.env.INSTANTLY_API_KEY;
   if (!key) throw new Error("Missing INSTANTLY_API_KEY");
   return key;
 }
+
 
 async function instantly<T>(
   path: string,
@@ -156,7 +171,11 @@ function priorityFrom(cat: InstantlyThread["category"], interest?: number): Inst
   return "low";
 }
 
-export const listInstantlyThreads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
+export const listInstantlyThreads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  if (!isInstantlyAllowed(context.claims)) {
+    return { threads: [] as InstantlyThread[], connected: false as const, error: "Not connected" };
+  }
+
   try {
     const data = await instantly<{ items?: RawEmail[] }>("/emails", {
       query: { limit: 50, email_type: "received" },
@@ -198,7 +217,11 @@ export const listInstantlyThreads = createServerFn({ method: "GET" }).middleware
   }
 });
 
-export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
+export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  if (!isInstantlyAllowed(context.claims)) {
+    return { mailboxes: [] as InstantlyMailbox[], connected: false as const, error: "Not connected" };
+  }
+
   try {
     const data = await instantly<{ items?: Array<{ email: string; status?: string; id?: string }> }>(
       "/accounts",
@@ -229,7 +252,9 @@ const ReplyInput = z.object({
 
 export const sendInstantlyReply = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ReplyInput.parse(raw))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    if (!isInstantlyAllowed(context.claims)) throw new Error("Not authorized for this integration");
+
     const res = await instantly<{ id?: string }>("/emails/reply", {
       method: "POST",
       body: {
@@ -277,7 +302,11 @@ function leadStatus(s?: number, interest?: number): InstantlyLead["status"] {
   return "new";
 }
 
-export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
+export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  if (!isInstantlyAllowed(context.claims)) {
+    return { leads: [] as InstantlyLead[], connected: false as const, error: "Not connected" };
+  }
+
   try {
     const data = await instantly<{ items?: RawLead[] }>("/leads/list", {
       method: "POST",
@@ -329,7 +358,9 @@ const UpdateStatusInput = z.object({
 
 export const updateLeadStatus = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => UpdateStatusInput.parse(raw))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    if (!isInstantlyAllowed(context.claims)) throw new Error("Not authorized for this integration");
+
     const interest = STATUS_TO_INTEREST[data.status];
     await instantly("/leads/update-interest-status", {
       method: "POST",
@@ -371,7 +402,11 @@ type DailyRow = {
   clicks?: number;
 };
 
-export const getInstantlyAnalytics = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
+export const getInstantlyAnalytics = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  if (!isInstantlyAllowed(context.claims)) {
+    return { connected: false as const, error: "Not connected" };
+  }
+
   try {
     const [overview, dailyRes, leadsRes] = await Promise.all([
       instantly<OverviewResponse>("/campaigns/analytics/overview"),

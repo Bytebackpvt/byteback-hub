@@ -62,7 +62,14 @@ function TeamPage() {
   const inviteMut = useMutation({
     mutationFn: () => callInvite({ data: { email: inviteEmail.trim(), role: inviteRole } }),
     onSuccess: (res) => {
-      toast.success(res.added ? "Teammate added to workspace." : "Invite saved — they'll join after signing up.");
+      toast.success(
+        res.added
+          ? "Teammate added to workspace."
+          : res.emailed
+          ? "Invitation email sent."
+          : "Invite saved — email couldn't be delivered, share the signup link manually.",
+      );
+
       setInviteEmail("");
       qc.invalidateQueries({ queryKey: ["team"] });
     },
