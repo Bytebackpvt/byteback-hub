@@ -1103,6 +1103,7 @@ export type Database = {
           business_type: string | null
           created_at: string
           id: string
+          inbound_token: string | null
           name: string
           owner_id: string
           slug: string
@@ -1112,6 +1113,7 @@ export type Database = {
           business_type?: string | null
           created_at?: string
           id?: string
+          inbound_token?: string | null
           name: string
           owner_id: string
           slug: string
@@ -1121,6 +1123,7 @@ export type Database = {
           business_type?: string | null
           created_at?: string
           id?: string
+          inbound_token?: string | null
           name?: string
           owner_id?: string
           slug?: string
