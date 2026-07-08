@@ -120,6 +120,41 @@ export type Database = {
           },
         ]
       }
+      ai_insights_cache: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          payload: Json
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_cache_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_accounts: {
         Row: {
           created_at: string
@@ -145,6 +180,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "email_accounts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_embeddings: {
+        Row: {
+          category: string | null
+          company: string | null
+          contact_email: string | null
+          contact_name: string | null
+          content: string
+          created_at: string
+          embedding: string
+          id: string
+          metadata: Json
+          subject: string | null
+          thread_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          category?: string | null
+          company?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          content: string
+          created_at?: string
+          embedding: string
+          id?: string
+          metadata?: Json
+          subject?: string | null
+          thread_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          category?: string | null
+          company?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          content?: string
+          created_at?: string
+          embedding?: string
+          id?: string
+          metadata?: Json
+          subject?: string | null
+          thread_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_embeddings_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -757,7 +845,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_email_embeddings: {
+        Args: { _limit?: number; _query: string; _workspace_id: string }
+        Returns: {
+          category: string
+          company: string
+          contact_email: string
+          contact_name: string
+          content: string
+          created_at: string
+          id: string
+          similarity: number
+          subject: string
+          thread_id: string
+        }[]
+      }
     }
     Enums: {
       notification_kind:
