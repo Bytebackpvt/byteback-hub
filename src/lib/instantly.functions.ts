@@ -358,7 +358,9 @@ const UpdateStatusInput = z.object({
 
 export const updateLeadStatus = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => UpdateStatusInput.parse(raw))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    if (!isInstantlyAllowed(context.claims)) throw new Error("Not authorized for this integration");
+
     const interest = STATUS_TO_INTEREST[data.status];
     await instantly("/leads/update-interest-status", {
       method: "POST",
