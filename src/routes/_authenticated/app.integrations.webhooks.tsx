@@ -19,7 +19,7 @@ import {
 } from "@/lib/integrations.functions";
 import { saveSheetsIntegration, testSheetsIntegration } from "@/lib/sheets.functions";
 
-export const Route = createFileRoute("/_authenticated/app/integrations")({
+export const Route = createFileRoute("/_authenticated/app/integrations/webhooks")({
   head: () => ({ meta: [{ title: "Integrations — ByteBack" }, { name: "robots", content: "noindex" }] }),
   component: IntegrationsPage,
 });
