@@ -387,30 +387,50 @@ export const runSyncForMe = createServerFn({ method: "POST" })
     return await runInstantlySync(wsId, { limit: data.limit });
   });
 
+export type SyncStatusRow = {
+  source: string;
+  last_run_at: string | null;
+  last_ok_at: string | null;
+  last_error: string | null;
+  stats: Record<string, number>;
+};
+
 export const getSyncStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<{ rows: SyncStatusRow[] }> => {
     const wsId = await getCurrentWorkspaceId(
       context.supabase as unknown as SupabaseClient<Database>,
       context.userId,
     );
-    if (!wsId) return { rows: [] as Array<{ source: string; last_run_at: string | null; last_ok_at: string | null; last_error: string | null; stats: unknown }> };
+    if (!wsId) return { rows: [] };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (context.supabase as any)
       .from("sync_state")
       .select("source, last_run_at, last_ok_at, last_error, stats")
       .eq("workspace_id", wsId);
-    return { rows: (data ?? []) as Array<{ source: string; last_run_at: string | null; last_ok_at: string | null; last_error: string | null; stats: unknown }> };
+    return { rows: (data ?? []) as SyncStatusRow[] };
   });
+
+export type DealRow = {
+  id: string;
+  thread_id: string | null;
+  stage: string;
+  category: string | null;
+  priority: string | null;
+  confidence: number | null;
+  value_estimate: number | null;
+  last_activity_at: string;
+  contact_id: string | null;
+};
 
 export const listRecentDeals = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<{ deals: DealRow[] }> => {
     const wsId = await getCurrentWorkspaceId(
       context.supabase as unknown as SupabaseClient<Database>,
       context.userId,
     );
-    if (!wsId) return { deals: [] as Array<Record<string, unknown>> };
+    if (!wsId) return { deals: [] };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (context.supabase as any)
       .from("deals")
@@ -418,5 +438,5 @@ export const listRecentDeals = createServerFn({ method: "GET" })
       .eq("workspace_id", wsId)
       .order("last_activity_at", { ascending: false })
       .limit(50);
-    return { deals: (data ?? []) as Array<Record<string, unknown>> };
+    return { deals: (data ?? []) as DealRow[] };
   });
