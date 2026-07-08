@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Plug,
+  Radar,
   Settings,
   Shield,
   Sparkles,
