@@ -252,7 +252,9 @@ const ReplyInput = z.object({
 
 export const sendInstantlyReply = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ReplyInput.parse(raw))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    if (!isInstantlyAllowed(context.claims)) throw new Error("Not authorized for this integration");
+
     const res = await instantly<{ id?: string }>("/emails/reply", {
       method: "POST",
       body: {
