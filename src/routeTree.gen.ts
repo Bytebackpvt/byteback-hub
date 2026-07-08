@@ -41,6 +41,7 @@ import { Route as AuthenticatedAppNotificationsSettingsRouteImport } from './rou
 import { Route as AuthenticatedAppIntegrationsWebhooksRouteImport } from './routes/_authenticated/app.integrations.webhooks'
 import { Route as AuthenticatedAppIntegrationsConnectedRouteImport } from './routes/_authenticated/app.integrations.connected'
 import { Route as AuthenticatedAppIntegrationsProviderIdRouteImport } from './routes/_authenticated/app.integrations.$providerId'
+import { Route as ApiPublicOauthGmailCallbackRouteImport } from './routes/api/public/oauth.gmail.callback'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -211,6 +212,12 @@ const AuthenticatedAppIntegrationsProviderIdRoute =
     path: '/$providerId',
     getParentRoute: () => AuthenticatedAppIntegrationsRoute,
   } as any)
+const ApiPublicOauthGmailCallbackRoute =
+  ApiPublicOauthGmailCallbackRouteImport.update({
+    id: '/api/public/oauth/gmail/callback',
+    path: '/api/public/oauth/gmail/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
   '/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
+  '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -274,6 +282,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsIndexRoute
+  '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -309,6 +318,7 @@ export interface FileRoutesById {
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
   '/_authenticated/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
+  '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -344,6 +354,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
     | '/app/integrations/'
+    | '/api/public/oauth/gmail/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -374,6 +385,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
     | '/app/integrations'
+    | '/api/public/oauth/gmail/callback'
   id:
     | '__root__'
     | '/'
@@ -408,6 +420,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
     | '/_authenticated/app/integrations/'
+    | '/api/public/oauth/gmail/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -418,6 +431,7 @@ export interface RootRouteChildren {
   ApiPublicCronDailyDigestRoute: typeof ApiPublicCronDailyDigestRoute
   ApiPublicCronEscalateRoute: typeof ApiPublicCronEscalateRoute
   ApiPublicCronSyncRoute: typeof ApiPublicCronSyncRoute
+  ApiPublicOauthGmailCallbackRoute: typeof ApiPublicOauthGmailCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -646,6 +660,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIntegrationsProviderIdRouteImport
       parentRoute: typeof AuthenticatedAppIntegrationsRoute
     }
+    '/api/public/oauth/gmail/callback': {
+      id: '/api/public/oauth/gmail/callback'
+      path: '/api/public/oauth/gmail/callback'
+      fullPath: '/api/public/oauth/gmail/callback'
+      preLoaderRoute: typeof ApiPublicOauthGmailCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -766,6 +787,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronDailyDigestRoute: ApiPublicCronDailyDigestRoute,
   ApiPublicCronEscalateRoute: ApiPublicCronEscalateRoute,
   ApiPublicCronSyncRoute: ApiPublicCronSyncRoute,
+  ApiPublicOauthGmailCallbackRoute: ApiPublicOauthGmailCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
