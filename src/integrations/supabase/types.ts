@@ -658,27 +658,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      escalate_overdue_tasks: { Args: never; Returns: undefined }
-      has_workspace_role: {
-        Args: {
-          _roles: Database["public"]["Enums"]["workspace_role"][]
-          _user_id: string
-          _workspace_id: string
-        }
-        Returns: boolean
-      }
-      is_workspace_member: {
-        Args: { _user_id: string; _workspace_id: string }
-        Returns: boolean
-      }
-      my_workspace_role: {
-        Args: { _workspace_id: string }
-        Returns: Database["public"]["Enums"]["workspace_role"]
-      }
-      workspace_role_of: {
-        Args: { _user_id: string; _workspace_id: string }
-        Returns: Database["public"]["Enums"]["workspace_role"]
-      }
+      [_ in never]: never
     }
     Enums: {
       notification_kind:
