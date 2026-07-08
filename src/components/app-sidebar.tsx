@@ -49,6 +49,7 @@ const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string; tour
   { to: "/app/analytics", label: "Analytics", icon: BarChart3, tour: "nav-analytics" },
   { to: "/app/team", label: "Team", icon: Shield, tour: "nav-team" },
   { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
+  { to: "/app/email-sources", label: "Email Sources", icon: Mail, tour: "nav-email-sources" },
   { to: "/app/notifications", label: "Notifications", icon: Bell, tour: "nav-notifications" },
   { to: "/app/memory", label: "AI Memory", icon: Brain, tour: "nav-memory" },
   { to: "/app/help", label: "Help", icon: HelpCircle, tour: "nav-help" },

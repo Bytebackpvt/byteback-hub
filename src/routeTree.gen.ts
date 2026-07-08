@@ -34,6 +34,7 @@ import { Route as AuthenticatedAppHelpRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAppCrmRouteImport } from './routes/_authenticated/app.crm'
 import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authenticated/app.analytics'
 import { Route as AuthenticatedAppIntegrationsIndexRouteImport } from './routes/_authenticated/app.integrations.index'
+import { Route as ApiPublicInboundEmailRouteImport } from './routes/api/public/inbound.email'
 import { Route as ApiPublicCronSyncRouteImport } from './routes/api/public/cron.sync'
 import { Route as ApiPublicCronEscalateRouteImport } from './routes/api/public/cron.escalate'
 import { Route as ApiPublicCronDailyDigestRouteImport } from './routes/api/public/cron.daily-digest'
@@ -172,6 +173,11 @@ const AuthenticatedAppIntegrationsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedAppIntegrationsRoute,
   } as any)
+const ApiPublicInboundEmailRoute = ApiPublicInboundEmailRouteImport.update({
+  id: '/api/public/inbound/email',
+  path: '/api/public/inbound/email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronSyncRoute = ApiPublicCronSyncRouteImport.update({
   id: '/api/public/cron/sync',
   path: '/api/public/cron/sync',
@@ -250,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
+  '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
   '/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
@@ -281,6 +288,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
+  '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
@@ -317,6 +325,7 @@ export interface FileRoutesById {
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
+  '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
   '/_authenticated/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
@@ -353,6 +362,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
+    | '/api/public/inbound/email'
     | '/app/integrations/'
     | '/api/public/oauth/gmail/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -384,6 +394,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
+    | '/api/public/inbound/email'
     | '/app/integrations'
     | '/api/public/oauth/gmail/callback'
   id:
@@ -419,6 +430,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
+    | '/api/public/inbound/email'
     | '/_authenticated/app/integrations/'
     | '/api/public/oauth/gmail/callback'
   fileRoutesById: FileRoutesById
@@ -431,6 +443,7 @@ export interface RootRouteChildren {
   ApiPublicCronDailyDigestRoute: typeof ApiPublicCronDailyDigestRoute
   ApiPublicCronEscalateRoute: typeof ApiPublicCronEscalateRoute
   ApiPublicCronSyncRoute: typeof ApiPublicCronSyncRoute
+  ApiPublicInboundEmailRoute: typeof ApiPublicInboundEmailRoute
   ApiPublicOauthGmailCallbackRoute: typeof ApiPublicOauthGmailCallbackRoute
 }
 
@@ -611,6 +624,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIntegrationsIndexRouteImport
       parentRoute: typeof AuthenticatedAppIntegrationsRoute
     }
+    '/api/public/inbound/email': {
+      id: '/api/public/inbound/email'
+      path: '/api/public/inbound/email'
+      fullPath: '/api/public/inbound/email'
+      preLoaderRoute: typeof ApiPublicInboundEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/sync': {
       id: '/api/public/cron/sync'
       path: '/api/public/cron/sync'
@@ -787,6 +807,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronDailyDigestRoute: ApiPublicCronDailyDigestRoute,
   ApiPublicCronEscalateRoute: ApiPublicCronEscalateRoute,
   ApiPublicCronSyncRoute: ApiPublicCronSyncRoute,
+  ApiPublicInboundEmailRoute: ApiPublicInboundEmailRoute,
   ApiPublicOauthGmailCallbackRoute: ApiPublicOauthGmailCallbackRoute,
 }
 export const routeTree = rootRouteImport
