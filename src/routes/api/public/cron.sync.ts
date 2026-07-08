@@ -16,9 +16,16 @@ export const Route = createFileRoute("/api/public/cron/sync")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Accept either the shared cron secret (Bearer) or the project's
+        // publishable/anon key (apikey header — the pg_cron standard pattern).
         const auth = request.headers.get("authorization") ?? "";
-        const expected = `Bearer ${process.env.DIGEST_CRON_SECRET ?? ""}`;
-        if (!process.env.DIGEST_CRON_SECRET || auth !== expected) {
+        const apiKey = request.headers.get("apikey") ?? "";
+        const cronSecret = process.env.DIGEST_CRON_SECRET ?? "";
+        const publishable =
+          process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
+        const bearerOk = cronSecret && auth === `Bearer ${cronSecret}`;
+        const apiKeyOk = publishable && apiKey === publishable;
+        if (!bearerOk && !apiKeyOk) {
           return new Response("unauthorized", { status: 401 });
         }
 
