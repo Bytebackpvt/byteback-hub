@@ -4,7 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { getCurrentWorkspaceId } from "@/lib/workspace.functions";
-import { universalSearch, type SearchFilters, type SearchHit } from "@/lib/search.functions";
+import {
+  runUniversalSearch,
+  type SearchFilters,
+  type SearchHit,
+} from "@/lib/search.functions";
 
 export type SavedSearch = {
   id: string;
@@ -106,7 +110,7 @@ export const deleteSavedSearch = createServerFn({ method: "POST" })
   });
 
 const RunInput = z.object({ id: z.string().uuid() });
-/** Manually run a saved search and record newly-seen results as notifications. */
+/** Run a saved search and record newly-seen results as notifications. */
 export const runSavedSearchAlert = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => RunInput.parse(raw))
@@ -119,19 +123,20 @@ export const runSavedSearchAlert = createServerFn({ method: "POST" })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: row, error } = await (context.supabase as any)
       .from("saved_searches")
-      .select("id, query, filters, last_seen_ids")
+      .select("id, name, query, filters, last_seen_ids")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw error;
     if (!row) return { newCount: 0 };
 
-    // Run the search via the same server function (imported directly, not RPC).
-    // We must inline the search logic to reuse the authenticated supabase client.
     const filters = (row.filters ?? {}) as SearchFilters;
-    const { hits } = (await universalSearch.__executeHandler?.({
-      // Not available; fall through to a direct call.
-    } as never)) ?? { hits: [] as SearchHit[] };
-    // Fallback: call the plain internal by re-issuing SQL similar to search.functions.
+    const hits: SearchHit[] = await runUniversalSearch(
+      context.supabase,
+      workspaceId,
+      row.query as string,
+      filters,
+      true,
+    );
     const seen = new Set<string>((row.last_seen_ids ?? []) as string[]);
     const currentIds = hits.map((h) => `${h.type}:${h.id}`);
     const newHits = hits.filter((h) => !seen.has(`${h.type}:${h.id}`));
@@ -142,11 +147,11 @@ export const runSavedSearchAlert = createServerFn({ method: "POST" })
         newHits.slice(0, 5).map((h) => ({
           workspace_id: workspaceId,
           user_id: context.userId,
-          kind: "info" as const,
-          title: `🔔 Saved search "${row.query}" matched`,
-          body: h.title,
+          kind: "info",
+          title: `🔔 "${row.name}" matched`,
+          body: `${h.title} — ${h.reason}`,
           link: h.link,
-          meta: { savedSearchId: row.id, matchType: h.type, filters },
+          meta: { savedSearchId: row.id, matchType: h.type },
         })),
       );
     }
