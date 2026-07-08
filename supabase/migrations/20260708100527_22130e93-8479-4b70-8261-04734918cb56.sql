@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS notifications_workspace_kind_thread_key_uidx ON public.notifications (workspace_id, kind, thread_key) WHERE thread_key IS NOT NULL;
