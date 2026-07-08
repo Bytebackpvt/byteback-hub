@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "@tanstack/react-router";
 import { X, ArrowRight, ArrowLeft } from "lucide-react";
@@ -115,20 +115,19 @@ export function GuidedTour({ open, onClose }: { open: boolean; onClose: () => vo
     };
   }, [open, step, index]);
 
-  if (!open || typeof document === "undefined") return null;
-
-  const complete = () => {
+  const complete = useCallback(() => {
     try {
       localStorage.setItem(TOUR_KEY, "1");
     } catch {}
     onClose();
-  };
+  }, [onClose]);
 
-  const next = () => {
+  const next = useCallback(() => {
     if (index >= STEPS.length - 1) return complete();
     setIndex((i) => i + 1);
-  };
-  const prev = () => setIndex((i) => Math.max(0, i - 1));
+  }, [complete, index]);
+
+  const prev = useCallback(() => setIndex((i) => Math.max(0, i - 1)), []);
 
   // Keyboard nav: Escape to close, ArrowRight/ArrowLeft to step
   useEffect(() => {
@@ -147,8 +146,9 @@ export function GuidedTour({ open, onClose }: { open: boolean; onClose: () => vo
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, index]);
+  }, [complete, next, open, prev]);
+
+  if (!open || typeof document === "undefined") return null;
 
 
   const pad = 8;
