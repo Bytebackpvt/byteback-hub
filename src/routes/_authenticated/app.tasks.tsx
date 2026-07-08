@@ -101,6 +101,17 @@ function TasksPage() {
       );
       return { prev };
     },
+    onSuccess: (_r, input) => {
+      if (input.done) {
+        toast.success("Task completed", {
+          description: "Moved to the Completed section below.",
+          action: {
+            label: "Undo",
+            onClick: () => toggleMut.mutate({ id: input.id, done: false }),
+          },
+        });
+      }
+    },
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(["tasks"], ctx.prev);
       toast.error("Could not update task");
