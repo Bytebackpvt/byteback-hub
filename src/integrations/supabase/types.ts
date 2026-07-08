@@ -152,6 +152,90 @@ export type Database = {
           },
         ]
       }
+      integration_catalog: {
+        Row: {
+          auth_type: string
+          category: string
+          created_at: string
+          docs_url: string | null
+          id: string
+          logo_slug: string | null
+          name: string
+          sort_order: number
+          status: string
+          tagline: string
+          updated_at: string
+        }
+        Insert: {
+          auth_type?: string
+          category: string
+          created_at?: string
+          docs_url?: string | null
+          id: string
+          logo_slug?: string | null
+          name: string
+          sort_order?: number
+          status?: string
+          tagline: string
+          updated_at?: string
+        }
+        Update: {
+          auth_type?: string
+          category?: string
+          created_at?: string
+          docs_url?: string | null
+          id?: string
+          logo_slug?: string | null
+          name?: string
+          sort_order?: number
+          status?: string
+          tagline?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      integration_requests: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          provider_id: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          provider_id: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          provider_id?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_requests_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "integration_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_requests_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_scores: {
         Row: {
           created_at: string
@@ -514,8 +598,13 @@ export type Database = {
           config: Json
           created_at: string
           created_by: string | null
+          health_status: string
           id: string
           label: string | null
+          last_error_at: string | null
+          last_error_msg: string | null
+          last_sync_at: string | null
+          mailbox_count: number
           provider: string
           secret: string | null
           status: string
@@ -526,8 +615,13 @@ export type Database = {
           config?: Json
           created_at?: string
           created_by?: string | null
+          health_status?: string
           id?: string
           label?: string | null
+          last_error_at?: string | null
+          last_error_msg?: string | null
+          last_sync_at?: string | null
+          mailbox_count?: number
           provider: string
           secret?: string | null
           status?: string
@@ -538,8 +632,13 @@ export type Database = {
           config?: Json
           created_at?: string
           created_by?: string | null
+          health_status?: string
           id?: string
           label?: string | null
+          last_error_at?: string | null
+          last_error_msg?: string | null
+          last_sync_at?: string | null
+          mailbox_count?: number
           provider?: string
           secret?: string | null
           status?: string

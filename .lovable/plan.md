@@ -1,52 +1,152 @@
-## Phase 2E — Gmail (read + send), per user
+# Phase 3 Build Plan — ByteBack AI Sales Command Center
 
-Each user of your app needs to connect **their own** Gmail (not yours), so I'll build a custom Google OAuth flow. The Lovable Gmail connector goes to your account only, so it's not the right fit.
+Scope is huge — shipping in **3 sequential milestones** (approx 1 week each). Each milestone leaves the app in a sellable, working state. Audit-fixes are folded into whatever milestone touches that surface.
 
-## What I'll ship this turn
+---
 
-### 1. Generic OAuth connections framework
-New table `oauth_connections` (workspace + user scoped) with columns for provider, account email, encrypted `access_token` / `refresh_token`, `expires_at`, granted `scopes`, `status`. RLS: users manage only their own rows; service role for the refresh worker. Tokens encrypted with `pgcrypto` using a `TOKEN_ENC_KEY` secret so a leaked DB row can't be replayed.
+## Milestone 1 — Integration Marketplace (Catalog + Real Google/Webhook)
 
-### 2. Google OAuth wiring
-- Public route `src/routes/api/public/oauth.google.callback.ts` — receives `?code`, exchanges for tokens, stores encrypted, redirects back to `/app/integrations?connected=gmail`.
-- Server fn `startGoogleOAuth` — returns the Google consent URL with `state` (signed HMAC of user + workspace + nonce) and scopes `gmail.readonly`, `gmail.send`, `gmail.modify`, `userinfo.email`.
-- Server fn `refreshGoogleToken` — refreshes when `expires_at` is near.
-- Server fn `disconnectGoogle` — revokes at Google + deletes row.
+**Goal:** `/app/integrations/marketplace` looks like Stripe/Linear/Notion. Every provider you listed is *visible*, but only Google Workspace + Webhook actually connect. Every other card = "Request early access" (adds row to `integration_requests` — real waitlist, not fake).
 
-### 3. Gmail server functions
-- `listGmailThreads({ mailbox })` — recent inbox threads with subject/from/snippet.
-- `getGmailThread({ id })` — full message bodies + headers.
-- `sendGmailReply({ threadId, to, subject, body, inReplyTo })` — builds RFC 2822, base64url, `POST /messages/send`.
-- `markGmailRead({ id })` — removes `UNREAD` label.
+### New pages
+1. **`/app/integrations/marketplace`** — Search bar, category sidebar (Email, Cold Email, CRM, Chat, Calendar, Storage, AI, Automation), grid of provider cards. Each card: logo, name, tagline, category, status pill.
+2. **`/app/integrations/marketplace/$providerId`** — Detail drawer: description, permissions, "Connect" (OAuth) or "Join waitlist" button, docs link.
+3. **`/app/integrations/connected`** — "Connected Accounts" dashboard. Grouped by provider. Per-connection: health dot (green/yellow/red), last sync, mailbox count, sync status, errors, Reconnect/Disconnect buttons.
 
-All call the Gmail REST API directly with the user's own access token, auto-refresh on 401.
+### Backend
+- New table `integration_catalog` (seeded via migration): id, name, category, logo_url, tagline, oauth_supported, status ('live'|'beta'|'coming_soon'), auth_type.
+- New table `integration_requests`: workspace_id, user_id, provider_id, created_at (dedup on workspace+provider).
+- Extend `oauth_connections` view: last_sync_at, last_error, health_status, mailbox_count.
+- Server fns: `listCatalog`, `listConnected`, `requestIntegration`, `reconnectIntegration`, `disconnectIntegration`, `getConnectionHealth`.
 
-### 4. UI on the Integrations page
-Gmail card flips from "Coming soon" → "Connect Gmail" (opens Google consent in new tab). Once connected shows account email, "Test send", "Disconnect".
+### Real integrations wired in this milestone
+- **Google Workspace / Gmail** — reuse existing OAuth flow.
+- **Instantly.ai** — already connected via API key; surface as "Connected" card.
+- **Webhook / REST** — generate per-workspace webhook URL + signing secret (`generate_secret`).
 
-### 5. Inbox integration
-When a Gmail connection exists, Inbox surfaces a **Gmail** mailbox alongside Instantly — reads real threads, reply composer sends via `sendGmailReply`.
+### Audit fixes folded in
+- Sidebar "Integrations" link points to new marketplace.
+- Remove/repurpose stale "coming soon" chips on old integrations page.
+- Fix onboarding invite email flow (verify `workspace_invites` accept path works end-to-end).
 
-## What you'll need to provide
+---
 
-Google OAuth client credentials from Google Cloud Console:
-- `GOOGLE_OAUTH_CLIENT_ID`
-- `GOOGLE_OAUTH_CLIENT_SECRET`
-- Authorized redirect URI to paste into Google console:
-  `https://project--cc239d7b-1706-4226-973f-f2f4c63de486.lovable.app/api/public/oauth/google/callback`
+## Milestone 2 — AI Follow-up Engine + Notification Center
 
-I'll also auto-generate a `TOKEN_ENC_KEY` (never leaves the server).
+**Goal:** No hot lead ever forgotten. Full loop: mark lead → schedule reminder → notify across channels → auto-escalate.
 
-## Technical notes (safe to skip)
+### Flow
+1. On any lead classification change (Hot/Warm/Cold/Won/Lost/Hold) → modal appears: "When should I remind you?" with quick options (30m, 1h, 2h, Tomorrow 9am, Next Week, Custom, No reminder).
+2. Creates row in `tasks` (already exists) + `notifications` row + schedules delivery.
+3. Delivery workers: browser push (web-push), in-app toast, email (Resend — key present), Slack DM (only if Slack connected — otherwise skipped, not fake).
+4. **Auto-escalation cron** (`pg_cron` every 10 min, calling `/api/public/hooks/escalate`): if reminder ignored past due time, priority bumped, second notification fires.
 
-- OAuth `state` = HMAC(`user_id|workspace_id|nonce|ts`, `SESSION_SECRET`) with 10-minute TTL to prevent CSRF and cross-workspace binding.
-- Refresh happens lazily inside each Gmail server fn: if `expires_at - now < 60s`, refresh, save, retry once on 401.
-- Token encryption uses `pgcrypto.pgp_sym_encrypt(token, key)`; migration installs the extension in the `extensions` schema (Supabase default).
-- The framework table is generic enough to plug in Outlook, Slack, HubSpot next turn — only the provider-specific server fns and callback change.
+### Notification Center redesign (`/app/notifications`)
+- Categorized tabs: New Reply, Hot Lead, Demo, Pricing, Pickup, Meeting, Reminder, Follow-up, System, Integration Error.
+- Per-item quick actions: Open Lead, Reply, Assign, Snooze (30m/1h/tomorrow), Archive, Complete.
+- Unread count in sidebar badge (real, not mock).
 
-## Out of scope this turn
+### Backend
+- New table `reminders`: task_id, lead_id, workspace_id, due_at, channels (jsonb), status, escalation_level.
+- New table `push_subscriptions` (browser push endpoint + keys per user).
+- Extend `notifications` with `category`, `snoozed_until`, `action_url`.
+- Server fns: `scheduleReminder`, `snoozeNotification`, `dispatchReminder` (server-side), `subscribePush`.
+- pg_cron job: escalate overdue reminders every 10 min.
 
-- Outlook, Slack, HubSpot (framework will support them; next turn).
-- Realtime push (Gmail `watch` + Pub/Sub) — we'll poll on inbox open first.
+### Audit fixes folded in
+- Dashboard priority action rows (Task/Reply/Followup) → wire to real tasks/notifications data instead of mock counts.
+- Tasks page: complete `onSuccess` UX already partial (undo toast).
 
-Ready? Say **go** and I'll start with the migration + secret request.
+---
+
+## Milestone 3 — AI Opportunity Radar + Universal Search + AI Memory (pgvector)
+
+**Goal:** The "AI Sales Command Center" USP. One-line summary at top of dashboard: *"You have 3 Hot Leads unreplied 2h+, potential ₹18.5L."*
+
+### Opportunity Radar (`/app/radar` + dashboard hero card)
+- Cron every 10 min scans all connected mailboxes (via Instantly API + Gmail sync).
+- Categorizes new/unactioned emails into: Hot unreplied, Warm, Demo request, Pricing request, Pickup, Meeting-to-schedule, Follow-up overdue, Lost opportunity.
+- Each row: contact, company, subject, waited time, AI-estimated value, action buttons (Reply, Snooze, Assign).
+- Dashboard hero summary sentence generated from aggregate.
+
+### AI Sync Engine (per-email pipeline)
+Triggered on new email webhook / Instantly poll:
+1. Fetch → 2. AI classify (Lovable AI Gateway, `google/gemini-3-flash-preview`) → 3. Extract summary/intent/sentiment/buying-intent/urgency/customer-value/lead-temp/suggested-reply/next-action/risk/close-probability → 4. Upsert `contacts` + `companies` + `deals` + `timeline_events` → 5. Create `notification` if Hot/Demo/Pricing → 6. Create follow-up task → 7. Store embedding in pgvector for memory.
+
+### AI Memory (pgvector)
+- Enable `pgvector` extension.
+- New table `email_embeddings`: id, workspace_id, contact_id, email_id, content, embedding vector(3072), metadata jsonb, created_at. HNSW halfvec index.
+- Embed via `google/gemini-embedding-001` on every synced email.
+- `match_context(contact_id, query_embedding, k)` SQL function.
+- When AI drafts a reply or radar summary, pull top-5 relevant past emails as context. Enables prompts like *"customer asked pricing 17 days ago and requested demo yesterday"* — computed from real embeddings + metadata.
+
+### Universal Search (`Cmd+K` global + `/app/search`)
+- One search bar. Backend: parallel query across `emails`, `contacts`, `companies`, `deals`, `tasks`, `notifications` (Postgres FTS) + semantic search over `email_embeddings` (pgvector).
+- Natural language queries mapped to filters via LLM: "Show all Hot Leads", "leads waiting >48h reply", "GreenSpark leads" → structured filter → results.
+- Result groups by entity type.
+
+### Universal AI Inbox (`/app/inbox`)
+- Merges Gmail + Instantly emails into single view. Columns: Company, Person, Subject, Priority, AI Classification, Mailbox, Platform badge, Assigned User.
+- Filters, bulk actions, keyboard shortcuts (j/k/e/r like Superhuman).
+
+### Product Intelligence Dashboard (`/app/analytics/health`)
+- Missed leads, avg reply time, lost opps, fastest/slowest responder, best/worst campaign, mailbox health.
+- One AI-generated insight card at top: *"You missed 4 Hot Leads this week."*
+
+---
+
+## Cross-cutting audit pass (executed inline in above milestones)
+
+Every touched surface gets these checks:
+- Every button either works or is removed (no dead affordances).
+- Every list clicks through to a real detail page.
+- Empty states have real CTAs.
+- Loading + error + not-found states for every route with a loader.
+- Sign-up → workspace create → invite teammate → connect first integration flow works end-to-end.
+
+Anything found that isn't in a milestone above gets logged for Phase 4 rather than half-fixed.
+
+---
+
+## Technical section
+
+**Stack decisions:**
+- All AI via Lovable AI Gateway (`google/gemini-3-flash-preview` for chat, `google/gemini-embedding-001` for embeddings, 3072-dim `vector` column with halfvec HNSW index).
+- Every server fn touching AI or external APIs uses `requireSupabaseAuth` (fixes security memory open findings simultaneously).
+- Cron endpoints under `/api/public/hooks/*` with HMAC verification.
+- Browser push via VAPID keys (`generate_secret` VAPID_PRIVATE_KEY).
+- All new tables: RLS enabled, GRANT to authenticated + service_role, workspace_id scoping via `has_role`/workspace membership.
+- Realtime channels for notifications + radar updates.
+
+**New Supabase tables (rough):**
+```text
+integration_catalog       (seed data, public read)
+integration_requests      (waitlist)
+reminders                 (scheduled + escalation)
+push_subscriptions        (per-user endpoints)
+email_embeddings          (pgvector 3072)
+timeline_events           (unified activity log)
+ai_insights_cache         (radar snapshots, refreshed by cron)
+```
+
+**Cron jobs (pg_cron + pg_net):**
+- `radar-scan` every 10 min → `/api/public/hooks/radar-scan`
+- `reminder-dispatch` every 1 min → `/api/public/hooks/dispatch-reminders`
+- `reminder-escalate` every 10 min → `/api/public/hooks/escalate`
+- `instantly-sync` every 5 min → `/api/public/hooks/instantly-sync`
+
+**Secrets needed (auto or generated, no user input for these):**
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (generate_secret)
+- `WEBHOOK_SIGNING_SECRET` (generate_secret)
+- Existing: LOVABLE_API_KEY, INSTANTLY_API_KEY, RESEND_API_KEY ✓
+
+**Milestone size estimate:**
+- M1: ~15 files, 2 migrations, 1 cron
+- M2: ~20 files, 3 migrations, 2 crons, push infra
+- M3: ~30 files, 4 migrations (incl. pgvector), 2 crons, embedding pipeline, radar UI, search UI, memory RAG
+
+---
+
+## Confirm before I start
+
+Reply **"start M1"** to begin Milestone 1 (Marketplace). Or say which milestone to start with — they're independent enough that I can do them in any order, but M1 gives the most immediate "wow" for demos.

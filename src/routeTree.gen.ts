@@ -30,8 +30,12 @@ import { Route as AuthenticatedAppInboxRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppHelpRouteImport } from './routes/_authenticated/app.help'
 import { Route as AuthenticatedAppCrmRouteImport } from './routes/_authenticated/app.crm'
 import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authenticated/app.analytics'
+import { Route as AuthenticatedAppIntegrationsIndexRouteImport } from './routes/_authenticated/app.integrations.index'
 import { Route as ApiPublicCronEscalateRouteImport } from './routes/api/public/cron.escalate'
 import { Route as ApiPublicCronDailyDigestRouteImport } from './routes/api/public/cron.daily-digest'
+import { Route as AuthenticatedAppIntegrationsWebhooksRouteImport } from './routes/_authenticated/app.integrations.webhooks'
+import { Route as AuthenticatedAppIntegrationsConnectedRouteImport } from './routes/_authenticated/app.integrations.connected'
+import { Route as AuthenticatedAppIntegrationsProviderIdRouteImport } from './routes/_authenticated/app.integrations.$providerId'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -141,6 +145,12 @@ const AuthenticatedAppAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppIntegrationsIndexRoute =
+  AuthenticatedAppIntegrationsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAppIntegrationsRoute,
+  } as any)
 const ApiPublicCronEscalateRoute = ApiPublicCronEscalateRouteImport.update({
   id: '/api/public/cron/escalate',
   path: '/api/public/cron/escalate',
@@ -151,6 +161,24 @@ const ApiPublicCronDailyDigestRoute =
     id: '/api/public/cron/daily-digest',
     path: '/api/public/cron/daily-digest',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedAppIntegrationsWebhooksRoute =
+  AuthenticatedAppIntegrationsWebhooksRouteImport.update({
+    id: '/webhooks',
+    path: '/webhooks',
+    getParentRoute: () => AuthenticatedAppIntegrationsRoute,
+  } as any)
+const AuthenticatedAppIntegrationsConnectedRoute =
+  AuthenticatedAppIntegrationsConnectedRouteImport.update({
+    id: '/connected',
+    path: '/connected',
+    getParentRoute: () => AuthenticatedAppIntegrationsRoute,
+  } as any)
+const AuthenticatedAppIntegrationsProviderIdRoute =
+  AuthenticatedAppIntegrationsProviderIdRouteImport.update({
+    id: '/$providerId',
+    path: '/$providerId',
+    getParentRoute: () => AuthenticatedAppIntegrationsRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -168,14 +196,18 @@ export interface FileRoutesByFullPath {
   '/app/crm': typeof AuthenticatedAppCrmRoute
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
-  '/app/integrations': typeof AuthenticatedAppIntegrationsRoute
+  '/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
   '/app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/integrations/$providerId': typeof AuthenticatedAppIntegrationsProviderIdRoute
+  '/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
+  '/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
+  '/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -190,14 +222,17 @@ export interface FileRoutesByTo {
   '/app/crm': typeof AuthenticatedAppCrmRoute
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
-  '/app/integrations': typeof AuthenticatedAppIntegrationsRoute
   '/app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/integrations/$providerId': typeof AuthenticatedAppIntegrationsProviderIdRoute
+  '/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
+  '/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
+  '/app/integrations': typeof AuthenticatedAppIntegrationsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -216,14 +251,18 @@ export interface FileRoutesById {
   '/_authenticated/app/crm': typeof AuthenticatedAppCrmRoute
   '/_authenticated/app/help': typeof AuthenticatedAppHelpRoute
   '/_authenticated/app/inbox': typeof AuthenticatedAppInboxRoute
-  '/_authenticated/app/integrations': typeof AuthenticatedAppIntegrationsRoute
+  '/_authenticated/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
   '/_authenticated/app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/_authenticated/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/_authenticated/app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/app/team': typeof AuthenticatedAppTeamRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/integrations/$providerId': typeof AuthenticatedAppIntegrationsProviderIdRoute
+  '/_authenticated/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
+  '/_authenticated/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
+  '/_authenticated/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -248,8 +287,12 @@ export interface FileRouteTypes {
     | '/app/tasks'
     | '/app/team'
     | '/app/'
+    | '/app/integrations/$providerId'
+    | '/app/integrations/connected'
+    | '/app/integrations/webhooks'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
+    | '/app/integrations/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -264,14 +307,17 @@ export interface FileRouteTypes {
     | '/app/crm'
     | '/app/help'
     | '/app/inbox'
-    | '/app/integrations'
     | '/app/notifications'
     | '/app/pipeline'
     | '/app/tasks'
     | '/app/team'
     | '/app'
+    | '/app/integrations/$providerId'
+    | '/app/integrations/connected'
+    | '/app/integrations/webhooks'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
+    | '/app/integrations'
   id:
     | '__root__'
     | '/'
@@ -295,8 +341,12 @@ export interface FileRouteTypes {
     | '/_authenticated/app/tasks'
     | '/_authenticated/app/team'
     | '/_authenticated/app/'
+    | '/_authenticated/app/integrations/$providerId'
+    | '/_authenticated/app/integrations/connected'
+    | '/_authenticated/app/integrations/webhooks'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
+    | '/_authenticated/app/integrations/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -457,6 +507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppAnalyticsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/integrations/': {
+      id: '/_authenticated/app/integrations/'
+      path: '/'
+      fullPath: '/app/integrations/'
+      preLoaderRoute: typeof AuthenticatedAppIntegrationsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppIntegrationsRoute
+    }
     '/api/public/cron/escalate': {
       id: '/api/public/cron/escalate'
       path: '/api/public/cron/escalate'
@@ -471,15 +528,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronDailyDigestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app/integrations/webhooks': {
+      id: '/_authenticated/app/integrations/webhooks'
+      path: '/webhooks'
+      fullPath: '/app/integrations/webhooks'
+      preLoaderRoute: typeof AuthenticatedAppIntegrationsWebhooksRouteImport
+      parentRoute: typeof AuthenticatedAppIntegrationsRoute
+    }
+    '/_authenticated/app/integrations/connected': {
+      id: '/_authenticated/app/integrations/connected'
+      path: '/connected'
+      fullPath: '/app/integrations/connected'
+      preLoaderRoute: typeof AuthenticatedAppIntegrationsConnectedRouteImport
+      parentRoute: typeof AuthenticatedAppIntegrationsRoute
+    }
+    '/_authenticated/app/integrations/$providerId': {
+      id: '/_authenticated/app/integrations/$providerId'
+      path: '/$providerId'
+      fullPath: '/app/integrations/$providerId'
+      preLoaderRoute: typeof AuthenticatedAppIntegrationsProviderIdRouteImport
+      parentRoute: typeof AuthenticatedAppIntegrationsRoute
+    }
   }
 }
+
+interface AuthenticatedAppIntegrationsRouteChildren {
+  AuthenticatedAppIntegrationsProviderIdRoute: typeof AuthenticatedAppIntegrationsProviderIdRoute
+  AuthenticatedAppIntegrationsConnectedRoute: typeof AuthenticatedAppIntegrationsConnectedRoute
+  AuthenticatedAppIntegrationsWebhooksRoute: typeof AuthenticatedAppIntegrationsWebhooksRoute
+  AuthenticatedAppIntegrationsIndexRoute: typeof AuthenticatedAppIntegrationsIndexRoute
+}
+
+const AuthenticatedAppIntegrationsRouteChildren: AuthenticatedAppIntegrationsRouteChildren =
+  {
+    AuthenticatedAppIntegrationsProviderIdRoute:
+      AuthenticatedAppIntegrationsProviderIdRoute,
+    AuthenticatedAppIntegrationsConnectedRoute:
+      AuthenticatedAppIntegrationsConnectedRoute,
+    AuthenticatedAppIntegrationsWebhooksRoute:
+      AuthenticatedAppIntegrationsWebhooksRoute,
+    AuthenticatedAppIntegrationsIndexRoute:
+      AuthenticatedAppIntegrationsIndexRoute,
+  }
+
+const AuthenticatedAppIntegrationsRouteWithChildren =
+  AuthenticatedAppIntegrationsRoute._addFileChildren(
+    AuthenticatedAppIntegrationsRouteChildren,
+  )
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAnalyticsRoute: typeof AuthenticatedAppAnalyticsRoute
   AuthenticatedAppCrmRoute: typeof AuthenticatedAppCrmRoute
   AuthenticatedAppHelpRoute: typeof AuthenticatedAppHelpRoute
   AuthenticatedAppInboxRoute: typeof AuthenticatedAppInboxRoute
-  AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRoute
+  AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRouteWithChildren
   AuthenticatedAppNotificationsRoute: typeof AuthenticatedAppNotificationsRoute
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
   AuthenticatedAppTasksRoute: typeof AuthenticatedAppTasksRoute
@@ -492,7 +594,8 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppCrmRoute: AuthenticatedAppCrmRoute,
   AuthenticatedAppHelpRoute: AuthenticatedAppHelpRoute,
   AuthenticatedAppInboxRoute: AuthenticatedAppInboxRoute,
-  AuthenticatedAppIntegrationsRoute: AuthenticatedAppIntegrationsRoute,
+  AuthenticatedAppIntegrationsRoute:
+    AuthenticatedAppIntegrationsRouteWithChildren,
   AuthenticatedAppNotificationsRoute: AuthenticatedAppNotificationsRoute,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
   AuthenticatedAppTasksRoute: AuthenticatedAppTasksRoute,
@@ -547,3 +650,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
