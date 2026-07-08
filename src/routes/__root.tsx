@@ -103,18 +103,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "AI-powered unified inbox for cold email teams. Connect unlimited mailboxes, classify replies, and reply faster.",
+          "The AI-powered unified inbox for B2B outreach teams. Connect unlimited email accounts across every domain, auto-classify replies, and never miss another lead.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       {
         name: "twitter:title",
-        content: "ByteBack Inbox AI",
+        content: "ByteBack Inbox AI — One Inbox. Every Lead. Zero Missed Opportunities.",
       },
       {
         name: "twitter:description",
-        content: "One inbox. Every lead. Zero missed opportunities.",
+        content: "The AI-powered unified inbox for B2B outreach teams. Connect unlimited email accounts across every domain, auto-classify replies, and never miss another lead.",
       },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/d28996bd-e557-4a2b-a974-96e2b2d3b94e" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/d28996bd-e557-4a2b-a974-96e2b2d3b94e" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
