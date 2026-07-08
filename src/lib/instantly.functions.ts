@@ -171,7 +171,11 @@ function priorityFrom(cat: InstantlyThread["category"], interest?: number): Inst
   return "low";
 }
 
-export const listInstantlyThreads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
+export const listInstantlyThreads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  if (!isInstantlyAllowed(context.claims)) {
+    return { threads: [] as InstantlyThread[], connected: false as const, error: "Not connected" };
+  }
+
   try {
     const data = await instantly<{ items?: RawEmail[] }>("/emails", {
       query: { limit: 50, email_type: "received" },
