@@ -37,6 +37,13 @@ function DashboardPage() {
   const callAnalytics = useServerFn(getInstantlyAnalytics);
   const callTasks = useServerFn(listTasks);
   const callBriefing = useServerFn(generatePriorityActions);
+  const callRadar = useServerFn(getRadarSummary);
+
+  const radarQuery = useQuery({
+    queryKey: ["radar", "summary"],
+    queryFn: () => callRadar(),
+    staleTime: 60_000,
+  });
 
   const threadsQuery = useQuery({
     queryKey: ["instantly", "threads"],
