@@ -400,7 +400,11 @@ type DailyRow = {
   clicks?: number;
 };
 
-export const getInstantlyAnalytics = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
+export const getInstantlyAnalytics = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  if (!isInstantlyAllowed(context.claims)) {
+    return { connected: false as const, error: "Not connected" };
+  }
+
   try {
     const [overview, dailyRes, leadsRes] = await Promise.all([
       instantly<OverviewResponse>("/campaigns/analytics/overview"),
