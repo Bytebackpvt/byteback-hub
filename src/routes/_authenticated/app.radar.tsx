@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   AlarmClock,
   Calendar,
@@ -16,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getRadarSummary, type RadarBucket } from "@/lib/radar.functions";
+import { getRadarSummary, type RadarBucket, type RadarBucketKey } from "@/lib/radar.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/radar")({
@@ -55,15 +56,51 @@ const TONE_CLASS: Record<RadarBucket["tone"], string> = {
   neutral: "border-border/60 bg-card",
 };
 
+const TIME_RANGES: { label: string; hours: number | undefined }[] = [
+  { label: "All", hours: undefined },
+  { label: "24h", hours: 24 },
+  { label: "3d", hours: 72 },
+  { label: "7d", hours: 168 },
+  { label: "30d", hours: 720 },
+];
+
+const BUCKET_FILTERS: { key: RadarBucketKey; label: string }[] = [
+  { key: "hot_unreplied", label: "Hot" },
+  { key: "demo_requests", label: "Demos" },
+  { key: "pricing_requests", label: "Pricing" },
+  { key: "meetings_to_schedule", label: "Meetings" },
+  { key: "warm", label: "Warm" },
+  { key: "pickup", label: "Pickup" },
+  { key: "followups_overdue", label: "Overdue" },
+  { key: "lost", label: "Lost" },
+];
+
 function RadarPage() {
+  const [sinceHours, setSinceHours] = useState<number | undefined>(undefined);
+  const [selected, setSelected] = useState<Set<RadarBucketKey>>(new Set());
   const call = useServerFn(getRadarSummary);
   const q = useQuery({
-    queryKey: ["radar", "summary"],
-    queryFn: () => call(),
+    queryKey: ["radar", "summary", sinceHours, Array.from(selected).sort().join(",")],
+    queryFn: () =>
+      call({
+        data: {
+          sinceHours,
+          buckets: selected.size ? Array.from(selected) : undefined,
+        },
+      }),
     staleTime: 60_000,
   });
 
   const s = q.data?.summary;
+
+  function toggle(key: RadarBucketKey) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
@@ -85,6 +122,48 @@ function RadarPage() {
           Rescan
         </Button>
       </header>
+
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-card p-3">
+        <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Recency
+        </span>
+        {TIME_RANGES.map((r) => (
+          <Button
+            key={r.label}
+            size="sm"
+            variant={sinceHours === r.hours ? "default" : "outline"}
+            className="h-7 px-2 text-xs"
+            onClick={() => setSinceHours(r.hours)}
+          >
+            {r.label}
+          </Button>
+        ))}
+        <span className="mx-2 h-4 w-px bg-border" />
+        <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Sources
+        </span>
+        {BUCKET_FILTERS.map((b) => (
+          <Button
+            key={b.key}
+            size="sm"
+            variant={selected.has(b.key) ? "default" : "outline"}
+            className="h-7 px-2 text-xs"
+            onClick={() => toggle(b.key)}
+          >
+            {b.label}
+          </Button>
+        ))}
+        {selected.size > 0 && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2 text-xs"
+            onClick={() => setSelected(new Set())}
+          >
+            Clear
+          </Button>
+        )}
+      </div>
 
       <section className="rounded-2xl border border-brand/40 bg-gradient-to-br from-brand/15 via-brand/5 to-transparent p-6">
         {q.isLoading ? (
@@ -120,7 +199,7 @@ function RadarPage() {
       {!q.isLoading && (s?.buckets.length ?? 0) === 0 ? (
         <div className="rounded-2xl border border-dashed border-border/70 p-10 text-center">
           <p className="text-sm text-muted-foreground">
-            No open opportunities detected. Connect a mailbox or wait for new activity.
+            No open opportunities in this range. Widen the filters or connect a mailbox.
           </p>
           <Button asChild variant="outline" size="sm" className="mt-3">
             <Link to="/app/integrations">Connect an inbox</Link>

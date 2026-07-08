@@ -27,6 +27,7 @@ import { Route as AuthenticatedAppSearchRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAppRadarRouteImport } from './routes/_authenticated/app.radar'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/app.pipeline'
 import { Route as AuthenticatedAppNotificationsRouteImport } from './routes/_authenticated/app.notifications'
+import { Route as AuthenticatedAppMemoryRouteImport } from './routes/_authenticated/app.memory'
 import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_authenticated/app.integrations'
 import { Route as AuthenticatedAppInboxRouteImport } from './routes/_authenticated/app.inbox'
 import { Route as AuthenticatedAppHelpRouteImport } from './routes/_authenticated/app.help'
@@ -131,6 +132,11 @@ const AuthenticatedAppNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppMemoryRoute = AuthenticatedAppMemoryRouteImport.update({
+  id: '/memory',
+  path: '/memory',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppIntegrationsRoute =
   AuthenticatedAppIntegrationsRouteImport.update({
     id: '/integrations',
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
+  '/app/memory': typeof AuthenticatedAppMemoryRoute
   '/app/notifications': typeof AuthenticatedAppNotificationsRouteWithChildren
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/radar': typeof AuthenticatedAppRadarRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/app/crm': typeof AuthenticatedAppCrmRoute
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
+  '/app/memory': typeof AuthenticatedAppMemoryRoute
   '/app/notifications': typeof AuthenticatedAppNotificationsRouteWithChildren
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/radar': typeof AuthenticatedAppRadarRoute
@@ -277,6 +285,7 @@ export interface FileRoutesById {
   '/_authenticated/app/help': typeof AuthenticatedAppHelpRoute
   '/_authenticated/app/inbox': typeof AuthenticatedAppInboxRoute
   '/_authenticated/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
+  '/_authenticated/app/memory': typeof AuthenticatedAppMemoryRoute
   '/_authenticated/app/notifications': typeof AuthenticatedAppNotificationsRouteWithChildren
   '/_authenticated/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/_authenticated/app/radar': typeof AuthenticatedAppRadarRoute
@@ -310,6 +319,7 @@ export interface FileRouteTypes {
     | '/app/help'
     | '/app/inbox'
     | '/app/integrations'
+    | '/app/memory'
     | '/app/notifications'
     | '/app/pipeline'
     | '/app/radar'
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/app/crm'
     | '/app/help'
     | '/app/inbox'
+    | '/app/memory'
     | '/app/notifications'
     | '/app/pipeline'
     | '/app/radar'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/help'
     | '/_authenticated/app/inbox'
     | '/_authenticated/app/integrations'
+    | '/_authenticated/app/memory'
     | '/_authenticated/app/notifications'
     | '/_authenticated/app/pipeline'
     | '/_authenticated/app/radar'
@@ -523,6 +535,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppNotificationsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/memory': {
+      id: '/_authenticated/app/memory'
+      path: '/memory'
+      fullPath: '/app/memory'
+      preLoaderRoute: typeof AuthenticatedAppMemoryRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/integrations': {
       id: '/_authenticated/app/integrations'
       path: '/integrations'
@@ -655,6 +674,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppHelpRoute: typeof AuthenticatedAppHelpRoute
   AuthenticatedAppInboxRoute: typeof AuthenticatedAppInboxRoute
   AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRouteWithChildren
+  AuthenticatedAppMemoryRoute: typeof AuthenticatedAppMemoryRoute
   AuthenticatedAppNotificationsRoute: typeof AuthenticatedAppNotificationsRouteWithChildren
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
   AuthenticatedAppRadarRoute: typeof AuthenticatedAppRadarRoute
@@ -671,6 +691,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppInboxRoute: AuthenticatedAppInboxRoute,
   AuthenticatedAppIntegrationsRoute:
     AuthenticatedAppIntegrationsRouteWithChildren,
+  AuthenticatedAppMemoryRoute: AuthenticatedAppMemoryRoute,
   AuthenticatedAppNotificationsRoute:
     AuthenticatedAppNotificationsRouteWithChildren,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,

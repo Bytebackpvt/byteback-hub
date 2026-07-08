@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
   Bell,
+  Brain,
   CheckSquare,
   HelpCircle,
   Inbox,
@@ -49,6 +50,7 @@ const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string; tour
   { to: "/app/team", label: "Team", icon: Shield, tour: "nav-team" },
   { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
   { to: "/app/notifications", label: "Notifications", icon: Bell, tour: "nav-notifications" },
+  { to: "/app/memory", label: "AI Memory", icon: Brain, tour: "nav-memory" },
   { to: "/app/help", label: "Help", icon: HelpCircle, tour: "nav-help" },
 ];
 

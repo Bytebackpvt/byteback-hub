@@ -613,6 +613,56 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_searches: {
+        Row: {
+          alert_enabled: boolean
+          created_at: string
+          filters: Json
+          id: string
+          last_checked_at: string | null
+          last_seen_ids: Json
+          name: string
+          query: string
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          alert_enabled?: boolean
+          created_at?: string
+          filters?: Json
+          id?: string
+          last_checked_at?: string | null
+          last_seen_ids?: Json
+          name: string
+          query: string
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          alert_enabled?: boolean
+          created_at?: string
+          filters?: Json
+          id?: string
+          last_checked_at?: string | null
+          last_seen_ids?: Json
+          name?: string
+          query?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_searches_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           created_at: string
