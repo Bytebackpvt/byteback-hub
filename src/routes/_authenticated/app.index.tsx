@@ -132,6 +132,24 @@ function DashboardPage() {
         </Button>
       </header>
 
+      {/* Opportunity Radar hero — one-sentence AI summary */}
+      <Link
+        to="/app/radar"
+        className="group block rounded-2xl border border-brand/50 bg-gradient-to-r from-brand/20 via-brand/10 to-transparent p-5 transition hover:border-brand"
+      >
+        <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand">
+          <Radar className="h-3.5 w-3.5" /> Opportunity Radar
+        </div>
+        <p className="text-base font-medium leading-snug">
+          {radarQuery.isLoading
+            ? "Scanning your pipeline for open opportunities…"
+            : (radarQuery.data?.summary.headline ?? "Radar quiet.")}
+        </p>
+        <div className="mt-2 flex items-center gap-1 text-xs text-brand opacity-80 group-hover:opacity-100">
+          Open radar <ArrowRight className="h-3 w-3" />
+        </div>
+      </Link>
+
       {/* AI briefing v2 — explainable priority ranking */}
       <section className="rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/10 via-brand/5 to-transparent p-6">
         <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand">
