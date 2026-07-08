@@ -41,7 +41,7 @@ function DashboardPage() {
 
   const radarQuery = useQuery({
     queryKey: ["radar", "summary"],
-    queryFn: () => callRadar(),
+    queryFn: () => callRadar({ data: undefined }),
     staleTime: 60_000,
   });
 
