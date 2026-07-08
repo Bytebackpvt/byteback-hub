@@ -33,6 +33,7 @@ import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAppIntegrationsIndexRouteImport } from './routes/_authenticated/app.integrations.index'
 import { Route as ApiPublicCronEscalateRouteImport } from './routes/api/public/cron.escalate'
 import { Route as ApiPublicCronDailyDigestRouteImport } from './routes/api/public/cron.daily-digest'
+import { Route as AuthenticatedAppNotificationsSettingsRouteImport } from './routes/_authenticated/app.notifications.settings'
 import { Route as AuthenticatedAppIntegrationsWebhooksRouteImport } from './routes/_authenticated/app.integrations.webhooks'
 import { Route as AuthenticatedAppIntegrationsConnectedRouteImport } from './routes/_authenticated/app.integrations.connected'
 import { Route as AuthenticatedAppIntegrationsProviderIdRouteImport } from './routes/_authenticated/app.integrations.$providerId'
@@ -162,6 +163,12 @@ const ApiPublicCronDailyDigestRoute =
     path: '/api/public/cron/daily-digest',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAppNotificationsSettingsRoute =
+  AuthenticatedAppNotificationsSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAppNotificationsRoute,
+  } as any)
 const AuthenticatedAppIntegrationsWebhooksRoute =
   AuthenticatedAppIntegrationsWebhooksRouteImport.update({
     id: '/webhooks',
@@ -197,7 +204,7 @@ export interface FileRoutesByFullPath {
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
-  '/app/notifications': typeof AuthenticatedAppNotificationsRoute
+  '/app/notifications': typeof AuthenticatedAppNotificationsRouteWithChildren
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/app/integrations/$providerId': typeof AuthenticatedAppIntegrationsProviderIdRoute
   '/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
   '/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
+  '/app/notifications/settings': typeof AuthenticatedAppNotificationsSettingsRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
@@ -222,7 +230,7 @@ export interface FileRoutesByTo {
   '/app/crm': typeof AuthenticatedAppCrmRoute
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
-  '/app/notifications': typeof AuthenticatedAppNotificationsRoute
+  '/app/notifications': typeof AuthenticatedAppNotificationsRouteWithChildren
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
@@ -230,6 +238,7 @@ export interface FileRoutesByTo {
   '/app/integrations/$providerId': typeof AuthenticatedAppIntegrationsProviderIdRoute
   '/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
   '/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
+  '/app/notifications/settings': typeof AuthenticatedAppNotificationsSettingsRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsIndexRoute
@@ -252,7 +261,7 @@ export interface FileRoutesById {
   '/_authenticated/app/help': typeof AuthenticatedAppHelpRoute
   '/_authenticated/app/inbox': typeof AuthenticatedAppInboxRoute
   '/_authenticated/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
-  '/_authenticated/app/notifications': typeof AuthenticatedAppNotificationsRoute
+  '/_authenticated/app/notifications': typeof AuthenticatedAppNotificationsRouteWithChildren
   '/_authenticated/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/_authenticated/app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/app/team': typeof AuthenticatedAppTeamRoute
@@ -260,6 +269,7 @@ export interface FileRoutesById {
   '/_authenticated/app/integrations/$providerId': typeof AuthenticatedAppIntegrationsProviderIdRoute
   '/_authenticated/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
   '/_authenticated/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
+  '/_authenticated/app/notifications/settings': typeof AuthenticatedAppNotificationsSettingsRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/_authenticated/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/app/integrations/$providerId'
     | '/app/integrations/connected'
     | '/app/integrations/webhooks'
+    | '/app/notifications/settings'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/app/integrations/'
@@ -315,6 +326,7 @@ export interface FileRouteTypes {
     | '/app/integrations/$providerId'
     | '/app/integrations/connected'
     | '/app/integrations/webhooks'
+    | '/app/notifications/settings'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/app/integrations'
@@ -344,6 +356,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/integrations/$providerId'
     | '/_authenticated/app/integrations/connected'
     | '/_authenticated/app/integrations/webhooks'
+    | '/_authenticated/app/notifications/settings'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/_authenticated/app/integrations/'
@@ -528,6 +541,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronDailyDigestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app/notifications/settings': {
+      id: '/_authenticated/app/notifications/settings'
+      path: '/settings'
+      fullPath: '/app/notifications/settings'
+      preLoaderRoute: typeof AuthenticatedAppNotificationsSettingsRouteImport
+      parentRoute: typeof AuthenticatedAppNotificationsRoute
+    }
     '/_authenticated/app/integrations/webhooks': {
       id: '/_authenticated/app/integrations/webhooks'
       path: '/webhooks'
@@ -576,13 +596,28 @@ const AuthenticatedAppIntegrationsRouteWithChildren =
     AuthenticatedAppIntegrationsRouteChildren,
   )
 
+interface AuthenticatedAppNotificationsRouteChildren {
+  AuthenticatedAppNotificationsSettingsRoute: typeof AuthenticatedAppNotificationsSettingsRoute
+}
+
+const AuthenticatedAppNotificationsRouteChildren: AuthenticatedAppNotificationsRouteChildren =
+  {
+    AuthenticatedAppNotificationsSettingsRoute:
+      AuthenticatedAppNotificationsSettingsRoute,
+  }
+
+const AuthenticatedAppNotificationsRouteWithChildren =
+  AuthenticatedAppNotificationsRoute._addFileChildren(
+    AuthenticatedAppNotificationsRouteChildren,
+  )
+
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAnalyticsRoute: typeof AuthenticatedAppAnalyticsRoute
   AuthenticatedAppCrmRoute: typeof AuthenticatedAppCrmRoute
   AuthenticatedAppHelpRoute: typeof AuthenticatedAppHelpRoute
   AuthenticatedAppInboxRoute: typeof AuthenticatedAppInboxRoute
   AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRouteWithChildren
-  AuthenticatedAppNotificationsRoute: typeof AuthenticatedAppNotificationsRoute
+  AuthenticatedAppNotificationsRoute: typeof AuthenticatedAppNotificationsRouteWithChildren
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
   AuthenticatedAppTasksRoute: typeof AuthenticatedAppTasksRoute
   AuthenticatedAppTeamRoute: typeof AuthenticatedAppTeamRoute
@@ -596,7 +631,8 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppInboxRoute: AuthenticatedAppInboxRoute,
   AuthenticatedAppIntegrationsRoute:
     AuthenticatedAppIntegrationsRouteWithChildren,
-  AuthenticatedAppNotificationsRoute: AuthenticatedAppNotificationsRoute,
+  AuthenticatedAppNotificationsRoute:
+    AuthenticatedAppNotificationsRouteWithChildren,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
   AuthenticatedAppTasksRoute: AuthenticatedAppTasksRoute,
   AuthenticatedAppTeamRoute: AuthenticatedAppTeamRoute,
@@ -650,13 +686,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
