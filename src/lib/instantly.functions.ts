@@ -217,7 +217,11 @@ export const listInstantlyThreads = createServerFn({ method: "GET" }).middleware
   }
 });
 
-export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
+export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  if (!isInstantlyAllowed(context.claims)) {
+    return { mailboxes: [] as InstantlyMailbox[], connected: false as const, error: "Not connected" };
+  }
+
   try {
     const data = await instantly<{ items?: Array<{ email: string; status?: string; id?: string }> }>(
       "/accounts",
