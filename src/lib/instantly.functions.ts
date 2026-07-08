@@ -4,11 +4,26 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const BASE = "https://api.instantly.ai/api/v2";
 
+// Only these accounts (workspace owners) can see the shared Instantly workspace.
+// Other users see an empty/not-connected state and must connect their own tool.
+const INSTANTLY_ALLOWED_EMAILS = new Set(
+  (process.env.INSTANTLY_ALLOWED_EMAILS ?? "anjali@byteback.co.in,abhishek.rathore@byteback.co.in")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+function isInstantlyAllowed(claims: unknown): boolean {
+  const email = (claims as { email?: string } | null)?.email?.toLowerCase();
+  return !!email && INSTANTLY_ALLOWED_EMAILS.has(email);
+}
+
 function getKey() {
   const key = process.env.INSTANTLY_API_KEY;
   if (!key) throw new Error("Missing INSTANTLY_API_KEY");
   return key;
 }
+
 
 async function instantly<T>(
   path: string,
