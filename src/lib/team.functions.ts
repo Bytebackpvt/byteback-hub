@@ -132,16 +132,74 @@ export const inviteMember = createServerFn({ method: "POST" })
         .select("id")
         .single();
       if (error && !String(error.message).includes("duplicate")) throw error;
-      return { added: true as const };
+      return { added: true as const, emailed: false as const };
     }
 
     // Otherwise store an invite so they get added when they sign up.
     const { error } = await context.supabase
       .from("workspace_invites")
       .insert({ workspace_id: workspaceId, email: data.email.toLowerCase(), role: data.role });
-    if (error) throw error;
-    return { added: false as const };
+    if (error && !String(error.message).includes("duplicate")) throw error;
+
+    // Fetch workspace name + inviter name for the email
+    const [{ data: ws }, { data: inviter }] = await Promise.all([
+      context.supabase.from("workspaces").select("name").eq("id", workspaceId).maybeSingle(),
+      context.supabase.from("profiles").select("full_name, email").eq("id", context.userId).maybeSingle(),
+    ]);
+    const wsName = (ws?.name as string | undefined) ?? "your team";
+    const inviterName = (inviter?.full_name as string | undefined) || (inviter?.email as string | undefined) || "A teammate";
+
+    // Send the invitation email via the Resend connector.
+    let emailed = false;
+    try {
+      const resendKey = process.env.RESEND_API_KEY;
+      const lovableKey = process.env.LOVABLE_API_KEY;
+      if (resendKey && lovableKey) {
+        const appUrl = process.env.APP_URL || "https://byteback.digital";
+        const acceptUrl = `${appUrl}/auth?invite=${encodeURIComponent(data.email.toLowerCase())}`;
+        const res = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${lovableKey}`,
+            "X-Connection-Api-Key": resendKey,
+          },
+          body: JSON.stringify({
+            from: "ByteBack <onboarding@resend.dev>",
+            to: [data.email.toLowerCase()],
+            subject: `${inviterName} invited you to ${wsName} on ByteBack`,
+            html: `
+              <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
+                <h2 style="margin:0 0 12px">You've been invited to ${wsName}</h2>
+                <p style="color:#475569;line-height:1.5">
+                  ${inviterName} added you to the <b>${wsName}</b> workspace on ByteBack as <b>${data.role}</b>.
+                </p>
+                <p style="margin:24px 0">
+                  <a href="${acceptUrl}" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600">
+                    Accept invitation
+                  </a>
+                </p>
+                <p style="color:#94a3b8;font-size:12px">
+                  If the button doesn't work, paste this link: <br/>${acceptUrl}
+                </p>
+              </div>
+            `,
+          }),
+        });
+        emailed = res.ok;
+        if (!res.ok) {
+          console.error("Invite email failed", res.status, (await res.text()).slice(0, 400));
+        }
+      } else {
+        console.warn("Invite email skipped: RESEND_API_KEY or LOVABLE_API_KEY missing");
+      }
+    } catch (e) {
+      console.error("Invite email exception", e);
+    }
+
+    return { added: false as const, emailed };
   });
+
 
 const RoleUpdateInput = z.object({
   memberId: z.string().uuid(),
