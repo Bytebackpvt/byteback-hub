@@ -31,9 +31,11 @@ import { Route as AuthenticatedAppMemoryRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_authenticated/app.integrations'
 import { Route as AuthenticatedAppInboxRouteImport } from './routes/_authenticated/app.inbox'
 import { Route as AuthenticatedAppHelpRouteImport } from './routes/_authenticated/app.help'
+import { Route as AuthenticatedAppEmailSourcesRouteImport } from './routes/_authenticated/app.email-sources'
 import { Route as AuthenticatedAppCrmRouteImport } from './routes/_authenticated/app.crm'
 import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authenticated/app.analytics'
 import { Route as AuthenticatedAppIntegrationsIndexRouteImport } from './routes/_authenticated/app.integrations.index'
+import { Route as ApiPublicInboundEmailRouteImport } from './routes/api/public/inbound.email'
 import { Route as ApiPublicCronSyncRouteImport } from './routes/api/public/cron.sync'
 import { Route as ApiPublicCronEscalateRouteImport } from './routes/api/public/cron.escalate'
 import { Route as ApiPublicCronDailyDigestRouteImport } from './routes/api/public/cron.daily-digest'
@@ -41,6 +43,7 @@ import { Route as AuthenticatedAppNotificationsSettingsRouteImport } from './rou
 import { Route as AuthenticatedAppIntegrationsWebhooksRouteImport } from './routes/_authenticated/app.integrations.webhooks'
 import { Route as AuthenticatedAppIntegrationsConnectedRouteImport } from './routes/_authenticated/app.integrations.connected'
 import { Route as AuthenticatedAppIntegrationsProviderIdRouteImport } from './routes/_authenticated/app.integrations.$providerId'
+import { Route as ApiPublicOauthGmailCallbackRouteImport } from './routes/api/public/oauth.gmail.callback'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -154,6 +157,12 @@ const AuthenticatedAppHelpRoute = AuthenticatedAppHelpRouteImport.update({
   path: '/help',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppEmailSourcesRoute =
+  AuthenticatedAppEmailSourcesRouteImport.update({
+    id: '/email-sources',
+    path: '/email-sources',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppCrmRoute = AuthenticatedAppCrmRouteImport.update({
   id: '/crm',
   path: '/crm',
@@ -171,6 +180,11 @@ const AuthenticatedAppIntegrationsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedAppIntegrationsRoute,
   } as any)
+const ApiPublicInboundEmailRoute = ApiPublicInboundEmailRouteImport.update({
+  id: '/api/public/inbound/email',
+  path: '/api/public/inbound/email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronSyncRoute = ApiPublicCronSyncRouteImport.update({
   id: '/api/public/cron/sync',
   path: '/api/public/cron/sync',
@@ -211,6 +225,12 @@ const AuthenticatedAppIntegrationsProviderIdRoute =
     path: '/$providerId',
     getParentRoute: () => AuthenticatedAppIntegrationsRoute,
   } as any)
+const ApiPublicOauthGmailCallbackRoute =
+  ApiPublicOauthGmailCallbackRouteImport.update({
+    id: '/api/public/oauth/gmail/callback',
+    path: '/api/public/oauth/gmail/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -225,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/': typeof OnboardingIndexRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsRoute
   '/app/crm': typeof AuthenticatedAppCrmRoute
+  '/app/email-sources': typeof AuthenticatedAppEmailSourcesRoute
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
@@ -243,7 +264,9 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
+  '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
   '/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
+  '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -256,6 +279,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingIndexRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsRoute
   '/app/crm': typeof AuthenticatedAppCrmRoute
+  '/app/email-sources': typeof AuthenticatedAppEmailSourcesRoute
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
   '/app/memory': typeof AuthenticatedAppMemoryRoute
@@ -273,7 +297,9 @@ export interface FileRoutesByTo {
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
+  '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsIndexRoute
+  '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -290,6 +316,7 @@ export interface FileRoutesById {
   '/onboarding/': typeof OnboardingIndexRoute
   '/_authenticated/app/analytics': typeof AuthenticatedAppAnalyticsRoute
   '/_authenticated/app/crm': typeof AuthenticatedAppCrmRoute
+  '/_authenticated/app/email-sources': typeof AuthenticatedAppEmailSourcesRoute
   '/_authenticated/app/help': typeof AuthenticatedAppHelpRoute
   '/_authenticated/app/inbox': typeof AuthenticatedAppInboxRoute
   '/_authenticated/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
@@ -308,7 +335,9 @@ export interface FileRoutesById {
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
+  '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
   '/_authenticated/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
+  '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -325,6 +354,7 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/app/analytics'
     | '/app/crm'
+    | '/app/email-sources'
     | '/app/help'
     | '/app/inbox'
     | '/app/integrations'
@@ -343,7 +373,9 @@ export interface FileRouteTypes {
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
+    | '/api/public/inbound/email'
     | '/app/integrations/'
+    | '/api/public/oauth/gmail/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -356,6 +388,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/app/analytics'
     | '/app/crm'
+    | '/app/email-sources'
     | '/app/help'
     | '/app/inbox'
     | '/app/memory'
@@ -373,7 +406,9 @@ export interface FileRouteTypes {
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
+    | '/api/public/inbound/email'
     | '/app/integrations'
+    | '/api/public/oauth/gmail/callback'
   id:
     | '__root__'
     | '/'
@@ -389,6 +424,7 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/_authenticated/app/analytics'
     | '/_authenticated/app/crm'
+    | '/_authenticated/app/email-sources'
     | '/_authenticated/app/help'
     | '/_authenticated/app/inbox'
     | '/_authenticated/app/integrations'
@@ -407,7 +443,9 @@ export interface FileRouteTypes {
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
+    | '/api/public/inbound/email'
     | '/_authenticated/app/integrations/'
+    | '/api/public/oauth/gmail/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -418,6 +456,8 @@ export interface RootRouteChildren {
   ApiPublicCronDailyDigestRoute: typeof ApiPublicCronDailyDigestRoute
   ApiPublicCronEscalateRoute: typeof ApiPublicCronEscalateRoute
   ApiPublicCronSyncRoute: typeof ApiPublicCronSyncRoute
+  ApiPublicInboundEmailRoute: typeof ApiPublicInboundEmailRoute
+  ApiPublicOauthGmailCallbackRoute: typeof ApiPublicOauthGmailCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -576,6 +616,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppHelpRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/email-sources': {
+      id: '/_authenticated/app/email-sources'
+      path: '/email-sources'
+      fullPath: '/app/email-sources'
+      preLoaderRoute: typeof AuthenticatedAppEmailSourcesRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/crm': {
       id: '/_authenticated/app/crm'
       path: '/crm'
@@ -596,6 +643,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/integrations/'
       preLoaderRoute: typeof AuthenticatedAppIntegrationsIndexRouteImport
       parentRoute: typeof AuthenticatedAppIntegrationsRoute
+    }
+    '/api/public/inbound/email': {
+      id: '/api/public/inbound/email'
+      path: '/api/public/inbound/email'
+      fullPath: '/api/public/inbound/email'
+      preLoaderRoute: typeof ApiPublicInboundEmailRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/cron/sync': {
       id: '/api/public/cron/sync'
@@ -646,6 +700,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIntegrationsProviderIdRouteImport
       parentRoute: typeof AuthenticatedAppIntegrationsRoute
     }
+    '/api/public/oauth/gmail/callback': {
+      id: '/api/public/oauth/gmail/callback'
+      path: '/api/public/oauth/gmail/callback'
+      fullPath: '/api/public/oauth/gmail/callback'
+      preLoaderRoute: typeof ApiPublicOauthGmailCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -691,6 +752,7 @@ const AuthenticatedAppNotificationsRouteWithChildren =
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAnalyticsRoute: typeof AuthenticatedAppAnalyticsRoute
   AuthenticatedAppCrmRoute: typeof AuthenticatedAppCrmRoute
+  AuthenticatedAppEmailSourcesRoute: typeof AuthenticatedAppEmailSourcesRoute
   AuthenticatedAppHelpRoute: typeof AuthenticatedAppHelpRoute
   AuthenticatedAppInboxRoute: typeof AuthenticatedAppInboxRoute
   AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRouteWithChildren
@@ -707,6 +769,7 @@ interface AuthenticatedAppRouteChildren {
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppAnalyticsRoute: AuthenticatedAppAnalyticsRoute,
   AuthenticatedAppCrmRoute: AuthenticatedAppCrmRoute,
+  AuthenticatedAppEmailSourcesRoute: AuthenticatedAppEmailSourcesRoute,
   AuthenticatedAppHelpRoute: AuthenticatedAppHelpRoute,
   AuthenticatedAppInboxRoute: AuthenticatedAppInboxRoute,
   AuthenticatedAppIntegrationsRoute:
@@ -766,6 +829,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronDailyDigestRoute: ApiPublicCronDailyDigestRoute,
   ApiPublicCronEscalateRoute: ApiPublicCronEscalateRoute,
   ApiPublicCronSyncRoute: ApiPublicCronSyncRoute,
+  ApiPublicInboundEmailRoute: ApiPublicInboundEmailRoute,
+  ApiPublicOauthGmailCallbackRoute: ApiPublicOauthGmailCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
