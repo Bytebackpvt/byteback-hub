@@ -302,7 +302,11 @@ function leadStatus(s?: number, interest?: number): InstantlyLead["status"] {
   return "new";
 }
 
-export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async () => {
+export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  if (!isInstantlyAllowed(context.claims)) {
+    return { leads: [] as InstantlyLead[], connected: false as const, error: "Not connected" };
+  }
+
   try {
     const data = await instantly<{ items?: RawLead[] }>("/leads/list", {
       method: "POST",
