@@ -155,6 +155,125 @@ export type Database = {
           },
         ]
       }
+      contacts: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          meta: Json
+          name: string | null
+          source: string | null
+          title: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          meta?: Json
+          name?: string | null
+          source?: string | null
+          title?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          meta?: Json
+          name?: string | null
+          source?: string | null
+          title?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          category: string | null
+          confidence: number | null
+          contact_id: string | null
+          created_at: string
+          id: string
+          last_activity_at: string
+          meta: Json
+          priority: string | null
+          source: string
+          stage: string
+          thread_id: string | null
+          updated_at: string
+          value_estimate: number | null
+          workspace_id: string
+        }
+        Insert: {
+          category?: string | null
+          confidence?: number | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_activity_at?: string
+          meta?: Json
+          priority?: string | null
+          source?: string
+          stage?: string
+          thread_id?: string | null
+          updated_at?: string
+          value_estimate?: number | null
+          workspace_id: string
+        }
+        Update: {
+          category?: string | null
+          confidence?: number | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_activity_at?: string
+          meta?: Json
+          priority?: string | null
+          source?: string
+          stage?: string
+          thread_id?: string | null
+          updated_at?: string
+          value_estimate?: number | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_accounts: {
         Row: {
           created_at: string
@@ -233,6 +352,78 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "email_embeddings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_threads: {
+        Row: {
+          category: string | null
+          confidence: number | null
+          contact_email: string | null
+          contact_id: string | null
+          created_at: string
+          id: string
+          last_body: string | null
+          last_received_at: string | null
+          mailbox: string | null
+          meta: Json
+          priority: string | null
+          source: string
+          subject: string | null
+          thread_id: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          category?: string | null
+          confidence?: number | null
+          contact_email?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_body?: string | null
+          last_received_at?: string | null
+          mailbox?: string | null
+          meta?: Json
+          priority?: string | null
+          source?: string
+          subject?: string | null
+          thread_id: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          category?: string | null
+          confidence?: number | null
+          contact_email?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_body?: string | null
+          last_received_at?: string | null
+          mailbox?: string | null
+          meta?: Json
+          priority?: string | null
+          source?: string
+          subject?: string | null
+          thread_id?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_threads_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_threads_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -656,6 +847,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "saved_searches_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_state: {
+        Row: {
+          created_at: string
+          cursor: string | null
+          id: string
+          last_error: string | null
+          last_ok_at: string | null
+          last_run_at: string | null
+          source: string
+          stats: Json
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          cursor?: string | null
+          id?: string
+          last_error?: string | null
+          last_ok_at?: string | null
+          last_run_at?: string | null
+          source: string
+          stats?: Json
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          cursor?: string | null
+          id?: string
+          last_error?: string | null
+          last_ok_at?: string | null
+          last_run_at?: string | null
+          source?: string
+          stats?: Json
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_state_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
