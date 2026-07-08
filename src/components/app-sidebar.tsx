@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Plug,
+  Radar,
   Settings,
   Shield,
   Sparkles,
@@ -39,6 +40,7 @@ import { useServerFn } from "@tanstack/react-start";
 
 const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string; tour: string }[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
+  { to: "/app/radar", label: "Opportunity Radar", icon: Radar, tour: "nav-radar" },
   { to: "/app/inbox", label: "Inbox", icon: Inbox, badge: "12", tour: "nav-inbox" },
   { to: "/app/crm", label: "Contacts", icon: Users, tour: "nav-crm" },
   { to: "/app/pipeline", label: "Pipeline", icon: Kanban, tour: "nav-pipeline" },

@@ -7,8 +7,10 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { initNativeShell } from "@/lib/native";
 import { GuidedTour, useGuidedTour } from "@/components/guided-tour";
 import { ShortcutsOverlay } from "@/components/shortcuts-overlay";
+import { CommandPalette } from "@/components/command-palette";
 import { Button } from "@/components/ui/button";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Search } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -36,6 +38,13 @@ function AppLayout() {
             <SidebarTrigger />
             <span className="text-sm font-medium text-muted-foreground md:hidden">ByteBack</span>
             <div className="ml-auto flex items-center gap-1">
+              <Button asChild variant="ghost" size="sm" className="gap-1.5 text-xs" title="Search (⌘K)">
+                <Link to="/app/search">
+                  <Search className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Search</span>
+                  <kbd className="ml-1 hidden rounded border border-border/60 bg-muted px-1 text-[10px] sm:inline">⌘K</kbd>
+                </Link>
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -57,6 +66,7 @@ function AppLayout() {
       </div>
       <GuidedTour open={tour.open} onClose={tour.close} />
       <ShortcutsOverlay />
+      <CommandPalette />
     </SidebarProvider>
 
   );
