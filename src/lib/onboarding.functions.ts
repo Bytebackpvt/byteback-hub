@@ -48,6 +48,12 @@ export const finishOnboarding = createServerFn({ method: "POST" })
         .single();
       if (error) throw error;
       workspaceId = ws.id as string;
+      await supabaseAdmin
+        .from("workspace_members")
+        .upsert(
+          { workspace_id: workspaceId, user_id: userId, role: "owner" },
+          { onConflict: "workspace_id,user_id" },
+        );
     } else if (data.workspaceName || data.businessType) {
       const { error: updateErr } = await supabaseAdmin
         .from("workspaces")
