@@ -475,7 +475,16 @@ function InboxPage() {
         {selected ? (
           <>
             <div className="flex items-start justify-between gap-3 border-b border-border/60 p-4">
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2 -ml-2 h-7 gap-1 text-xs md:hidden"
+                  onClick={() => setMobileReaderOpen(false)}
+                  aria-label="Back to inbox list"
+                >
+                  ← Back to list
+                </Button>
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
