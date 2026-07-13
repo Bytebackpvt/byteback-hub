@@ -178,6 +178,19 @@ function InboxPage() {
     }
   }, [activeThreads, selectedId]);
 
+  // Honor deep-links: if URL ?thread=<id> matches a loaded thread, select it.
+  useEffect(() => {
+    if (!threadParam) return;
+    if (activeThreads.some((t) => t.id === threadParam) && threadParam !== selectedId) {
+      setSelectedId(threadParam);
+    }
+  }, [threadParam, activeThreads, selectedId]);
+
+  function selectThread(id: string) {
+    setSelectedId(id);
+    navigate({ search: (prev) => ({ ...prev, thread: id }), replace: true });
+  }
+
   // Auto-draft: on thread select, generate an AI reply in the background if none exists.
   useEffect(() => {
     if (!selectedId) return;
@@ -415,7 +428,7 @@ function InboxPage() {
                 key={t.id}
                 thread={t}
                 active={selected?.id === t.id}
-                onClick={() => setSelectedId(t.id)}
+                onClick={() => selectThread(t.id)}
               />
             ))}
             {filtered.length === 0 && (
