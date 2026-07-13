@@ -92,11 +92,16 @@ function HelpPage() {
         <ActionCard
           icon={Mail}
           title="Contact Support"
-          body="Stuck on something? Our team replies within a few hours on business days."
+          body="Email info@byteback.co.in or call +91 97175 13277 — our team replies within a few hours on business days."
           action={
-            <Button asChild size="sm" variant="outline" className="w-full">
-              <a href="mailto:support@byteback.ai">Email support</a>
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button asChild size="sm" variant="outline" className="w-full">
+                <a href="mailto:info@byteback.co.in">Email support</a>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="w-full">
+                <a href="tel:+919717513277">Call +91 97175 13277</a>
+              </Button>
+            </div>
           }
         />
       </div>
