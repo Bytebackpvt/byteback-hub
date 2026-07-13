@@ -38,15 +38,17 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWorkspace } from "@/lib/workspace.functions";
+import { listInstantlyThreads } from "@/lib/instantly.functions";
+import { listTasks } from "@/lib/tasks.functions";
 import { useServerFn } from "@tanstack/react-start";
 
-const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string; tour: string }[] = [
+const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox" | "tasks"; tour: string }[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
   { to: "/app/radar", label: "Opportunity Radar", icon: Radar, tour: "nav-radar" },
-  { to: "/app/inbox", label: "Inbox", icon: Inbox, badge: "12", tour: "nav-inbox" },
+  { to: "/app/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox", tour: "nav-inbox" },
   { to: "/app/crm", label: "Contacts", icon: Users, tour: "nav-crm" },
   { to: "/app/pipeline", label: "Pipeline", icon: Kanban, tour: "nav-pipeline" },
-  { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badge: "4", tour: "nav-tasks" },
+  { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badgeKey: "tasks", tour: "nav-tasks" },
   { to: "/app/analytics", label: "Analytics", icon: BarChart3, tour: "nav-analytics" },
   { to: "/app/team", label: "Team", icon: Shield, tour: "nav-team" },
   { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
@@ -62,16 +64,31 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [email, setEmail] = useState<string>("");
   const callWorkspace = useServerFn(getCurrentWorkspace);
+  const callThreads = useServerFn(listInstantlyThreads);
+  const callTasks = useServerFn(listTasks);
   const wsQuery = useQuery({
     queryKey: ["workspace", "current"],
     queryFn: () => callWorkspace(),
     staleTime: 60_000,
   });
+  const inboxQ = useQuery({
+    queryKey: ["inbox"],
+    queryFn: () => callThreads(),
+    staleTime: 30_000,
+  });
+  const tasksQ = useQuery({
+    queryKey: ["tasks"],
+    queryFn: () => callTasks(),
+    staleTime: 30_000,
+  });
   const role = wsQuery.data?.role ?? null;
+  const inboxCount = inboxQ.data?.threads?.length ?? 0;
+  const tasksCount = tasksQ.data?.tasks?.filter((t) => !t.done).length ?? 0;
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
   }, []);
+
 
   const signOut = async () => {
     await queryClient.cancelQueries();
@@ -101,11 +118,15 @@ export function AppSidebar() {
                       <Link to={item.to} className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
                         <span className="flex-1">{item.label}</span>
-                        {item.badge && (
-                          <span className="ml-auto rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
-                            {item.badge}
-                          </span>
-                        )}
+                        {item.badgeKey && (() => {
+                          const n = item.badgeKey === "inbox" ? inboxCount : tasksCount;
+                          if (!n) return null;
+                          return (
+                            <span className="ml-auto rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
+                              {n}
+                            </span>
+                          );
+                        })()}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
