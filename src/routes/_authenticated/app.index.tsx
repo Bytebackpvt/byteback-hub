@@ -295,8 +295,8 @@ function DashboardPage() {
 
         {/* Priority tasks */}
         <section className="rounded-2xl border border-border/60 bg-card p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Top tasks</h2>
+          <div className="mb-1 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Today's to-do list</h2>
             <Link
               to="/app/tasks"
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -304,6 +304,9 @@ function DashboardPage() {
               Open tasks <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Har task ek lead ya follow-up se juda hai — priority ke hisaab se sorted.
+          </p>
           {tasksQuery.isLoading ? (
             <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…
@@ -311,50 +314,65 @@ function DashboardPage() {
           ) : openTasks.length === 0 ? (
             <div className="flex flex-col items-start gap-2 py-6">
               <p className="text-sm text-muted-foreground">
-                <CheckSquare className="mr-1.5 inline h-3.5 w-3.5" /> Inbox zero on tasks.
+                <CheckSquare className="mr-1.5 inline h-3.5 w-3.5" /> Sab tasks complete — inbox zero.
               </p>
               <Button asChild variant="outline" size="sm">
                 <Link to="/app/tasks">Add a task</Link>
               </Button>
             </div>
-
           ) : (
             <ul className="divide-y divide-border/50">
-              {openTasks.slice(0, 5).map((t) => (
-                <li key={t.id}>
-                  <Link
-                    to="/app/tasks"
-                    className="flex items-center gap-3 rounded-md py-2.5 px-1 -mx-1 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-label={`Open task: ${t.title}`}
-                  >
-                    <span
-                      className={cn(
-                        "rounded px-1.5 py-0.5 text-[10px] font-bold uppercase",
-                        t.priority === "high" && "bg-rose-500/15 text-rose-500",
-                        t.priority === "med" && "bg-amber-500/15 text-amber-600",
-                        t.priority === "low" && "bg-muted text-muted-foreground",
-                      )}
+              {openTasks.slice(0, 5).map((t) => {
+                const dueLabel = formatDue(t.due);
+                return (
+                  <li key={t.id}>
+                    <Link
+                      to="/app/tasks"
+                      className="flex items-start gap-3 rounded-md py-2.5 px-1 -mx-1 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={`Open task: ${t.title}`}
                     >
-                      {t.priority}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm">{t.title}</div>
-                      {t.linked_to && (
-                        <div className="truncate text-xs text-muted-foreground">
-                          {t.linked_to}
+                      <span
+                        className={cn(
+                          "mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase",
+                          t.priority === "high" && "bg-rose-500/15 text-rose-500",
+                          t.priority === "med" && "bg-amber-500/15 text-amber-600",
+                          t.priority === "low" && "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {t.priority}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{t.title}</div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                          {t.linked_to && (
+                            <span className="truncate">👤 {t.linked_to}</span>
+                          )}
+                          {dueLabel && (
+                            <span
+                              className={cn(
+                                "font-medium",
+                                dueLabel.overdue ? "text-rose-500" : "text-foreground/70",
+                              )}
+                            >
+                              🕒 {dueLabel.label}
+                            </span>
+                          )}
+                          {t.source === "ai" && (
+                            <span className="inline-flex items-center gap-0.5 rounded bg-brand/10 px-1 py-0.5 text-brand">
+                              <Sparkles className="h-2.5 w-2.5" /> AI suggested
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    {t.source === "ai" && (
-                      <Sparkles className="h-3 w-3 shrink-0 text-brand" />
-                    )}
-                  </Link>
-                </li>
-              ))}
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
       </div>
+
 
       {/* Analytics glance */}
       {analytics && (
