@@ -53,6 +53,12 @@ function AuthPage() {
     const { data } = await supabase.auth.getUser();
     if (!data.user) return;
     await ensureWorkspace().catch(() => null);
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    if (next && next.startsWith("/")) {
+      window.location.href = next;
+      return;
+    }
     navigate({ to: "/app" });
   };
 
