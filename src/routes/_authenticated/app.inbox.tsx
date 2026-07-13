@@ -490,6 +490,17 @@ function InboxPage() {
                     Clear filters
                   </Button>
                 )}
+                {!search && filter === "all" && (
+                  <div className="mt-2 flex flex-wrap justify-center gap-2">
+                    <Button size="sm" variant="outline" onClick={handleSyncGmail} disabled={syncingGmail}>
+                      {syncingGmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      Sync Gmail
+                    </Button>
+                    <Button size="sm" onClick={() => navigate({ to: "/app/email-sources" })}>
+                      Connect Gmail
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
