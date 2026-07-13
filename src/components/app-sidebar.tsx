@@ -138,8 +138,10 @@ export function AppSidebar() {
           <ThemeToggle />
         </div>
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" className="flex-1 justify-start text-xs">
-            <Settings className="h-3.5 w-3.5" /> Settings
+          <Button asChild variant="ghost" size="sm" className="flex-1 justify-start text-xs">
+            <Link to="/app/settings/account">
+              <Settings className="h-3.5 w-3.5" /> Settings
+            </Link>
           </Button>
           <Button variant="ghost" size="sm" onClick={signOut} className="text-xs">
             <LogOut className="h-3.5 w-3.5" />
