@@ -558,3 +558,30 @@ function PriorityRow({
   );
 }
 
+function formatDue(due: string | null | undefined): { label: string; overdue: boolean } | null {
+  if (!due) return null;
+  const ts = new Date(due).getTime();
+  if (!isFinite(ts)) return null;
+  const now = Date.now();
+  const diffMs = ts - now;
+  const day = 86_400_000;
+  const overdue = diffMs < 0;
+  const absDays = Math.round(Math.abs(diffMs) / day);
+  if (overdue) {
+    if (absDays === 0) return { label: "Overdue today", overdue: true };
+    return { label: `Overdue ${absDays}d`, overdue: true };
+  }
+  if (absDays === 0) return { label: "Due today", overdue: false };
+  if (absDays === 1) return { label: "Due tomorrow", overdue: false };
+  if (absDays < 7)
+    return {
+      label: `Due ${new Date(ts).toLocaleDateString(undefined, { weekday: "short" })}`,
+      overdue: false,
+    };
+  return {
+    label: `Due ${new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
+    overdue: false,
+  };
+}
+
+
