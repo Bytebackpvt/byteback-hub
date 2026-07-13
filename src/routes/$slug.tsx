@@ -144,7 +144,7 @@ const PAGES: Record<string, MarketingPage> = {
       "ByteBack is an AI-powered unified inbox for outbound reply teams",
       "The product helps teams classify replies, prioritize buyers, and manage follow-ups",
       "Core users include agencies, founders, sales teams, and IT-focused businesses",
-      "For press inquiries, contact info@byteback.co.in or info@byteback.co.in",
+      "For press inquiries, contact info@byteback.co.in or call +91 97175 13277",
     ],
   },
   contact: {
@@ -152,8 +152,9 @@ const PAGES: Record<string, MarketingPage> = {
     title: "Contact ByteBack",
     description: "Reach the ByteBack team for product, privacy, legal, or account-data questions.",
     bullets: [
-      "Privacy and deletion requests: info@byteback.co.in",
-      "Legal questions: info@byteback.co.in",
+      "Email: info@byteback.co.in",
+      "Phone: +91 97175 13277",
+      "Privacy, legal and deletion requests: info@byteback.co.in",
       "Product access: create a workspace from the sign-in page",
       "Connected account management: Account & Data settings inside the app",
     ],
