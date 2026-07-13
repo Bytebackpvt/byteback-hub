@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandLink } from "@/components/brand";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
@@ -24,7 +26,7 @@ export const Route = createFileRoute("/privacy")({
 function PrivacyPage() {
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <header className="border-b border-border/60">
+      <header className="border-b border-border/60 bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
           <BrandLink />
           <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
@@ -34,9 +36,43 @@ function PrivacyPage() {
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-12">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-brand">Legal</p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight">Privacy Policy</h1>
+        <Badge variant="outline" className="rounded-full">Legal</Badge>
+        <h1 className="mt-4 text-4xl font-semibold tracking-tight">Privacy Policy</h1>
+        <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+          How ByteBack collects, uses, protects, disconnects, and deletes your data — including
+          Google/Gmail data authorized through OAuth.
+        </p>
         <p className="mt-2 text-sm text-muted-foreground">Last updated: July 10, 2026</p>
+
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-border/70 bg-card p-4">
+            <div className="text-sm font-semibold">Google Limited Use</div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Gmail data is used only for user-facing inbox, classification, CRM, and task features.
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-card p-4">
+            <div className="text-sm font-semibold">Disconnect flow</div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Disconnect one mailbox or all connected Google accounts from Account &amp; Data settings.
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-card p-4">
+            <div className="text-sm font-semibold">Delete account</div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Permanently delete your account and associated workspace data from settings.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/terms">Terms of Service</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <a href="mailto:privacy@byteback.digital">Contact privacy</a>
+          </Button>
+        </div>
 
         <div className="prose prose-sm mt-10 max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-h2:mt-10 prose-h2:text-xl prose-h3:text-base prose-p:leading-relaxed prose-a:text-brand">
           <p>
