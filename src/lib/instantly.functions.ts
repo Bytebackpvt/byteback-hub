@@ -171,55 +171,140 @@ function priorityFrom(cat: InstantlyThread["category"], interest?: number): Inst
   return "low";
 }
 
-export const listInstantlyThreads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
-  if (!isInstantlyAllowed(context.claims)) {
-    return { threads: [] as InstantlyThread[], connected: false as const, error: "Not connected" };
-  }
-
-  try {
-    const data = await instantly<{ items?: RawEmail[] }>("/emails", {
-      query: { limit: 50, email_type: "received" },
-    });
-    const items = data.items ?? [];
-    const threads: InstantlyThread[] = items.map((e) => {
-      const fromJson = e.from_address_json?.[0];
-      const fromEmail = fromJson?.address ?? e.from_address_email ?? "unknown@unknown";
-      const fromName =
-        fromJson?.name?.trim() ||
-        fromEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-      const bodyText = e.body?.text ?? (e.body?.html ? stripHtml(e.body.html) : "");
-      const cat = classify(e.subject ?? "", bodyText, e.ai_interest_value);
-      return {
-        id: e.id,
-        from: {
-          name: fromName,
-          email: fromEmail,
-          company: companyFromEmail(fromEmail),
-        },
-        subject: e.subject ?? "(no subject)",
-        preview: bodyText.slice(0, 140),
-        body: bodyText,
-        mailbox: e.eaccount ?? "unknown",
-        receivedAt: timeAgo(e.timestamp_email ?? e.timestamp_created),
-        unread: Boolean(e.is_unread),
-        category: cat,
-        priority: priorityFrom(cat, e.ai_interest_value),
-        campaign: e.campaign_id,
-      };
-    });
-    return { threads, connected: true as const };
-  } catch (err) {
+/** Load DB-ingested threads (Gmail, inbound webhook, custom IMAP) for the
+ *  current workspace and map them into the shared InstantlyThread shape so
+ *  the inbox / dashboard can render them alongside Instantly replies. */
+async function loadDbThreads(
+  supabase: unknown,
+  userId: string,
+): Promise<InstantlyThread[]> {
+  const { getCurrentWorkspaceId } = await import("@/lib/workspace.functions");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
+  const workspaceId = await getCurrentWorkspaceId(sb, userId);
+  if (!workspaceId) return [];
+  const { data } = await sb
+    .from("email_threads")
+    .select(
+      "thread_id, subject, last_body, mailbox, source, category, priority, last_received_at, contact_email",
+    )
+    .eq("workspace_id", workspaceId)
+    .order("last_received_at", { ascending: false })
+    .limit(100);
+  const catMap: Record<string, InstantlyThread["category"]> = {
+    meeting_request: "meeting",
+    demo_request: "interested",
+    pricing_request: "interested",
+    interested: "interested",
+    rental_inquiry: "interested",
+    amc_inquiry: "interested",
+    refurbished_devices: "interested",
+    pickup_request: "interested",
+    out_of_office: "ooo",
+    spam: "spam",
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((r: any) => {
+    const email = String(r.contact_email ?? "");
+    const name = email
+      ? email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+      : "Unknown";
+    const cat: InstantlyThread["category"] = catMap[r.category as string] ?? "interested";
+    const pri: InstantlyThread["priority"] =
+      r.priority === "hot" ? "hot" : r.priority === "warm" ? "warm" : "low";
     return {
-      threads: [] as InstantlyThread[],
-      connected: false as const,
-      error: err instanceof Error ? err.message : "Unknown error",
+      id: String(r.thread_id),
+      from: { name, email, company: companyFromEmail(email) },
+      subject: (r.subject as string) ?? "(no subject)",
+      preview: String(r.last_body ?? "").slice(0, 140),
+      body: String(r.last_body ?? ""),
+      mailbox: (r.mailbox as string) ?? (r.source as string) ?? "inbox",
+      receivedAt: timeAgo(r.last_received_at as string),
+      unread: true,
+      category: cat,
+      priority: pri,
     };
-  }
-});
+  });
+}
+
+export const listInstantlyThreads = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    // Always load DB-ingested threads (Gmail, webhook, etc.) — these belong to
+    // every workspace member, not only Instantly-allowed accounts.
+    const dbThreads = await loadDbThreads(context.supabase, context.userId).catch(() => []);
+
+    if (!isInstantlyAllowed(context.claims)) {
+      return {
+        threads: dbThreads,
+        connected: dbThreads.length > 0,
+        error: dbThreads.length ? undefined : "Not connected",
+      };
+    }
+
+    try {
+      const data = await instantly<{ items?: RawEmail[] }>("/emails", {
+        query: { limit: 50, email_type: "received" },
+      });
+      const items = data.items ?? [];
+      const threads: InstantlyThread[] = items.map((e) => {
+        const fromJson = e.from_address_json?.[0];
+        const fromEmail = fromJson?.address ?? e.from_address_email ?? "unknown@unknown";
+        const fromName =
+          fromJson?.name?.trim() ||
+          fromEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        const bodyText = e.body?.text ?? (e.body?.html ? stripHtml(e.body.html) : "");
+        const cat = classify(e.subject ?? "", bodyText, e.ai_interest_value);
+        return {
+          id: e.id,
+          from: {
+            name: fromName,
+            email: fromEmail,
+            company: companyFromEmail(fromEmail),
+          },
+          subject: e.subject ?? "(no subject)",
+          preview: bodyText.slice(0, 140),
+          body: bodyText,
+          mailbox: e.eaccount ?? "unknown",
+          receivedAt: timeAgo(e.timestamp_email ?? e.timestamp_created),
+          unread: Boolean(e.is_unread),
+          category: cat,
+          priority: priorityFrom(cat, e.ai_interest_value),
+          campaign: e.campaign_id,
+        };
+      });
+      return { threads: [...threads, ...dbThreads], connected: true };
+    } catch (err) {
+      return {
+        threads: dbThreads,
+        connected: dbThreads.length > 0,
+        error: dbThreads.length ? undefined : err instanceof Error ? err.message : "Unknown error",
+      };
+    }
+  });
 
 export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  // Always include connected mailboxes stored in oauth_connections (Gmail etc.)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = context.supabase as any;
+  const { data: conns } = await sb
+    .from("oauth_connections")
+    .select("account_email, status")
+    .eq("user_id", context.userId);
+  const oauthMailboxes: InstantlyMailbox[] = (conns ?? [])
+    .filter((c: { account_email?: string }) => !!c.account_email)
+    .map((c: { account_email: string; status?: string }) => ({
+      id: c.account_email,
+      email: c.account_email,
+      status: c.status ?? "active",
+    }));
+
   if (!isInstantlyAllowed(context.claims)) {
-    return { mailboxes: [] as InstantlyMailbox[], connected: false as const, error: "Not connected" };
+    return {
+      mailboxes: oauthMailboxes,
+      connected: oauthMailboxes.length > 0,
+      error: oauthMailboxes.length ? undefined : "Not connected",
+    };
   }
 
   try {
@@ -233,12 +318,17 @@ export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middlewa
       email: a.email,
       status: a.status ?? "active",
     }));
-    return { mailboxes, connected: true as const };
+    // De-dupe by email
+    const merged = [...mailboxes];
+    for (const m of oauthMailboxes) {
+      if (!merged.some((x) => x.email.toLowerCase() === m.email.toLowerCase())) merged.push(m);
+    }
+    return { mailboxes: merged, connected: true };
   } catch (err) {
     return {
-      mailboxes: [] as InstantlyMailbox[],
-      connected: false as const,
-      error: err instanceof Error ? err.message : "Unknown error",
+      mailboxes: oauthMailboxes,
+      connected: oauthMailboxes.length > 0,
+      error: oauthMailboxes.length ? undefined : err instanceof Error ? err.message : "Unknown error",
     };
   }
 });
@@ -302,9 +392,40 @@ function leadStatus(s?: number, interest?: number): InstantlyLead["status"] {
   return "new";
 }
 
+async function loadDbLeads(supabase: unknown, userId: string): Promise<InstantlyLead[]> {
+  const { getCurrentWorkspaceId } = await import("@/lib/workspace.functions");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
+  const workspaceId = await getCurrentWorkspaceId(sb, userId);
+  if (!workspaceId) return [];
+  const { data } = await sb
+    .from("contacts")
+    .select("id, email, name, company, source, last_seen_at")
+    .eq("workspace_id", workspaceId)
+    .order("last_seen_at", { ascending: false })
+    .limit(200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((c: any) => ({
+    id: String(c.id),
+    email: String(c.email),
+    name: String(c.name || c.email),
+    company: String(c.company ?? companyFromEmail(c.email)),
+    title: "",
+    status: "new" as InstantlyLead["status"],
+    lastActivity: timeAgo(c.last_seen_at),
+    campaign: undefined,
+  }));
+}
+
 export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  const dbLeads = await loadDbLeads(context.supabase, context.userId).catch(() => []);
+
   if (!isInstantlyAllowed(context.claims)) {
-    return { leads: [] as InstantlyLead[], connected: false as const, error: "Not connected" };
+    return {
+      leads: dbLeads,
+      connected: dbLeads.length > 0,
+      error: dbLeads.length ? undefined : "Not connected",
+    };
   }
 
   try {
@@ -332,12 +453,17 @@ export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([
         campaign: l.campaign,
       };
     });
-    return { leads, connected: true as const };
+    // Merge Instantly + DB leads, de-duped by email
+    const merged = [...leads];
+    for (const l of dbLeads) {
+      if (!merged.some((x) => x.email.toLowerCase() === l.email.toLowerCase())) merged.push(l);
+    }
+    return { leads: merged, connected: true };
   } catch (err) {
     return {
-      leads: [] as InstantlyLead[],
-      connected: false as const,
-      error: err instanceof Error ? err.message : "Unknown error",
+      leads: dbLeads,
+      connected: dbLeads.length > 0,
+      error: dbLeads.length ? undefined : err instanceof Error ? err.message : "Unknown error",
     };
   }
 });

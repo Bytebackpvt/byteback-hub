@@ -79,28 +79,45 @@ export const Route = createFileRoute("/api/public/oauth/gmail/callback")({
         const accessEnc = await encryptToken(tok.access_token);
         const refreshEnc = tok.refresh_token ? await encryptToken(tok.refresh_token) : null;
 
-        await admin.from("oauth_connections").upsert(
-          {
-            workspace_id: workspaceId,
-            user_id: userId,
-            provider: "gmail",
-            account_email: accountEmail,
-            account_label: prof.name ?? accountEmail,
-            access_token_enc: accessEnc,
-            refresh_token_enc: refreshEnc,
-            expires_at: new Date(Date.now() + tok.expires_in * 1000).toISOString(),
-            scopes: (tok.scope ?? "").split(" ").filter(Boolean),
-            status: "active",
-            last_error: null,
-          },
-          { onConflict: "workspace_id,user_id,provider,account_email" },
-        );
+        const { data: connRow } = await admin
+          .from("oauth_connections")
+          .upsert(
+            {
+              workspace_id: workspaceId,
+              user_id: userId,
+              provider: "gmail",
+              account_email: accountEmail,
+              account_label: prof.name ?? accountEmail,
+              access_token_enc: accessEnc,
+              refresh_token_enc: refreshEnc,
+              expires_at: new Date(Date.now() + tok.expires_in * 1000).toISOString(),
+              scopes: (tok.scope ?? "").split(" ").filter(Boolean),
+              status: "active",
+              last_error: null,
+            },
+            { onConflict: "workspace_id,user_id,provider,account_email" },
+          )
+          .select("id")
+          .maybeSingle();
 
         // clean up the one-shot state row
         await admin
           .from("sync_state")
           .delete()
           .eq("source", `gmail_oauth_state:${state}`);
+
+        // Fire-and-forget: pull the first batch of messages immediately so the
+        // user sees their mailbox populate on return, instead of waiting for cron.
+        if (connRow?.id) {
+          try {
+            const { syncGmailConnection } = await import("@/lib/gmail.functions");
+            await syncGmailConnection(connRow.id).catch((e) =>
+              console.error("[oauth.gmail.callback] initial sync failed", e),
+            );
+          } catch (e) {
+            console.error("[oauth.gmail.callback] sync import failed", e);
+          }
+        }
 
         throw redirect({ href: `${backTo}?connected=${encodeURIComponent(accountEmail)}` });
       },

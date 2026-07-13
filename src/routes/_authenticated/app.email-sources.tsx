@@ -97,7 +97,7 @@ function EmailSourcesPage() {
 
       {connected && (
         <div className="rounded-md border border-emerald-500/40 bg-emerald-500/5 p-3 text-sm text-emerald-600">
-          Connected <b>{connected}</b>. First sync runs within 5 minutes.
+          Connected <b>{connected}</b>. Recent messages have been pulled — check your Inbox &amp; Dashboard.
         </div>
       )}
       {errorParam && (
