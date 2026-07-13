@@ -39,6 +39,7 @@ import { Route as AuthenticatedAppEmailSourcesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAppCrmRouteImport } from './routes/_authenticated/app.crm'
 import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authenticated/app.analytics'
 import { Route as AuthenticatedAppIntegrationsIndexRouteImport } from './routes/_authenticated/app.integrations.index'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicInboundEmailRouteImport } from './routes/api/public/inbound.email'
 import { Route as ApiPublicCronSyncRouteImport } from './routes/api/public/cron.sync'
 import { Route as ApiPublicCronEscalateRouteImport } from './routes/api/public/cron.escalate'
@@ -205,6 +206,12 @@ const AuthenticatedAppIntegrationsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedAppIntegrationsRoute,
   } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicInboundEmailRoute = ApiPublicInboundEmailRouteImport.update({
   id: '/api/public/inbound/email',
   path: '/api/public/inbound/email',
@@ -301,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
@@ -339,6 +347,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
@@ -382,6 +391,7 @@ export interface FileRoutesById {
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/_authenticated/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
 }
@@ -425,6 +435,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
     | '/api/public/inbound/email'
+    | '/lovable/email/queue/process'
     | '/app/integrations/'
     | '/api/public/oauth/gmail/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
     | '/api/public/inbound/email'
+    | '/lovable/email/queue/process'
     | '/app/integrations'
     | '/api/public/oauth/gmail/callback'
   id:
@@ -505,6 +517,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
     | '/api/public/inbound/email'
+    | '/lovable/email/queue/process'
     | '/_authenticated/app/integrations/'
     | '/api/public/oauth/gmail/callback'
   fileRoutesById: FileRoutesById
@@ -522,6 +535,7 @@ export interface RootRouteChildren {
   ApiPublicCronEscalateRoute: typeof ApiPublicCronEscalateRoute
   ApiPublicCronSyncRoute: typeof ApiPublicCronSyncRoute
   ApiPublicInboundEmailRoute: typeof ApiPublicInboundEmailRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicOauthGmailCallbackRoute: typeof ApiPublicOauthGmailCallbackRoute
 }
 
@@ -737,6 +751,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIntegrationsIndexRouteImport
       parentRoute: typeof AuthenticatedAppIntegrationsRoute
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/inbound/email': {
       id: '/api/public/inbound/email'
       path: '/api/public/inbound/email'
@@ -936,6 +957,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronEscalateRoute: ApiPublicCronEscalateRoute,
   ApiPublicCronSyncRoute: ApiPublicCronSyncRoute,
   ApiPublicInboundEmailRoute: ApiPublicInboundEmailRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicOauthGmailCallbackRoute: ApiPublicOauthGmailCallbackRoute,
 }
 export const routeTree = rootRouteImport
