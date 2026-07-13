@@ -158,7 +158,7 @@ export const listConnectedAccounts = createServerFn({ method: "GET" })
         last_sync_at: null,
         last_error_msg: lastError,
         mailbox_count: mailboxCount,
-        created_at: new Date(0).toISOString(),
+        created_at: new Date().toISOString(),
       });
     }
 

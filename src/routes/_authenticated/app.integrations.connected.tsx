@@ -127,16 +127,24 @@ function ConnectionRow({
       ? "bg-red-500"
       : "bg-muted-foreground";
 
+  const isBuiltin = kind === "builtin";
+  const detailHref =
+    account.provider === "instantly"
+      ? "/app/inbox"
+      : account.provider === "gmail" || account.provider === "google"
+      ? "/app/email-sources"
+      : `/app/integrations/${account.provider}`;
+
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
+    <div className="group flex items-center gap-3 px-4 py-3 transition hover:bg-muted/40">
       <span
         className={`h-2 w-2 shrink-0 rounded-full ${healthDot}`}
         aria-label={`Status: ${account.health_status}`}
       />
-      <div className="min-w-0 flex-1">
+      <Link to={detailHref} className="min-w-0 flex-1 focus:outline-none">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium capitalize">{account.provider.replace(/_/g, " ")}</span>
-          {account.label && <span className="text-sm text-muted-foreground">· {account.label}</span>}
+          {account.label && <span className="truncate text-sm text-muted-foreground">· {account.label}</span>}
           {account.health_status === "error" && (
             <Badge variant="destructive" className="gap-1">
               <AlertTriangle className="h-3 w-3" /> Error
@@ -147,12 +155,14 @@ function ConnectionRow({
               <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Healthy
             </Badge>
           )}
-          {kind === "builtin" && (
-            <Badge variant="outline" className="gap-1 text-[10px]">Built-in</Badge>
+          {isBuiltin && (
+            <Badge variant="outline" className="text-[10px]">Shared workspace key</Badge>
           )}
         </div>
         <div className="mt-0.5 text-xs text-muted-foreground">
-          {account.last_sync_at ? (
+          {isBuiltin ? (
+            <>Active · managed via workspace API key</>
+          ) : account.last_sync_at ? (
             <>Last sync {formatDistanceToNow(new Date(account.last_sync_at), { addSuffix: true })}</>
           ) : (
             <>Connected {formatDistanceToNow(new Date(account.created_at), { addSuffix: true })}</>
@@ -162,14 +172,18 @@ function ConnectionRow({
         {account.last_error_msg && (
           <div className="mt-1 text-xs text-red-500">{account.last_error_msg}</div>
         )}
-      </div>
+      </Link>
       <div className="flex shrink-0 items-center gap-1">
-        {account.health_status !== "healthy" && (
+        {!isBuiltin && account.health_status !== "healthy" && (
           <Button size="sm" variant="outline" className="gap-1">
             <RefreshCw className="h-3.5 w-3.5" /> Reconnect
           </Button>
         )}
-        {kind !== "builtin" && (
+        {isBuiltin ? (
+          <Button asChild size="sm" variant="outline" className="gap-1">
+            <Link to="/app/inbox">Manage mailboxes</Link>
+          </Button>
+        ) : (
           <Button
             size="sm"
             variant="ghost"
@@ -190,3 +204,4 @@ function ConnectionRow({
     </div>
   );
 }
+
