@@ -37,6 +37,7 @@ function ConnectedPage() {
   const all = [
     ...(q.data?.oauth ?? []).map((a) => ({ ...a, kind: "oauth_connection" as const })),
     ...(q.data?.accounts ?? []).map((a) => ({ ...a, kind: "workspace_integration" as const })),
+    ...(q.data?.builtin ?? []).map((a) => ({ ...a, kind: "builtin" as const })),
   ];
 
   if (all.length === 0) {
@@ -101,12 +102,15 @@ function ConnectionRow({
   kind,
 }: {
   account: ConnectedAccount;
-  kind: "workspace_integration" | "oauth_connection";
+  kind: "workspace_integration" | "oauth_connection" | "builtin";
 }) {
   const qc = useQueryClient();
   const callDisconnect = useServerFn(disconnectAccount);
   const disconnectMut = useMutation({
-    mutationFn: () => callDisconnect({ data: { kind, id: account.id } }),
+    mutationFn: () =>
+      kind === "builtin"
+        ? Promise.resolve({ ok: true as const })
+        : callDisconnect({ data: { kind, id: account.id } }),
     onSuccess: () => {
       toast.success("Disconnected");
       qc.invalidateQueries({ queryKey: ["marketplace"] });
@@ -143,6 +147,9 @@ function ConnectionRow({
               <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Healthy
             </Badge>
           )}
+          {kind === "builtin" && (
+            <Badge variant="outline" className="gap-1 text-[10px]">Built-in</Badge>
+          )}
         </div>
         <div className="mt-0.5 text-xs text-muted-foreground">
           {account.last_sync_at ? (
@@ -162,21 +169,23 @@ function ConnectionRow({
             <RefreshCw className="h-3.5 w-3.5" /> Reconnect
           </Button>
         )}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            if (confirm(`Disconnect ${account.provider}?`)) disconnectMut.mutate();
-          }}
-          disabled={disconnectMut.isPending}
-          aria-label={`Disconnect ${account.provider}`}
-        >
-          {disconnectMut.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
-          )}
-        </Button>
+        {kind !== "builtin" && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (confirm(`Disconnect ${account.provider}?`)) disconnectMut.mutate();
+            }}
+            disabled={disconnectMut.isPending}
+            aria-label={`Disconnect ${account.provider}`}
+          >
+            {disconnectMut.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );

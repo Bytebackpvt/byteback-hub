@@ -68,9 +68,9 @@ export const listCatalog = createServerFn({ method: "GET" })
 
 export const listConnectedAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ accounts: ConnectedAccount[]; oauth: ConnectedAccount[] }> => {
+  .handler(async ({ context }): Promise<{ accounts: ConnectedAccount[]; oauth: ConnectedAccount[]; builtin: ConnectedAccount[] }> => {
     const workspaceId = await getWorkspaceId(context.supabase, context.userId);
-    if (!workspaceId) return { accounts: [], oauth: [] };
+    if (!workspaceId) return { accounts: [], oauth: [], builtin: [] };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [{ data: ws }, { data: oauth }] = await Promise.all([
@@ -116,8 +116,55 @@ export const listConnectedAccounts = createServerFn({ method: "GET" })
       created_at: r.created_at,
     }));
 
-    return { accounts, oauth: oauthAccounts };
+    // Built-in shared integrations (env-key based). Currently: Instantly, gated
+    // by allowlisted emails. Surface as a virtual connected account so the
+    // owner sees it in the Connected section and stats.
+    const builtin: ConnectedAccount[] = [];
+    const claimsEmail = (context.claims as { email?: string } | null)?.email?.toLowerCase();
+    const allowedEmails = new Set(
+      (process.env.INSTANTLY_ALLOWED_EMAILS ?? "anjali@byteback.co.in,abhishek.rathore@byteback.co.in")
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    if (process.env.INSTANTLY_API_KEY && claimsEmail && allowedEmails.has(claimsEmail)) {
+      let mailboxCount = 0;
+      let health: ConnectedAccount["health_status"] = "healthy";
+      let lastError: string | null = null;
+      try {
+        const res = await fetch("https://api.instantly.ai/api/v2/accounts?limit=100", {
+          headers: {
+            Authorization: `Bearer ${process.env.INSTANTLY_API_KEY}`,
+            Accept: "application/json",
+          },
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { items?: unknown[] };
+          mailboxCount = Array.isArray(data.items) ? data.items.length : 0;
+        } else {
+          health = res.status === 401 || res.status === 403 ? "error" : "degraded";
+          lastError = `Instantly API returned ${res.status}`;
+        }
+      } catch (err) {
+        health = "degraded";
+        lastError = err instanceof Error ? err.message : "Unable to reach Instantly";
+      }
+      builtin.push({
+        id: "instantly-builtin",
+        provider: "instantly",
+        label: claimsEmail,
+        status: "connected",
+        health_status: health,
+        last_sync_at: null,
+        last_error_msg: lastError,
+        mailbox_count: mailboxCount,
+        created_at: new Date(0).toISOString(),
+      });
+    }
+
+    return { accounts, oauth: oauthAccounts, builtin };
   });
+
 
 const RequestInput = z.object({
   provider_id: z.string().min(1).max(80),
