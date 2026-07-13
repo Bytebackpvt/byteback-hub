@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 
 import { getInstantlyAnalytics } from "@/lib/instantly.functions";
-import { ANALYTICS } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/analytics")({
@@ -81,33 +80,19 @@ function AnalyticsPage() {
         },
       ]
     : [
-        { icon: Inbox, label: "Replies", value: ANALYTICS.totalReplies.toString(), sub: "+12% vs last week" },
-        { icon: Flame, label: "Hot leads", value: ANALYTICS.hotLeads.toString(), sub: "+8%", tone: "hot" as const },
-        {
-          icon: Sparkles,
-          label: "Meetings booked",
-          value: ANALYTICS.meetingsBooked.toString(),
-          sub: "+22%",
-          tone: "good" as const,
-        },
-        {
-          icon: Clock,
-          label: "Avg response",
-          value: ANALYTICS.avgResponseTime,
-          sub: "-14%",
-          tone: "good" as const,
-        },
+        { icon: Inbox, label: "Replies", value: "0", sub: "No data yet" },
+        { icon: Flame, label: "Hot leads", value: "0", sub: "No data yet", tone: "hot" as const },
+        { icon: Sparkles, label: "Meetings booked", value: "0", sub: "No data yet", tone: "good" as const },
+        { icon: Clock, label: "Avg response", value: "—", sub: "No data yet", tone: "good" as const },
       ];
 
   const chartData =
     live && live.daily.length > 0
       ? live.daily.map((d) => ({ day: d.date, replies: d.replied, hot: d.opened }))
-      : ANALYTICS.weekly;
+      : [];
 
   const pieData =
-    live && live.categoryBreakdown.length > 0
-      ? live.categoryBreakdown
-      : ANALYTICS.categoryBreakdown;
+    live && live.categoryBreakdown.length > 0 ? live.categoryBreakdown : [];
 
   return (
     <div className="mx-auto h-[calc(100dvh-3rem)] max-w-6xl overflow-y-auto px-6 py-8">
