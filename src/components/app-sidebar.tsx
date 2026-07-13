@@ -118,11 +118,15 @@ export function AppSidebar() {
                       <Link to={item.to} className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
                         <span className="flex-1">{item.label}</span>
-                        {item.badge && (
-                          <span className="ml-auto rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
-                            {item.badge}
-                          </span>
-                        )}
+                        {item.badgeKey && (() => {
+                          const n = item.badgeKey === "inbox" ? inboxCount : tasksCount;
+                          if (!n) return null;
+                          return (
+                            <span className="ml-auto rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
+                              {n}
+                            </span>
+                          );
+                        })()}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
