@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Loader2, Mail, ShieldOff, Trash2 } from "lucide-react";
@@ -280,11 +280,11 @@ function AccountSettingsPage() {
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 pt-4 text-xs text-muted-foreground">
         <span>Learn more:</span>
-        <a href="/privacy" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+        <a href="/privacy" className="underline hover:text-foreground">
           Privacy Policy
         </a>
         <span>·</span>
-        <a href="/terms" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+        <a href="/terms" className="underline hover:text-foreground">
           Terms of Service
         </a>
       </div>
