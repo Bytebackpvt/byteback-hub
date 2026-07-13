@@ -341,16 +341,18 @@ export const syncWorkspaceGmailNow = createServerFn({ method: "POST" })
     const admin = supabaseAdmin as any;
     const { data } = await admin
       .from("oauth_connections")
-      .select("id")
+      .select("id, account_email")
       .eq("workspace_id", workspaceId)
       .eq("provider", "gmail")
       .in("status", ["active", "error"]);
     let processed = 0;
+    const errors: Array<{ account: string | null; error: string }> = [];
     for (const row of data ?? []) {
       const result = await syncGmailConnection(row.id);
       processed += result.processed;
+      if (result.error) errors.push({ account: row.account_email ?? null, error: result.error });
     }
-    return { connections: (data ?? []).length, processed };
+    return { connections: (data ?? []).length, processed, errors };
   });
 
 /** Sync every active Gmail connection across every workspace. */
