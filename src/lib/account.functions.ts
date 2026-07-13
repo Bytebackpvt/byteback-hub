@@ -21,6 +21,43 @@ async function revokeGoogleToken(token: string): Promise<void> {
 
 /** Disconnect ALL connected email accounts for the current user.
  *  Revokes Google tokens and deletes oauth_connections rows. */
+/** Disconnect a SINGLE connected email account by id.
+ *  Revokes its Google token then deletes the row. */
+export const disconnectOneAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { connectionId: string }) => {
+    if (!d || typeof d.connectionId !== "string") throw new Error("connectionId required");
+    return d;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { decryptToken } = await import("@/lib/email-ingest.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const admin = supabaseAdmin as any;
+
+    const { data: conn } = await admin
+      .from("oauth_connections")
+      .select("id, account_email, refresh_token_enc, access_token_enc, user_id")
+      .eq("id", data.connectionId)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+
+    if (!conn) return { ok: false as const, error: "Not found" };
+
+    try {
+      if (conn.refresh_token_enc) {
+        const rt = await decryptToken(conn.refresh_token_enc);
+        if (rt) await revokeGoogleToken(rt);
+      } else if (conn.access_token_enc) {
+        const at = await decryptToken(conn.access_token_enc);
+        if (at) await revokeGoogleToken(at);
+      }
+    } catch { /* best-effort */ }
+
+    await admin.from("oauth_connections").delete().eq("id", conn.id).eq("user_id", context.userId);
+    return { ok: true as const, email: conn.account_email as string | null };
+  });
+
 export const disconnectAllAccounts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

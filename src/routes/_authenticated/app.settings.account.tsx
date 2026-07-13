@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, ShieldOff, Trash2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, Loader2, Mail, ShieldOff, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -9,8 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { disconnectAllAccounts, deleteMyAccount } from "@/lib/account.functions";
+import {
+  disconnectAllAccounts,
+  disconnectOneAccount,
+  deleteMyAccount,
+} from "@/lib/account.functions";
+import { listEmailAccounts } from "@/lib/gmail.functions";
 
 export const Route = createFileRoute("/_authenticated/app/settings/account")({
   head: () => ({
@@ -34,16 +40,36 @@ export const Route = createFileRoute("/_authenticated/app/settings/account")({
 function AccountSettingsPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const disconnectFn = useServerFn(disconnectAllAccounts);
+  const disconnectAllFn = useServerFn(disconnectAllAccounts);
+  const disconnectOneFn = useServerFn(disconnectOneAccount);
   const deleteFn = useServerFn(deleteMyAccount);
+  const listFn = useServerFn(listEmailAccounts);
   const [confirmText, setConfirmText] = useState("");
   const [showDelete, setShowDelete] = useState(false);
 
+  const accounts = useQuery({
+    queryKey: ["email-accounts"],
+    queryFn: () => listFn(),
+  });
+
   const disconnectMut = useMutation({
-    mutationFn: () => disconnectFn(),
+    mutationFn: () => disconnectAllFn(),
     onSuccess: (r) => {
       toast.success(`Disconnected ${r.disconnected} account(s). Google tokens revoked.`);
       qc.invalidateQueries();
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  const disconnectOneMut = useMutation({
+    mutationFn: (connectionId: string) => disconnectOneFn({ data: { connectionId } }),
+    onSuccess: (r) => {
+      if (!r.ok) {
+        toast.error(r.error ?? "Failed to disconnect");
+        return;
+      }
+      toast.success(`Disconnected ${r.email ?? "account"}. Google token revoked.`);
+      qc.invalidateQueries({ queryKey: ["email-accounts"] });
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -88,27 +114,84 @@ function AccountSettingsPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             <li>Tokens revoked at <code>oauth2.googleapis.com/revoke</code></li>
             <li>All OAuth connection rows deleted from our database</li>
             <li>Historic emails synced before disconnect are purged within 30 days</li>
             <li>You can reconnect anytime from Email Sources</li>
           </ul>
-          <Button
-            variant="outline"
-            onClick={() => {
-              if (confirm("Disconnect all connected Google accounts?")) disconnectMut.mutate();
-            }}
-            disabled={disconnectMut.isPending}
-          >
-            {disconnectMut.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ShieldOff className="mr-2 h-4 w-4" />
+
+          {/* Per-account list */}
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Connected accounts</div>
+            {accounts.isLoading && (
+              <div className="text-sm text-muted-foreground">Loading…</div>
             )}
-            Disconnect all Google accounts
-          </Button>
+            {accounts.data && accounts.data.length === 0 && (
+              <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                No Google accounts connected.
+              </div>
+            )}
+            {accounts.data?.map((a) => {
+              const busy = disconnectOneMut.isPending && disconnectOneMut.variables === a.id;
+              return (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between gap-3 rounded-md border p-3"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium">{a.account_email}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {a.provider} • {a.status}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={a.status === "active" ? "default" : "destructive"}>
+                      {a.status}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (confirm(`Disconnect ${a.account_email}?`)) {
+                          disconnectOneMut.mutate(a.id);
+                        }
+                      }}
+                      disabled={busy}
+                    >
+                      {busy ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      )}
+                      Disconnect
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {accounts.data && accounts.data.length > 1 && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (confirm("Disconnect ALL connected Google accounts?")) disconnectMut.mutate();
+              }}
+              disabled={disconnectMut.isPending}
+            >
+              {disconnectMut.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ShieldOff className="mr-2 h-4 w-4" />
+              )}
+              Disconnect all accounts
+            </Button>
+          )}
         </CardContent>
       </Card>
 
