@@ -225,30 +225,40 @@ function RadarPage() {
                   <span className="text-xs text-muted-foreground">{inr(b.totalValue)}</span>
                 </header>
                 <ul className="space-y-2">
-                  {b.items.slice(0, 6).map((i) => (
-                    <li key={i.id}>
-                      <Link
-                        to={(i.link ?? "/app/notifications") as "/app/notifications"}
-                        className="flex items-start gap-2 rounded-lg p-2 -mx-2 hover:bg-background/60"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">{i.title}</div>
-                          {i.subtitle && (
-                            <div className="line-clamp-1 text-xs text-muted-foreground">
-                              {i.subtitle}
-                            </div>
-                          )}
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <div className="text-[11px] font-semibold text-foreground">
-                            {inr(i.value)}
+                  {b.items.slice(0, 6).map((i) => {
+                    const goesToInbox =
+                      !!i.thread_key || (i.link ?? "").startsWith("/app/inbox");
+                    const linkProps = goesToInbox
+                      ? ({
+                          to: "/app/inbox",
+                          search: i.thread_key ? { thread: i.thread_key } : undefined,
+                        } as const)
+                      : ({ to: (i.link ?? "/app/notifications") as "/app/notifications" } as const);
+                    return (
+                      <li key={i.id}>
+                        <Link
+                          {...linkProps}
+                          className="flex items-start gap-2 rounded-lg p-2 -mx-2 hover:bg-background/60"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-medium">{i.title}</div>
+                            {i.subtitle && (
+                              <div className="line-clamp-1 text-xs text-muted-foreground">
+                                {i.subtitle}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-[10px] text-muted-foreground">waited {i.waited}</div>
-                        </div>
-                        <ChevronRight className="mt-1 h-3.5 w-3.5 text-muted-foreground" />
-                      </Link>
-                    </li>
-                  ))}
+                          <div className="shrink-0 text-right">
+                            <div className="text-[11px] font-semibold text-foreground">
+                              {inr(i.value)}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">waited {i.waited}</div>
+                          </div>
+                          <ChevronRight className="mt-1 h-3.5 w-3.5 text-muted-foreground" />
+                        </Link>
+                      </li>
+                    );
+                  })}
                   {b.items.length > 6 && (
                     <li className="pt-1 text-center text-[11px] text-muted-foreground">
                       +{b.items.length - 6} more

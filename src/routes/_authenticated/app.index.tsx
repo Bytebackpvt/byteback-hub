@@ -70,6 +70,18 @@ function DashboardPage() {
   const hot = threads.filter((t) => t.priority === "hot").slice(0, 5);
   const openTasks = tasks.filter((t) => !t.done);
 
+  // Build a lookup so AI's "Name @ Company" target can resolve to a real thread id.
+  const threadIndex = useMemo(
+    () =>
+      threads.map((t) => ({
+        id: t.id,
+        name: (t.from.name ?? "").toLowerCase(),
+        company: (t.from.company ?? "").toLowerCase(),
+        email: (t.from.email ?? "").toLowerCase(),
+      })),
+    [threads],
+  );
+
   const briefingInput = useMemo(
     () => ({
       senderName: "there",
@@ -174,7 +186,7 @@ function DashboardPage() {
             )}
             <ol className="space-y-2">
               {briefingQuery.data.actions.map((a) => (
-                <PriorityRow key={`${a.priority}-${a.title}`} action={a} />
+                <PriorityRow key={`${a.priority}-${a.title}`} action={a} threadIndex={threadIndex} />
               ))}
             </ol>
           </div>
@@ -256,6 +268,7 @@ function DashboardPage() {
                 <li key={t.id}>
                   <Link
                     to="/app/inbox"
+                    search={{ thread: t.id }}
                     className="flex items-center gap-3 rounded-md py-2.5 px-1 -mx-1 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label={`Open thread from ${t.from.name} at ${t.from.company}: ${t.subject}`}
                   >
@@ -282,8 +295,8 @@ function DashboardPage() {
 
         {/* Priority tasks */}
         <section className="rounded-2xl border border-border/60 bg-card p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Top tasks</h2>
+          <div className="mb-1 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Today's to-do list</h2>
             <Link
               to="/app/tasks"
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -291,6 +304,9 @@ function DashboardPage() {
               Open tasks <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Har task ek lead ya follow-up se juda hai — priority ke hisaab se sorted.
+          </p>
           {tasksQuery.isLoading ? (
             <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…
@@ -298,50 +314,65 @@ function DashboardPage() {
           ) : openTasks.length === 0 ? (
             <div className="flex flex-col items-start gap-2 py-6">
               <p className="text-sm text-muted-foreground">
-                <CheckSquare className="mr-1.5 inline h-3.5 w-3.5" /> Inbox zero on tasks.
+                <CheckSquare className="mr-1.5 inline h-3.5 w-3.5" /> Sab tasks complete — inbox zero.
               </p>
               <Button asChild variant="outline" size="sm">
                 <Link to="/app/tasks">Add a task</Link>
               </Button>
             </div>
-
           ) : (
             <ul className="divide-y divide-border/50">
-              {openTasks.slice(0, 5).map((t) => (
-                <li key={t.id}>
-                  <Link
-                    to="/app/tasks"
-                    className="flex items-center gap-3 rounded-md py-2.5 px-1 -mx-1 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-label={`Open task: ${t.title}`}
-                  >
-                    <span
-                      className={cn(
-                        "rounded px-1.5 py-0.5 text-[10px] font-bold uppercase",
-                        t.priority === "high" && "bg-rose-500/15 text-rose-500",
-                        t.priority === "med" && "bg-amber-500/15 text-amber-600",
-                        t.priority === "low" && "bg-muted text-muted-foreground",
-                      )}
+              {openTasks.slice(0, 5).map((t) => {
+                const dueLabel = formatDue(t.due);
+                return (
+                  <li key={t.id}>
+                    <Link
+                      to="/app/tasks"
+                      className="flex items-start gap-3 rounded-md py-2.5 px-1 -mx-1 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={`Open task: ${t.title}`}
                     >
-                      {t.priority}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm">{t.title}</div>
-                      {t.linked_to && (
-                        <div className="truncate text-xs text-muted-foreground">
-                          {t.linked_to}
+                      <span
+                        className={cn(
+                          "mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase",
+                          t.priority === "high" && "bg-rose-500/15 text-rose-500",
+                          t.priority === "med" && "bg-amber-500/15 text-amber-600",
+                          t.priority === "low" && "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {t.priority}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{t.title}</div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                          {t.linked_to && (
+                            <span className="truncate">👤 {t.linked_to}</span>
+                          )}
+                          {dueLabel && (
+                            <span
+                              className={cn(
+                                "font-medium",
+                                dueLabel.overdue ? "text-rose-500" : "text-foreground/70",
+                              )}
+                            >
+                              🕒 {dueLabel.label}
+                            </span>
+                          )}
+                          {t.source === "ai" && (
+                            <span className="inline-flex items-center gap-0.5 rounded bg-brand/10 px-1 py-0.5 text-brand">
+                              <Sparkles className="h-2.5 w-2.5" /> AI suggested
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    {t.source === "ai" && (
-                      <Sparkles className="h-3 w-3 shrink-0 text-brand" />
-                    )}
-                  </Link>
-                </li>
-              ))}
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
       </div>
+
 
       {/* Analytics glance */}
       {analytics && (
@@ -429,20 +460,56 @@ const CATEGORY_ICON: Record<PriorityAction["category"], typeof Inbox> = {
   review: BarChart3,
 };
 
-function PriorityRow({ action }: { action: PriorityAction }) {
+type ThreadIndexEntry = { id: string; name: string; company: string; email: string };
+
+function matchThreadFromTarget(
+  target: string | undefined,
+  index: ThreadIndexEntry[],
+): string | null {
+  if (!target || !index.length) return null;
+  const t = target.toLowerCase();
+  // Try email first
+  const byEmail = index.find((e) => e.email && t.includes(e.email));
+  if (byEmail) return byEmail.id;
+  // Then name + company both present
+  const byBoth = index.find(
+    (e) => e.name && e.company && t.includes(e.name) && t.includes(e.company),
+  );
+  if (byBoth) return byBoth.id;
+  // Then company alone (more distinctive than a first name)
+  const byCompany = index.find((e) => e.company && t.includes(e.company));
+  if (byCompany) return byCompany.id;
+  const byName = index.find((e) => e.name && t.includes(e.name));
+  return byName?.id ?? null;
+}
+
+function PriorityRow({
+  action,
+  threadIndex,
+}: {
+  action: PriorityAction;
+  threadIndex: ThreadIndexEntry[];
+}) {
   const Icon = CATEGORY_ICON[action.category];
-  const target =
+  const fallbackTarget =
     action.category === "task"
       ? "/app/tasks"
       : action.category === "review"
         ? "/app/analytics"
         : "/app/inbox";
+  const matchedThreadId =
+    action.category === "reply" || action.category === "followup"
+      ? matchThreadFromTarget(action.target, threadIndex)
+      : null;
+  const linkProps = matchedThreadId
+    ? ({ to: "/app/inbox", search: { thread: matchedThreadId } } as const)
+    : ({ to: fallbackTarget } as const);
   return (
     <li>
       <Link
-        to={target}
+        {...linkProps}
         className="flex gap-3 rounded-xl border border-border/50 bg-background/50 p-3 transition hover:border-brand/40 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label={`${action.title} — open ${target.replace("/app/", "")}`}
+        aria-label={`${action.title} — open ${fallbackTarget.replace("/app/", "")}`}
       >
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/15 text-xs font-bold text-brand">
           {action.priority}
@@ -490,4 +557,31 @@ function PriorityRow({ action }: { action: PriorityAction }) {
     </li>
   );
 }
+
+function formatDue(due: string | null | undefined): { label: string; overdue: boolean } | null {
+  if (!due) return null;
+  const ts = new Date(due).getTime();
+  if (!isFinite(ts)) return null;
+  const now = Date.now();
+  const diffMs = ts - now;
+  const day = 86_400_000;
+  const overdue = diffMs < 0;
+  const absDays = Math.round(Math.abs(diffMs) / day);
+  if (overdue) {
+    if (absDays === 0) return { label: "Overdue today", overdue: true };
+    return { label: `Overdue ${absDays}d`, overdue: true };
+  }
+  if (absDays === 0) return { label: "Due today", overdue: false };
+  if (absDays === 1) return { label: "Due tomorrow", overdue: false };
+  if (absDays < 7)
+    return {
+      label: `Due ${new Date(ts).toLocaleDateString(undefined, { weekday: "short" })}`,
+      overdue: false,
+    };
+  return {
+    label: `Due ${new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
+    overdue: false,
+  };
+}
+
 
