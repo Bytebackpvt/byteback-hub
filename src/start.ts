@@ -5,7 +5,11 @@ import { attachSupabaseAuth } from "@/lib/attach-supabase-auth";
 import { buildMissingAuthLog } from "@/lib/auth-audit";
 
 
-const errorMiddleware = createMiddleware().server(async ({ next }) => {
+const errorMiddleware = createMiddleware().server(async ({ next, request }) => {
+  const url = new URL(request.url);
+  if (url.pathname.startsWith("/lovable/")) {
+    return next();
+  }
   try {
     return await next();
   } catch (error) {
@@ -23,6 +27,10 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 // Structured logging for server-fn calls that arrive without an Authorization
 // header. Helps trace which route / server fn is firing while signed out.
 const authAuditMiddleware = createMiddleware().server(async ({ next, request }) => {
+  const url = new URL(request.url);
+  if (url.pathname.startsWith("/lovable/")) {
+    return next();
+  }
   try {
     const hasAuth = Boolean(request.headers.get("authorization"));
     if (!hasAuth) {
