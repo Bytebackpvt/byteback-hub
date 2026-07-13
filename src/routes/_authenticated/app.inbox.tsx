@@ -63,6 +63,8 @@ function InboxPage() {
   const navigate = useNavigate({ from: "/app/inbox" });
   const [mailbox, setMailbox] = useState("all");
   const [selectedId, setSelectedId] = useState<string>(threadParam || THREADS[0].id);
+  // On phones we drill into the reader; on md+ both list and reader are visible together.
+  const [mobileReaderOpen, setMobileReaderOpen] = useState<boolean>(!!threadParam);
   const [search, setSearch] = useState("");
   const [reply, setReply] = useState("");
   const [aiSummaries, setAiSummaries] = useState<Record<string, string>>({});
