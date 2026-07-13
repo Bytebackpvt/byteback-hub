@@ -188,7 +188,7 @@ function InboxPage() {
 
   function selectThread(id: string) {
     setSelectedId(id);
-    navigate({ search: (prev) => ({ ...prev, thread: id }), replace: true });
+    navigate({ search: (prev: { thread?: string }) => ({ ...prev, thread: id }), replace: true });
   }
 
   // Auto-draft: on thread select, generate an AI reply in the background if none exists.
