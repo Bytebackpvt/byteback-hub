@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { fallback, zodValidator } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -47,13 +49,20 @@ import {
 } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
+const inboxSearchSchema = z.object({
+  thread: fallback(z.string(), "").default(""),
+});
+
 export const Route = createFileRoute("/_authenticated/app/inbox")({
+  validateSearch: zodValidator(inboxSearchSchema),
   component: InboxPage,
 });
 
 function InboxPage() {
+  const { thread: threadParam } = Route.useSearch();
+  const navigate = useNavigate({ from: "/app/inbox" });
   const [mailbox, setMailbox] = useState("all");
-  const [selectedId, setSelectedId] = useState<string>(THREADS[0].id);
+  const [selectedId, setSelectedId] = useState<string>(threadParam || THREADS[0].id);
   const [search, setSearch] = useState("");
   const [reply, setReply] = useState("");
   const [aiSummaries, setAiSummaries] = useState<Record<string, string>>({});
