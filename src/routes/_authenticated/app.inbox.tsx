@@ -337,10 +337,10 @@ function InboxPage() {
         <div className="border-b border-border/60 p-3">
           <div
             className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-            aria-label={connected ? "Connected to Instantly, live data" : "Not connected to Instantly"}
+            aria-label={connected ? "Live inbox" : "No mailboxes connected"}
           >
             <Plug aria-hidden="true" className={cn("h-3 w-3", connected ? "text-emerald-500" : "text-amber-500")} />
-            {connected ? "Instantly · live" : threadsQuery.isLoading ? "Connecting…" : "Demo data"}
+            {connected ? "Live" : threadsQuery.isLoading ? "Connecting…" : "Not connected"}
           </div>
           {!connected && threadsQuery.data?.error && (
             <div className="mt-1 text-[10px] text-rose-500/80" title={threadsQuery.data.error}>
