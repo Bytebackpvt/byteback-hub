@@ -135,20 +135,34 @@ export async function syncGmailConnection(connectionId: string): Promise<{
     .maybeSingle();
   const seen = new Set<string>(state?.cursor ? String(state.cursor).split(",").filter(Boolean) : []);
 
-  const listRes = await fetch(
-    "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25&labelIds=INBOX",
-    { headers: { authorization: `Bearer ${accessToken}` } },
-  );
-  if (!listRes.ok) {
-    const txt = await listRes.text();
-    await admin
-      .from("oauth_connections")
-      .update({ status: "error", last_error: `list ${listRes.status}: ${txt.slice(0, 200)}` })
-      .eq("id", connectionId);
-    return { processed: 0, skipped: 0, error: `list ${listRes.status}` };
+  const items: GmailListItem[] = [];
+  let pageToken: string | undefined;
+  const MAX_MESSAGES = 500;
+  // Paginate the mailbox (Gmail returns newest first). Stop once we hit an
+  // already-synced id or the safety cap.
+  while (items.length < MAX_MESSAGES) {
+    const url = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
+    url.searchParams.set("maxResults", "100");
+    url.searchParams.set("labelIds", "INBOX");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+    const listRes = await fetch(url.toString(), {
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    if (!listRes.ok) {
+      const txt = await listRes.text();
+      await admin
+        .from("oauth_connections")
+        .update({ status: "error", last_error: `list ${listRes.status}: ${txt.slice(0, 200)}` })
+        .eq("id", connectionId);
+      return { processed: 0, skipped: 0, error: `list ${listRes.status}` };
+    }
+    const list = (await listRes.json()) as { messages?: GmailListItem[]; nextPageToken?: string };
+    const batch = list.messages ?? [];
+    items.push(...batch);
+    if (batch.some((m) => seen.has(m.id))) break;
+    if (!list.nextPageToken) break;
+    pageToken = list.nextPageToken;
   }
-  const list = (await listRes.json()) as { messages?: GmailListItem[] };
-  const items = list.messages ?? [];
 
   let processed = 0;
   let skipped = 0;
