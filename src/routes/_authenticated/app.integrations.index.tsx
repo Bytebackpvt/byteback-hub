@@ -40,7 +40,8 @@ function MarketplacePage() {
   const [search, setSearch] = useState("");
 
   const rowsByProvider = useMemo(() => {
-    const m = new Map<string, (typeof q.data.rows)[number]>();
+    type Row = NonNullable<typeof q.data>["rows"][number];
+    const m = new Map<string, Row>();
     for (const r of q.data?.rows ?? []) m.set(r.provider_id, r);
     return m;
   }, [q.data]);
