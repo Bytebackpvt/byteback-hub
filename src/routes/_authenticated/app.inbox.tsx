@@ -393,8 +393,13 @@ function InboxPage() {
         </ScrollArea>
       </aside>
 
-      {/* Thread list */}
-      <section className="flex flex-col border-r border-border/60">
+      {/* Thread list — full-width on mobile, hidden when reader is open on mobile */}
+      <section
+        className={cn(
+          "flex-col border-r border-border/60 md:flex",
+          mobileReaderOpen ? "hidden" : "flex",
+        )}
+      >
         <div className="flex items-center gap-2 border-b border-border/60 p-3">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
