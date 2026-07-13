@@ -144,7 +144,7 @@ function TermsPage() {
           <h2>14. Contact</h2>
           <p>
             Questions about these Terms? Email{" "}
-            <a href="mailto:legal@byteback.digital">legal@byteback.digital</a>.
+            <a href="mailto:info@byteback.co.in">info@byteback.co.in</a>.
           </p>
         </div>
 

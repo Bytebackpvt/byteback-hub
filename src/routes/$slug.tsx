@@ -144,7 +144,7 @@ const PAGES: Record<string, MarketingPage> = {
       "ByteBack is an AI-powered unified inbox for outbound reply teams",
       "The product helps teams classify replies, prioritize buyers, and manage follow-ups",
       "Core users include agencies, founders, sales teams, and IT-focused businesses",
-      "For press inquiries, contact legal@byteback.digital or privacy@byteback.digital",
+      "For press inquiries, contact info@byteback.co.in or info@byteback.co.in",
     ],
   },
   contact: {
@@ -152,8 +152,8 @@ const PAGES: Record<string, MarketingPage> = {
     title: "Contact ByteBack",
     description: "Reach the ByteBack team for product, privacy, legal, or account-data questions.",
     bullets: [
-      "Privacy and deletion requests: privacy@byteback.digital",
-      "Legal questions: legal@byteback.digital",
+      "Privacy and deletion requests: info@byteback.co.in",
+      "Legal questions: info@byteback.co.in",
       "Product access: create a workspace from the sign-in page",
       "Connected account management: Account & Data settings inside the app",
     ],
@@ -189,7 +189,7 @@ const PAGES: Record<string, MarketingPage> = {
       "App routes and public legal pages are available",
       "Account settings include disconnect and delete controls",
       "Connected account authorization depends on provider availability",
-      "For urgent access questions, contact privacy@byteback.digital",
+      "For urgent access questions, contact info@byteback.co.in",
     ],
   },
   community: {
@@ -224,7 +224,7 @@ const PAGES: Record<string, MarketingPage> = {
       "Customer data is processed to provide the ByteBack service",
       "Connected account data is used for reply syncing, classification, prioritization, and user-requested workflows",
       "Deletion and disconnect controls are available from Account & Data settings",
-      "For DPA requests, contact legal@byteback.digital",
+      "For DPA requests, contact info@byteback.co.in",
     ],
   },
   cookies: {
@@ -235,7 +235,7 @@ const PAGES: Record<string, MarketingPage> = {
       "Authentication state keeps users signed in securely",
       "Preference storage can remember interface settings such as theme",
       "Essential cookies support routing, session, and product functionality",
-      "Contact privacy@byteback.digital for privacy-related questions",
+      "Contact info@byteback.co.in for privacy-related questions",
     ],
   },
 };

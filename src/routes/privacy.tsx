@@ -70,7 +70,7 @@ function PrivacyPage() {
             <Link to="/terms">Terms of Service</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <a href="mailto:privacy@byteback.digital">Contact privacy</a>
+            <a href="mailto:info@byteback.co.in">Contact privacy</a>
           </Button>
         </div>
 
@@ -212,7 +212,7 @@ function PrivacyPage() {
           </ul>
           <p>
             Backups are purged within 30 days. If you cannot access the app, email{" "}
-            <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a> and
+            <a href="mailto:info@byteback.co.in">info@byteback.co.in</a> and
             we will action the request within 30 days.
           </p>
 
@@ -233,7 +233,7 @@ function PrivacyPage() {
           <p>
             Subject to applicable law (including GDPR and CCPA), you have the right to access,
             correct, export, or delete your personal data. Contact{" "}
-            <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a> to exercise
+            <a href="mailto:info@byteback.co.in">info@byteback.co.in</a> to exercise
             these rights.
           </p>
 
@@ -249,7 +249,7 @@ function PrivacyPage() {
           <h2>10. Contact</h2>
           <p>
             Questions? Contact us at{" "}
-            <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a>.
+            <a href="mailto:info@byteback.co.in">info@byteback.co.in</a>.
           </p>
         </div>
 

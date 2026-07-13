@@ -95,7 +95,7 @@ function HelpPage() {
           body="Stuck on something? Our team replies within a few hours on business days."
           action={
             <Button asChild size="sm" variant="outline" className="w-full">
-              <a href="mailto:support@byteback.ai">Email support</a>
+              <a href="mailto:info@byteback.co.in">Email support</a>
             </Button>
           }
         />

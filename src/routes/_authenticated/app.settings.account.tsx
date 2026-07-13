@@ -272,8 +272,8 @@ function AccountSettingsPage() {
 
       <p className="text-xs text-muted-foreground">
         Prefer email? Send a deletion request to{" "}
-        <a className="underline" href="mailto:privacy@byteback.digital">
-          privacy@byteback.digital
+        <a className="underline" href="mailto:info@byteback.co.in">
+          info@byteback.co.in
         </a>{" "}
         — we action requests within 30 days.
       </p>
