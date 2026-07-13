@@ -63,6 +63,8 @@ function InboxPage() {
   const navigate = useNavigate({ from: "/app/inbox" });
   const [mailbox, setMailbox] = useState("all");
   const [selectedId, setSelectedId] = useState<string>(threadParam || THREADS[0].id);
+  // On phones we drill into the reader; on md+ both list and reader are visible together.
+  const [mobileReaderOpen, setMobileReaderOpen] = useState<boolean>(!!threadParam);
   const [search, setSearch] = useState("");
   const [reply, setReply] = useState("");
   const [aiSummaries, setAiSummaries] = useState<Record<string, string>>({});
@@ -188,6 +190,7 @@ function InboxPage() {
 
   function selectThread(id: string) {
     setSelectedId(id);
+    setMobileReaderOpen(true);
     navigate({ search: (prev: { thread?: string }) => ({ ...prev, thread: id }), replace: true });
   }
 
@@ -328,9 +331,12 @@ function InboxPage() {
   }
 
   return (
-    <div className="grid h-[calc(100dvh-3rem)] grid-cols-[240px_360px_1fr]">
-      {/* Mailboxes column */}
-      <aside className="flex flex-col border-r border-border/60 bg-muted/20">
+    <div
+      className="grid h-[calc(100dvh-3rem)] grid-cols-1 md:grid-cols-[280px_1fr] xl:grid-cols-[220px_320px_1fr]"
+      data-reader={mobileReaderOpen ? "open" : "closed"}
+    >
+      {/* Mailboxes column — only on xl+ (hidden below to save space) */}
+      <aside className="hidden flex-col border-r border-border/60 bg-muted/20 xl:flex">
         <div className="border-b border-border/60 p-3">
           <div
             className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
@@ -387,8 +393,13 @@ function InboxPage() {
         </ScrollArea>
       </aside>
 
-      {/* Thread list */}
-      <section className="flex flex-col border-r border-border/60">
+      {/* Thread list — full-width on mobile, hidden when reader is open on mobile */}
+      <section
+        className={cn(
+          "flex-col border-r border-border/60 md:flex",
+          mobileReaderOpen ? "hidden" : "flex",
+        )}
+      >
         <div className="flex items-center gap-2 border-b border-border/60 p-3">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -454,12 +465,26 @@ function InboxPage() {
         </ScrollArea>
       </section>
 
-      {/* Thread detail */}
-      <section className="flex flex-col overflow-hidden">
+      {/* Thread detail — hidden on mobile until a thread is opened */}
+      <section
+        className={cn(
+          "flex-col overflow-hidden md:flex",
+          mobileReaderOpen ? "flex" : "hidden",
+        )}
+      >
         {selected ? (
           <>
             <div className="flex items-start justify-between gap-3 border-b border-border/60 p-4">
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2 -ml-2 h-7 gap-1 text-xs md:hidden"
+                  onClick={() => setMobileReaderOpen(false)}
+                  aria-label="Back to inbox list"
+                >
+                  ← Back to list
+                </Button>
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
