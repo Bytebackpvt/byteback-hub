@@ -3,20 +3,13 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { getCurrentWorkspaceId } from "@/lib/workspace.functions";
 
 async function getOwnedWorkspaceId(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("workspace_members")
-    .select("workspace_id, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  return (data?.workspace_id as string | undefined) ?? null;
+  return (await getCurrentWorkspaceId(supabase, userId)) ?? null;
 }
 
 // Rules: due date + priority derived from lead interest / reply sentiment.
