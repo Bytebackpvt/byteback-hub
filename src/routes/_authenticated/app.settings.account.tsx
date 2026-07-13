@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Loader2, Mail, ShieldOff, Trash2 } from "lucide-react";
@@ -277,6 +277,17 @@ function AccountSettingsPage() {
         </a>{" "}
         — we action requests within 30 days.
       </p>
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+        <span>Learn more:</span>
+        <Link to="/privacy" target="_blank" className="underline hover:text-foreground">
+          Privacy Policy
+        </Link>
+        <span>·</span>
+        <Link to="/terms" target="_blank" className="underline hover:text-foreground">
+          Terms of Service
+        </Link>
+      </div>
     </div>
   );
 }
