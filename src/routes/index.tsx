@@ -42,11 +42,54 @@ export const Route = createFileRoute("/")({
 });
 
 const NAV = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Blog", href: "#blog" },
+  { label: "Features", href: "/features" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "FAQ", href: "/faq" },
+  { label: "Blog", href: "/blog" },
 ];
+
+const FOOTER_LINKS = [
+  {
+    title: "Product",
+    links: [
+      ["Features", "/features"],
+      ["Pricing", "/pricing"],
+      ["Integrations", "/integrations"],
+      ["Changelog", "/changelog"],
+      ["Roadmap", "/roadmap"],
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      ["About", "/about"],
+      ["Customers", "/customers"],
+      ["Careers", "/careers"],
+      ["Press", "/press"],
+      ["Contact", "/contact"],
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      ["Docs", "/docs"],
+      ["Blog", "/blog"],
+      ["Guides", "/guides"],
+      ["Status", "/status"],
+      ["Community", "/community"],
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      ["Privacy", "/privacy"],
+      ["Terms", "/terms"],
+      ["Security", "/security"],
+      ["DPA", "/dpa"],
+      ["Cookies", "/cookies"],
+    ],
+  },
+] as const;
 
 const INTEGRATIONS = [
   "Instantly",
@@ -823,15 +866,6 @@ function FinalCTA() {
 }
 
 function Footer() {
-  const cols = [
-    {
-      title: "Product",
-      links: ["Features", "Pricing", "Integrations", "Changelog", "Roadmap"],
-    },
-    { title: "Company", links: ["About", "Customers", "Careers", "Press", "Contact"] },
-    { title: "Resources", links: ["Docs", "Blog", "Guides", "Status", "Community"] },
-    { title: "Legal", links: ["Privacy", "Terms", "Security", "DPA", "Cookies"] },
-  ];
   return (
     <footer className="border-t border-border/60 bg-muted/20 py-14">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -842,16 +876,16 @@ function Footer() {
               One inbox. Every lead. Zero missed opportunities.
             </p>
           </div>
-          {cols.map((c) => (
+          {FOOTER_LINKS.map((c) => (
             <div key={c.title}>
               <div className="text-xs font-semibold uppercase tracking-wider text-foreground">
                 {c.title}
               </div>
               <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                {c.links.map((l) => (
-                  <li key={l}>
-                    <a href="#" className="transition hover:text-foreground">
-                      {l}
+                {c.links.map(([label, href]) => (
+                  <li key={href}>
+                    <a href={href} className="transition hover:text-foreground">
+                      {label}
                     </a>
                   </li>
                 ))}
