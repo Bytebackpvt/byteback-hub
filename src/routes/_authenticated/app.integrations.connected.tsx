@@ -37,6 +37,7 @@ function ConnectedPage() {
   const all = [
     ...(q.data?.oauth ?? []).map((a) => ({ ...a, kind: "oauth_connection" as const })),
     ...(q.data?.accounts ?? []).map((a) => ({ ...a, kind: "workspace_integration" as const })),
+    ...(q.data?.builtin ?? []).map((a) => ({ ...a, kind: "builtin" as const })),
   ];
 
   if (all.length === 0) {
