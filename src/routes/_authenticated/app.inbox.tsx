@@ -331,9 +331,12 @@ function InboxPage() {
   }
 
   return (
-    <div className="grid h-[calc(100dvh-3rem)] grid-cols-[240px_360px_1fr]">
-      {/* Mailboxes column */}
-      <aside className="flex flex-col border-r border-border/60 bg-muted/20">
+    <div
+      className="grid h-[calc(100dvh-3rem)] grid-cols-1 md:grid-cols-[280px_1fr] xl:grid-cols-[220px_320px_1fr]"
+      data-reader={mobileReaderOpen ? "open" : "closed"}
+    >
+      {/* Mailboxes column — only on xl+ (hidden below to save space) */}
+      <aside className="hidden flex-col border-r border-border/60 bg-muted/20 xl:flex">
         <div className="border-b border-border/60 p-3">
           <div
             className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
