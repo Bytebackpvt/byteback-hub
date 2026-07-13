@@ -276,13 +276,33 @@ function getKey(): Buffer {
   return createHash("sha256").update(raw).digest();
 }
 
-export async function encryptToken(plaintext: string): Promise<Buffer> {
+function unwrapStoredTokenBytes(buf: Buffer): Buffer {
+  // Older rows were saved from a Worker Buffer polyfill, which PostgREST stored
+  // as JSON text: {"type":"Buffer","data":[...]}. Accept both that shape and
+  // the intended raw AES-GCM byte payload so existing Gmail connections recover.
+  if (buf[0] !== 0x7b) return buf;
+  try {
+    const parsed = JSON.parse(buf.toString("utf8")) as { type?: string; data?: unknown };
+    if (
+      parsed?.type === "Buffer" &&
+      Array.isArray(parsed.data) &&
+      parsed.data.every((n) => Number.isInteger(n) && n >= 0 && n <= 255)
+    ) {
+      return Buffer.from(parsed.data as number[]);
+    }
+  } catch {
+    // Not JSON; fall through to the raw bytes.
+  }
+  return buf;
+}
+
+export async function encryptToken(plaintext: string): Promise<string> {
   const { randomBytes, createCipheriv } = await import("crypto");
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", getKey(), iv);
   const enc = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
-  return Buffer.concat([iv, tag, enc]);
+  return `\\x${Buffer.concat([iv, tag, enc]).toString("hex")}`;
 }
 
 export async function decryptToken(blob: Buffer | Uint8Array | string): Promise<string> {
@@ -295,6 +315,7 @@ export async function decryptToken(blob: Buffer | Uint8Array | string): Promise<
   } else {
     buf = Buffer.from(blob);
   }
+  buf = unwrapStoredTokenBytes(buf);
   const iv = buf.subarray(0, 12);
   const tag = buf.subarray(12, 28);
   const data = buf.subarray(28);
