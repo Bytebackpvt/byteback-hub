@@ -17,7 +17,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getCurrentWorkspaceId } from "@/lib/workspace.functions";
-import { syncAllGmail as runAllGmailSync, syncGmailConnection as runGmailConnectionSync } from "@/lib/gmail-sync.server";
 
 /**
  * Build the Google OAuth consent URL. Client passes its window.location.origin
@@ -104,8 +103,6 @@ export const disconnectGmail = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const syncGmailConnection = runGmailConnectionSync;
-
 export const syncWorkspaceGmailNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -123,13 +120,11 @@ export const syncWorkspaceGmailNow = createServerFn({ method: "POST" })
       .in("status", ["active", "error"]);
     let processed = 0;
     const errors: Array<{ account: string | null; error: string }> = [];
+    const { syncGmailConnection } = await import("@/lib/gmail-sync.server");
     for (const row of data ?? []) {
-      const result = await runGmailConnectionSync(row.id);
+      const result = await syncGmailConnection(row.id);
       processed += result.processed;
       if (result.error) errors.push({ account: row.account_email ?? null, error: result.error });
     }
     return { connections: (data ?? []).length, processed, errors };
   });
-
-/** Sync every active Gmail connection across every workspace. */
-export const syncAllGmail = runAllGmailSync;
