@@ -70,7 +70,10 @@ function PrivacyPage() {
             <Link to="/terms">Terms of Service</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <a href="mailto:info@byteback.co.in">Contact privacy</a>
+            <a href="mailto:info@byteback.co.in">Email info@byteback.co.in</a>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <a href="tel:+919717513277">Call +91 97175 13277</a>
           </Button>
         </div>
 

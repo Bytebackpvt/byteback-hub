@@ -275,6 +275,10 @@ function AccountSettingsPage() {
         <a className="underline" href="mailto:info@byteback.co.in">
           info@byteback.co.in
         </a>{" "}
+        or call{" "}
+        <a className="underline" href="tel:+919717513277">
+          +91 97175 13277
+        </a>{" "}
         — we action requests within 30 days.
       </p>
 
