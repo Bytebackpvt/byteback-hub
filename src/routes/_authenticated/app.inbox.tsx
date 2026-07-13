@@ -15,6 +15,7 @@ import {
   Loader2,
   Plug,
   Reply,
+  RefreshCw,
   Search,
   Send,
   Sparkles,
@@ -378,7 +379,7 @@ function InboxPage() {
             onClick={handleSyncGmail}
             disabled={syncingGmail}
           >
-            {syncingGmail ? <Loader2 className="h-3 w-3 animate-spin" /> : <MailSyncIcon />}
+            {syncingGmail ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
             Sync Gmail
           </Button>
         </div>
