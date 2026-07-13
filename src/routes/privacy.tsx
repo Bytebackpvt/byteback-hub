@@ -111,6 +111,30 @@ function PrivacyPage() {
             <li>We do not allow humans to read Gmail data unless you explicitly grant permission for support, we need to for security or to comply with the law, or the data is aggregated and anonymized for internal operations.</li>
           </ul>
 
+          <h3>Google OAuth scope justification</h3>
+          <p>Each scope we request from Google is used only for the following purpose:</p>
+          <ul>
+            <li>
+              <code>https://www.googleapis.com/auth/gmail.readonly</code> — read incoming
+              messages in the connected mailbox so ByteBack can display them in the unified
+              inbox, classify replies with AI, and create CRM contacts and follow-up tasks.
+              We never send, modify, delete, or archive messages.
+            </li>
+            <li>
+              <code>https://www.googleapis.com/auth/userinfo.email</code> — identify which
+              Google account the user connected, so we can label the mailbox in the app and
+              prevent duplicate connections.
+            </li>
+            <li>
+              <code>https://www.googleapis.com/auth/userinfo.profile</code> — display the
+              connected account's name in the ByteBack UI.
+            </li>
+            <li>
+              <code>openid</code> — standard OpenID Connect sign-in for identifying the
+              Google user.
+            </li>
+          </ul>
+
           <h2>4. Data storage and security</h2>
           <ul>
             <li>All data is encrypted in transit (TLS 1.2+) and at rest.</li>
