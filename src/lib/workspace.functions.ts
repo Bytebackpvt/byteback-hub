@@ -65,9 +65,27 @@ export async function getCurrentWorkspaceId(
       .select("email, full_name")
       .eq("id", userId)
       .maybeSingle();
+    let email = prof?.email as string | undefined;
+    let fullName = prof?.full_name as string | undefined;
+    if (!email) {
+      const { data: authUser } = await admin.auth.admin.getUserById(userId);
+      email = authUser?.user?.email ?? undefined;
+      fullName = (authUser?.user?.user_metadata?.full_name as string | undefined) ?? undefined;
+      await admin
+        .from("profiles")
+        .upsert(
+          {
+            id: userId,
+            email: email ?? null,
+            full_name: fullName ?? null,
+            onboarded: false,
+          },
+          { onConflict: "id" },
+        );
+    }
     const name =
-      (prof?.full_name as string | undefined) ||
-      (prof?.email as string | undefined)?.split("@")[0] ||
+      fullName ||
+      email?.split("@")[0] ||
       "My Workspace";
     const slug = `ws-${userId.slice(0, 8)}-${Date.now().toString(36)}`;
     const { data: ws, error: wsErr } = await admin

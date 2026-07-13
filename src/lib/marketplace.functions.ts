@@ -127,7 +127,15 @@ export const listConnectedAccounts = createServerFn({ method: "GET" })
         .map((s) => s.trim().toLowerCase())
         .filter(Boolean),
     );
-    if (process.env.INSTANTLY_API_KEY && claimsEmail && allowedEmails.has(claimsEmail)) {
+    const { data: instantlyRow } = await (context.supabase as any)
+      .from("workspace_integrations")
+      .select("id")
+      .eq("workspace_id", workspaceId)
+      .eq("provider", "instantly")
+      .eq("status", "connected")
+      .limit(1)
+      .maybeSingle();
+    if (process.env.INSTANTLY_API_KEY && claimsEmail && allowedEmails.has(claimsEmail) && instantlyRow?.id) {
       let mailboxCount = 0;
       let health: ConnectedAccount["health_status"] = "healthy";
       let lastError: string | null = null;

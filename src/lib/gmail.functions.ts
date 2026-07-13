@@ -344,7 +344,7 @@ export const syncWorkspaceGmailNow = createServerFn({ method: "POST" })
       .select("id")
       .eq("workspace_id", workspaceId)
       .eq("provider", "gmail")
-      .eq("status", "active");
+      .in("status", ["active", "error"]);
     let processed = 0;
     for (const row of data ?? []) {
       const result = await syncGmailConnection(row.id);
