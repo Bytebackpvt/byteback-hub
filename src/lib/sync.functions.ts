@@ -384,6 +384,27 @@ export const runSyncForMe = createServerFn({ method: "POST" })
     );
     if (!wsId) throw new Error("No workspace");
     await assertOwnerOrAdmin(context.supabase as unknown as SupabaseClient<Database>, wsId, context.userId);
+    // Only run Instantly sync when this workspace has explicitly connected it.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: conn } = await (context.supabase as any)
+      .from("workspace_integrations")
+      .select("id")
+      .eq("workspace_id", wsId)
+      .eq("provider", "instantly")
+      .eq("status", "connected")
+      .maybeSingle();
+    if (!conn) {
+      return {
+        workspaceId: wsId,
+        processed: 0,
+        contactsUpserted: 0,
+        threadsUpserted: 0,
+        dealsUpserted: 0,
+        embedded: 0,
+        skipped: 0,
+        error: "Instantly is not connected for this workspace",
+      };
+    }
     return await runInstantlySync(wsId, { limit: data.limit });
   });
 
