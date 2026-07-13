@@ -106,7 +106,7 @@ function AnalyticsPage() {
                 ? "Live from Instantly · all campaigns"
                 : q.isLoading
                   ? "Loading analytics…"
-                  : "Demo data · connect Instantly to see live campaign stats"}
+                  : "No data yet · connect Instantly to see live campaign stats"}
             </span>
           </p>
         </div>
