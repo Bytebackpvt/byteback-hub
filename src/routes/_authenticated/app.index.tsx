@@ -460,20 +460,56 @@ const CATEGORY_ICON: Record<PriorityAction["category"], typeof Inbox> = {
   review: BarChart3,
 };
 
-function PriorityRow({ action }: { action: PriorityAction }) {
+type ThreadIndexEntry = { id: string; name: string; company: string; email: string };
+
+function matchThreadFromTarget(
+  target: string | undefined,
+  index: ThreadIndexEntry[],
+): string | null {
+  if (!target || !index.length) return null;
+  const t = target.toLowerCase();
+  // Try email first
+  const byEmail = index.find((e) => e.email && t.includes(e.email));
+  if (byEmail) return byEmail.id;
+  // Then name + company both present
+  const byBoth = index.find(
+    (e) => e.name && e.company && t.includes(e.name) && t.includes(e.company),
+  );
+  if (byBoth) return byBoth.id;
+  // Then company alone (more distinctive than a first name)
+  const byCompany = index.find((e) => e.company && t.includes(e.company));
+  if (byCompany) return byCompany.id;
+  const byName = index.find((e) => e.name && t.includes(e.name));
+  return byName?.id ?? null;
+}
+
+function PriorityRow({
+  action,
+  threadIndex,
+}: {
+  action: PriorityAction;
+  threadIndex: ThreadIndexEntry[];
+}) {
   const Icon = CATEGORY_ICON[action.category];
-  const target =
+  const fallbackTarget =
     action.category === "task"
       ? "/app/tasks"
       : action.category === "review"
         ? "/app/analytics"
         : "/app/inbox";
+  const matchedThreadId =
+    action.category === "reply" || action.category === "followup"
+      ? matchThreadFromTarget(action.target, threadIndex)
+      : null;
+  const linkProps = matchedThreadId
+    ? ({ to: "/app/inbox", search: { thread: matchedThreadId } } as const)
+    : ({ to: fallbackTarget } as const);
   return (
     <li>
       <Link
-        to={target}
+        {...linkProps}
         className="flex gap-3 rounded-xl border border-border/50 bg-background/50 p-3 transition hover:border-brand/40 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label={`${action.title} — open ${target.replace("/app/", "")}`}
+        aria-label={`${action.title} — open ${fallbackTarget.replace("/app/", "")}`}
       >
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/15 text-xs font-bold text-brand">
           {action.priority}
