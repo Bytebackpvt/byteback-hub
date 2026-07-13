@@ -186,7 +186,7 @@ function DashboardPage() {
             )}
             <ol className="space-y-2">
               {briefingQuery.data.actions.map((a) => (
-                <PriorityRow key={`${a.priority}-${a.title}`} action={a} />
+                <PriorityRow key={`${a.priority}-${a.title}`} action={a} threadIndex={threadIndex} />
               ))}
             </ol>
           </div>
@@ -268,6 +268,7 @@ function DashboardPage() {
                 <li key={t.id}>
                   <Link
                     to="/app/inbox"
+                    search={{ thread: t.id }}
                     className="flex items-center gap-3 rounded-md py-2.5 px-1 -mx-1 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label={`Open thread from ${t.from.name} at ${t.from.company}: ${t.subject}`}
                   >
