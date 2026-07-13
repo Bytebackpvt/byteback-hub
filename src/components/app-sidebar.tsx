@@ -64,16 +64,31 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [email, setEmail] = useState<string>("");
   const callWorkspace = useServerFn(getCurrentWorkspace);
+  const callThreads = useServerFn(listInstantlyThreads);
+  const callTasks = useServerFn(listTasks);
   const wsQuery = useQuery({
     queryKey: ["workspace", "current"],
     queryFn: () => callWorkspace(),
     staleTime: 60_000,
   });
+  const inboxQ = useQuery({
+    queryKey: ["inbox"],
+    queryFn: () => callThreads(),
+    staleTime: 30_000,
+  });
+  const tasksQ = useQuery({
+    queryKey: ["tasks"],
+    queryFn: () => callTasks(),
+    staleTime: 30_000,
+  });
   const role = wsQuery.data?.role ?? null;
+  const inboxCount = inboxQ.data?.threads?.length ?? 0;
+  const tasksCount = tasksQ.data?.tasks?.filter((t) => !t.done).length ?? 0;
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
   }, []);
+
 
   const signOut = async () => {
     await queryClient.cancelQueries();
