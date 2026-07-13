@@ -36,7 +36,7 @@ function AccountSettingsPage() {
   const qc = useQueryClient();
   const disconnectFn = useServerFn(disconnectAllAccounts);
   const deleteFn = useServerFn(deleteMyAccount);
-  const [confirm, setConfirm] = useState("");
+  const [confirmText, setConfirmText] = useState("");
   const [showDelete, setShowDelete] = useState(false);
 
   const disconnectMut = useMutation({
@@ -153,15 +153,15 @@ function AccountSettingsPage() {
               </Label>
               <Input
                 id="confirm"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
                 placeholder="DELETE"
                 autoComplete="off"
               />
               <div className="flex gap-2">
                 <Button
                   variant="destructive"
-                  disabled={confirm !== "DELETE" || deleteMut.isPending}
+                  disabled={confirmText !== "DELETE" || deleteMut.isPending}
                   onClick={() => deleteMut.mutate()}
                 >
                   {deleteMut.isPending ? (
@@ -175,7 +175,7 @@ function AccountSettingsPage() {
                   variant="ghost"
                   onClick={() => {
                     setShowDelete(false);
-                    setConfirm("");
+                    setConfirmText("");
                   }}
                   disabled={deleteMut.isPending}
                 >
