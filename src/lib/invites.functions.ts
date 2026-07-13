@@ -74,11 +74,11 @@ export const acceptInvite = createServerFn({ method: "POST" })
       .update({ accepted_at: new Date().toISOString() })
       .eq("id", invite.id);
 
-    // Ensure profile has this workspace as current
+    // Mark profile onboarded so they can enter the app immediately.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabaseAdmin as any)
       .from("profiles")
-      .update({ current_workspace_id: invite.workspace_id, onboarded: true })
+      .update({ onboarded: true })
       .eq("id", context.userId);
 
     return { ok: true as const, workspaceId: invite.workspace_id as string };
