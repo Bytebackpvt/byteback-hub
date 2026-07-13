@@ -284,8 +284,27 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
   });
 
 export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  // Always include connected mailboxes stored in oauth_connections (Gmail etc.)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = context.supabase as any;
+  const { data: conns } = await sb
+    .from("oauth_connections")
+    .select("account_email, status")
+    .eq("user_id", context.userId);
+  const oauthMailboxes: InstantlyMailbox[] = (conns ?? [])
+    .filter((c: { account_email?: string }) => !!c.account_email)
+    .map((c: { account_email: string; status?: string }) => ({
+      id: c.account_email,
+      email: c.account_email,
+      status: c.status ?? "active",
+    }));
+
   if (!isInstantlyAllowed(context.claims)) {
-    return { mailboxes: [] as InstantlyMailbox[], connected: false as const, error: "Not connected" };
+    return {
+      mailboxes: oauthMailboxes,
+      connected: oauthMailboxes.length > 0,
+      error: oauthMailboxes.length ? undefined : "Not connected",
+    };
   }
 
   try {
@@ -299,12 +318,17 @@ export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middlewa
       email: a.email,
       status: a.status ?? "active",
     }));
-    return { mailboxes, connected: true as const };
+    // De-dupe by email
+    const merged = [...mailboxes];
+    for (const m of oauthMailboxes) {
+      if (!merged.some((x) => x.email.toLowerCase() === m.email.toLowerCase())) merged.push(m);
+    }
+    return { mailboxes: merged, connected: true };
   } catch (err) {
     return {
-      mailboxes: [] as InstantlyMailbox[],
-      connected: false as const,
-      error: err instanceof Error ? err.message : "Unknown error",
+      mailboxes: oauthMailboxes,
+      connected: oauthMailboxes.length > 0,
+      error: oauthMailboxes.length ? undefined : err instanceof Error ? err.message : "Unknown error",
     };
   }
 });
