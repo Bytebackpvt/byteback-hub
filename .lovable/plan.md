@@ -1,35 +1,91 @@
-## Problem
+## Goal
 
-1. Dashboard ke **Opportunity Radar** aur **Today's Priority Actions** me kisi bhi lead / row par click karne se inbox to khulta hai, lekin hamesha sabse recent email pe land karta hai — kyunki inbox thread selection sirf local `useState` me hai, URL me nahi. Koi bhi outside link `/app/inbox` pe aata hai, aur pehla thread select ho jata hai.
-2. **Top tasks** section me sirf title dikh raha hai — customer ko kya kehna hai, kaunse lead se juda hai, kab tak karna hai — kuch clear nahi.
+Make the integrations flow **universal** — same connect / configure / disconnect / sync UX for every provider — and start closing the remaining product gaps (invites, digest emails, analytics, notifications settings).
 
-## Fix (frontend/presentation only)
+---
 
-### 1) Inbox ko deep-linkable banao — `?thread=<id>`
-- `src/routes/_authenticated/app.inbox.tsx` me route par `validateSearch` add karo: `{ thread?: string }`.
-- Component me `Route.useSearch()` se `thread` padho. Initial `selectedId` URL se aaye (agar valid ho), warna current default.
-- Jab user thread badle, `navigate({ search: { thread: id }, replace: true })` — URL sync rahe, back button na tootey.
-- Agar URL me diya gaya `thread` list me na mile, chup-chap pehla thread fallback.
+## Part 1 — Universal Integrations Flow
 
-### 2) Priority Actions rows ko sahi lead pe le jao
-- `src/routes/_authenticated/app.index.tsx` (`PriorityRow`): AI ke `action.target` ("Name @ Company") ko `hot`/`threads` list ke against match karke thread id nikaalo (name+company substring, case-insensitive).
-- Match mile to `<Link to="/app/inbox" search={{ thread: matchedId }}>`. Match na mile to jaisa hai — category ke hisaab se `/app/inbox` / `/app/tasks` / `/app/analytics`.
-- Same file ke **Hot replies** list ke `<Link to="/app/inbox">` ko `search={{ thread: t.id }}` ke saath update karo.
+Right now Instantly and Gmail each have their own custom UI + server code. Everything else in the marketplace is just a "Request" button. Make one generic pattern that all providers plug into.
 
-### 3) Radar rows par thread deep-link
-- `src/routes/_authenticated/app.radar.tsx` me har item ka `Link` build karte waqt: agar `item.thread_key` ya `item.link` me thread id ho, `to="/app/inbox"` + `search={{ thread: <id> }}` use karo (thread_key ko string id maano). Warna current `item.link` fallback.
-- Type cast `as "/app/notifications"` hata do; proper `to` string do.
+### 1.1 Provider registry (single source of truth)
 
-### 4) Top tasks section ko samajhne yogya banao
-- `src/routes/_authenticated/app.index.tsx` ke **Top tasks** card me:
-  - Heading ke neeche ek chhoti helper line: "Jinhe aaj complete karna hai — har task ek lead / follow-up se juda hai."
-  - Har row me current title ke saath: due date (agar hai) — "Due today / Overdue 2d / Fri" — aur linked lead ka naam (already `t.linked_to` dikhta hai, format tighten karo: "Follow up · Alex @ Acme").
-  - AI-generated tasks (`t.source === "ai"`) par ek chhota "AI suggested" tooltip/label taaki user ko pata chale kyu banaya gaya.
-  - Row ka link `<Link to="/app/tasks" search={{ task: t.id }}>` (tasks page agar param na padhe to koi harm nahi; UI ke liye at least href specific hoga). Tasks page me search param abhi na wire karein — scope UI-only.
+Create `src/lib/integrations/registry.ts` — one entry per provider with:
+- `id`, `name`, `logo_slug`, `category`
+- `auth_kind`: `"oauth"` | `"api_key"` | `"webhook_in"` | `"webhook_out"`
+- `fields`: schema of what the user must enter (label, type, placeholder, secret y/n)
+- `capabilities`: `["ingest_email", "send_email", "crm_sync", "notify", "sheets"]`
+- `test_fn`: server function name to validate credentials
+- `sync_fn` (optional): server function to pull data
 
-### Files touched
-- `src/routes/_authenticated/app.inbox.tsx` — search param + initial selection + sync on change.
-- `src/routes/_authenticated/app.index.tsx` — PriorityRow target matching, Hot list `search`, Top tasks copy + subtitle.
-- `src/routes/_authenticated/app.radar.tsx` — items use `search={{ thread }}` when available.
+Providers to seed: Gmail, Outlook, Instantly, Smartlead, Apollo, HubSpot, Salesforce, Pipedrive, Slack, Teams, Discord, Zapier, Google Sheets, generic webhook.
 
-Koi backend / server-fn / DB change nahi. AI prompt bhi waise hi — matching client-side hogi jisse existing hot threads reliably link ho jayein.
+### 1.2 One generic table row shape
+
+`workspace_integrations` already stores `provider`, `config`, `secret`, `status`. Keep it — just make sure every new provider writes here (no more per-provider tables).
+
+### 1.3 Universal server functions
+
+Replace the scattered per-provider fns with:
+- `connectIntegration({ provider, fields })` — validates via registry, encrypts secret, upserts row.
+- `testIntegration({ id })` — calls the provider's `test_fn`.
+- `syncIntegration({ id })` — calls the provider's `sync_fn` if it has one.
+- `disconnectIntegration({ id })` — deletes row + revokes tokens where possible.
+
+Existing Gmail / Instantly code becomes just two of the registry entries; their internals stay, but the UI calls the universal fns.
+
+### 1.4 Universal UI
+
+Replace the current marketplace + Instantly-specific screens with:
+- **`/app/integrations`** — grid of all providers from registry. Each card shows status (Not connected / Connected / Error) and Connect / Manage button.
+- **`/app/integrations/$providerId`** — renders a generic form from `fields`; OAuth providers show "Connect with X" button; API-key providers show input fields; webhook-in providers show the generated inbound URL to paste elsewhere. Same page also shows Test, Sync now, Disconnect.
+- **`/app/integrations/connected`** — filtered view of connected only.
+
+All rendering is data-driven from the registry — adding a new provider = one registry entry + optional test/sync fn, zero UI code.
+
+### 1.5 Data pipeline hooks
+
+Wire capabilities so the rest of the app reacts:
+- `ingest_email` capability → thread listing merges from all such integrations for the workspace (already works for Gmail/Instantly — generalize the merge).
+- `notify` capability → notification dispatcher fans out to every connected notifier (Slack, Teams, Discord, webhook).
+- `crm_sync` capability → contact/deal syncers pick up connected CRMs.
+
+---
+
+## Part 2 — Remaining product work
+
+### 2.1 Team invites (accept flow)
+- Public route `/invite/$token` that reads `workspace_invites`, prompts sign-in / sign-up, then joins the workspace (`workspace_members` insert) and marks invite accepted.
+- Send invite email via Lovable Emails using existing auth-email infra.
+
+### 2.2 Notifications settings UI polish
+- `notification_preferences` table already exists — the settings page needs per-channel toggles (in-app, email, Slack, digest) tied to real prefs.
+- Respect prefs in the notification dispatcher.
+
+### 2.3 Daily digest email
+- `cron.daily-digest` route exists; wire it to real per-user digest content (new replies, hot leads, pending tasks) using Lovable Emails.
+- Add unsubscribe link → toggles `notification_preferences.digest_email`.
+
+### 2.4 Analytics
+- Replace mock numbers with real queries: reply rate over time, response time, hot-lead conversion, per-account performance.
+- Add date-range filter.
+
+### 2.5 Small polish
+- Sidebar badges already dynamic — add unread notifications count too.
+- Empty states across Inbox / Pipeline / Radar link into the right integration to fix.
+
+---
+
+## Suggested order of delivery
+
+1. Provider registry + universal server fns + universal UI (Part 1.1 – 1.4). Instantly and Gmail migrate onto it.
+2. Capability wiring (Part 1.5).
+3. Invite accept flow (2.1).
+4. Digest email + notification prefs (2.3 + 2.2).
+5. Analytics (2.4).
+6. Polish (2.5).
+
+## What I need from you
+
+- Confirm the order above works, ya kisi ek cheez ko pehle chahiye (invites / digest / analytics)?
+- Kya main abhi step 1 (universal integrations) se shuru kar du?
