@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, ShieldOff, Trash2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, Loader2, Mail, ShieldOff, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -9,8 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { disconnectAllAccounts, deleteMyAccount } from "@/lib/account.functions";
+import {
+  disconnectAllAccounts,
+  disconnectOneAccount,
+  deleteMyAccount,
+} from "@/lib/account.functions";
+import { listEmailAccounts } from "@/lib/gmail.functions";
 
 export const Route = createFileRoute("/_authenticated/app/settings/account")({
   head: () => ({
@@ -34,16 +40,36 @@ export const Route = createFileRoute("/_authenticated/app/settings/account")({
 function AccountSettingsPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const disconnectFn = useServerFn(disconnectAllAccounts);
+  const disconnectAllFn = useServerFn(disconnectAllAccounts);
+  const disconnectOneFn = useServerFn(disconnectOneAccount);
   const deleteFn = useServerFn(deleteMyAccount);
+  const listFn = useServerFn(listEmailAccounts);
   const [confirmText, setConfirmText] = useState("");
   const [showDelete, setShowDelete] = useState(false);
 
+  const accounts = useQuery({
+    queryKey: ["email-accounts"],
+    queryFn: () => listFn(),
+  });
+
   const disconnectMut = useMutation({
-    mutationFn: () => disconnectFn(),
+    mutationFn: () => disconnectAllFn(),
     onSuccess: (r) => {
       toast.success(`Disconnected ${r.disconnected} account(s). Google tokens revoked.`);
       qc.invalidateQueries();
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  const disconnectOneMut = useMutation({
+    mutationFn: (connectionId: string) => disconnectOneFn({ data: { connectionId } }),
+    onSuccess: (r) => {
+      if (!r.ok) {
+        toast.error(r.error ?? "Failed to disconnect");
+        return;
+      }
+      toast.success(`Disconnected ${r.email ?? "account"}. Google token revoked.`);
+      qc.invalidateQueries({ queryKey: ["email-accounts"] });
     },
     onError: (e) => toast.error((e as Error).message),
   });
