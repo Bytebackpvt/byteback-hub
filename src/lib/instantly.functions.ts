@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getCurrentWorkspaceId } from "@/lib/workspace.functions";
 
 const BASE = "https://api.instantly.ai/api/v2";
 
@@ -87,6 +88,7 @@ export type InstantlyThread = {
     | "spam";
   priority: "hot" | "warm" | "low";
   campaign?: string;
+  source?: string;
 };
 
 export type InstantlyMailbox = { id: string; email: string; status: string };
@@ -178,7 +180,6 @@ async function loadDbThreads(
   supabase: unknown,
   userId: string,
 ): Promise<InstantlyThread[]> {
-  const { getCurrentWorkspaceId } = await import("@/lib/workspace.functions");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = supabase as any;
   const workspaceId = await getCurrentWorkspaceId(sb, userId);
@@ -223,8 +224,45 @@ async function loadDbThreads(
       unread: true,
       category: cat,
       priority: pri,
+      source: (r.source as string) ?? "gmail",
     };
   });
+}
+
+async function getWorkspaceMailStatus(supabase: unknown, userId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
+  const workspaceId = await getCurrentWorkspaceId(sb, userId);
+  if (!workspaceId) {
+    return { workspaceId: null as string | null, hasActiveMailbox: false, mailError: null as string | null };
+  }
+  const { data: conns } = await sb
+    .from("oauth_connections")
+    .select("status, last_error")
+    .eq("workspace_id", workspaceId)
+    .eq("provider", "gmail");
+  const rows = (conns ?? []) as Array<{ status?: string | null; last_error?: string | null }>;
+  return {
+    workspaceId,
+    hasActiveMailbox: rows.some((c) => c.status === "active"),
+    mailError: rows.find((c) => c.last_error)?.last_error ?? null,
+  };
+}
+
+async function workspaceHasActiveInstantly(supabase: unknown, userId: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
+  const workspaceId = await getCurrentWorkspaceId(sb, userId);
+  if (!workspaceId) return false;
+  const { data } = await sb
+    .from("workspace_integrations")
+    .select("id")
+    .eq("workspace_id", workspaceId)
+    .eq("provider", "instantly")
+    .eq("status", "connected")
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data?.id);
 }
 
 export const listInstantlyThreads = createServerFn({ method: "GET" })
@@ -233,12 +271,25 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
     // Always load DB-ingested threads (Gmail, webhook, etc.) — these belong to
     // every workspace member, not only Instantly-allowed accounts.
     const dbThreads = await loadDbThreads(context.supabase, context.userId).catch(() => []);
+    const mailStatus = await getWorkspaceMailStatus(context.supabase, context.userId).catch(() => ({
+      workspaceId: null,
+      hasActiveMailbox: false,
+      mailError: null,
+    }));
+    const instantlyConnected =
+      isInstantlyAllowed(context.claims) &&
+      (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
 
-    if (!isInstantlyAllowed(context.claims)) {
+    if (!instantlyConnected) {
       return {
         threads: dbThreads,
-        connected: dbThreads.length > 0,
-        error: dbThreads.length ? undefined : "Not connected",
+        connected: dbThreads.length > 0 || mailStatus.hasActiveMailbox,
+        error:
+          dbThreads.length || mailStatus.hasActiveMailbox
+            ? undefined
+            : mailStatus.mailError
+              ? `Reconnect Gmail: ${mailStatus.mailError}`
+              : "Not connected",
       };
     }
 
@@ -271,6 +322,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
           category: cat,
           priority: priorityFrom(cat, e.ai_interest_value),
           campaign: e.campaign_id,
+          source: "instantly",
         };
       });
       return { threads: [...threads, ...dbThreads], connected: true };
@@ -287,10 +339,13 @@ export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middlewa
   // Always include connected mailboxes stored in oauth_connections (Gmail etc.)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = context.supabase as any;
+  const workspaceId = await getCurrentWorkspaceId(context.supabase, context.userId);
+  if (!workspaceId) return { mailboxes: [] as InstantlyMailbox[], connected: false as const, error: "No workspace" };
   const { data: conns } = await sb
     .from("oauth_connections")
     .select("account_email, status")
-    .eq("user_id", context.userId);
+    .eq("workspace_id", workspaceId)
+    .eq("provider", "gmail");
   const oauthMailboxes: InstantlyMailbox[] = (conns ?? [])
     .filter((c: { account_email?: string }) => !!c.account_email)
     .map((c: { account_email: string; status?: string }) => ({
@@ -299,7 +354,11 @@ export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middlewa
       status: c.status ?? "active",
     }));
 
-  if (!isInstantlyAllowed(context.claims)) {
+  const instantlyConnected =
+    isInstantlyAllowed(context.claims) &&
+    (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
+
+  if (!instantlyConnected) {
     return {
       mailboxes: oauthMailboxes,
       connected: oauthMailboxes.length > 0,
@@ -343,7 +402,10 @@ const ReplyInput = z.object({
 export const sendInstantlyReply = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ReplyInput.parse(raw))
   .handler(async ({ data, context }) => {
-    if (!isInstantlyAllowed(context.claims)) throw new Error("Not authorized for this integration");
+    const instantlyConnected =
+      isInstantlyAllowed(context.claims) &&
+      (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
+    if (!instantlyConnected) throw new Error("Instantly is not connected for this workspace");
 
     const res = await instantly<{ id?: string }>("/emails/reply", {
       method: "POST",
@@ -419,8 +481,11 @@ async function loadDbLeads(supabase: unknown, userId: string): Promise<Instantly
 
 export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const dbLeads = await loadDbLeads(context.supabase, context.userId).catch(() => []);
+  const instantlyConnected =
+    isInstantlyAllowed(context.claims) &&
+    (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
 
-  if (!isInstantlyAllowed(context.claims)) {
+  if (!instantlyConnected) {
     return {
       leads: dbLeads,
       connected: dbLeads.length > 0,
@@ -485,7 +550,10 @@ const UpdateStatusInput = z.object({
 export const updateLeadStatus = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => UpdateStatusInput.parse(raw))
   .handler(async ({ data, context }) => {
-    if (!isInstantlyAllowed(context.claims)) throw new Error("Not authorized for this integration");
+    const instantlyConnected =
+      isInstantlyAllowed(context.claims) &&
+      (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
+    if (!instantlyConnected) throw new Error("Instantly is not connected for this workspace");
 
     const interest = STATUS_TO_INTEREST[data.status];
     await instantly("/leads/update-interest-status", {
@@ -529,7 +597,10 @@ type DailyRow = {
 };
 
 export const getInstantlyAnalytics = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
-  if (!isInstantlyAllowed(context.claims)) {
+  const instantlyConnected =
+    isInstantlyAllowed(context.claims) &&
+    (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
+  if (!instantlyConnected) {
     return { connected: false as const, error: "Not connected" };
   }
 

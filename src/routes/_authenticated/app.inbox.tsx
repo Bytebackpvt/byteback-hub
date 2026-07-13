@@ -15,6 +15,7 @@ import {
   Loader2,
   Plug,
   Reply,
+  RefreshCw,
   Search,
   Send,
   Sparkles,
@@ -38,6 +39,7 @@ import {
   listInstantlyThreads,
   sendInstantlyReply,
 } from "@/lib/instantly.functions";
+import { syncWorkspaceGmailNow } from "@/lib/gmail.functions";
 import { scanForNotifications } from "@/lib/notifications.functions";
 import { autoScheduleFollowUps } from "@/lib/followups.functions";
 import {
@@ -70,6 +72,7 @@ function InboxPage() {
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [loadingReply, setLoadingReply] = useState(false);
   const [sending, setSending] = useState(false);
+  const [syncingGmail, setSyncingGmail] = useState(false);
   // Local UX state for star / snooze / archive / read overlaid on threads.
   type ThreadFlags = { starred?: boolean; snoozedUntil?: number; archived?: boolean; read?: boolean };
   const [flags, setFlags] = useState<Record<string, ThreadFlags>>({});
@@ -81,6 +84,7 @@ function InboxPage() {
   const callListThreads = useServerFn(listInstantlyThreads);
   const callListMailboxes = useServerFn(listInstantlyMailboxes);
   const callSendReply = useServerFn(sendInstantlyReply);
+  const callSyncGmail = useServerFn(syncWorkspaceGmailNow);
   const callScan = useServerFn(scanForNotifications);
   const callAutoSchedule = useServerFn(autoScheduleFollowUps);
 
@@ -304,8 +308,8 @@ function InboxPage() {
 
   async function handleSend() {
     if (!selected) return;
-    if (!connected) {
-      toast.success("Reply sent (demo — Instantly not connected)");
+    if (selected.source !== "instantly") {
+      toast.error("Reply sending is only enabled for Instantly threads right now.");
       return;
     }
     setSending(true);
@@ -324,6 +328,31 @@ function InboxPage() {
       toast.error(e instanceof Error ? e.message : "Failed to send reply");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleSyncGmail() {
+    setSyncingGmail(true);
+    try {
+      const result = await callSyncGmail();
+      await Promise.all([threadsQuery.refetch(), mailboxesQuery.refetch()]);
+      if (result.connections === 0) {
+        toast.error("No active Gmail mailbox. Reconnect Gmail from Email Sources.");
+      } else if (result.errors?.length) {
+        toast.error("Gmail needs reconnecting", {
+          description: result.errors[0]?.account ?? "Open Email Sources and reconnect Gmail.",
+        });
+      } else {
+        toast.success(
+          result.processed > 0
+            ? `Synced ${result.processed} new emails`
+            : "Mailbox checked — no new emails found",
+        );
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gmail sync failed");
+    } finally {
+      setSyncingGmail(false);
     }
   }
 
@@ -347,6 +376,16 @@ function InboxPage() {
               {threadsQuery.data.error.slice(0, 60)}
             </div>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2 h-7 w-full text-xs"
+            onClick={handleSyncGmail}
+            disabled={syncingGmail}
+          >
+            {syncingGmail ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            Sync Gmail
+          </Button>
         </div>
         <ScrollArea className="flex-1">
           <div className="space-y-0.5 p-2">
@@ -454,6 +493,17 @@ function InboxPage() {
                   >
                     Clear filters
                   </Button>
+                )}
+                {!search && filter === "all" && (
+                  <div className="mt-2 flex flex-wrap justify-center gap-2">
+                    <Button size="sm" variant="outline" onClick={handleSyncGmail} disabled={syncingGmail}>
+                      {syncingGmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      Sync Gmail
+                    </Button>
+                    <Button size="sm" onClick={() => navigate({ to: "/app/email-sources" })}>
+                      Connect Gmail
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
@@ -650,9 +700,14 @@ function InboxPage() {
                     <div className="mt-3 flex items-center justify-between">
                       <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                         <Sparkles className="h-3 w-3" /> Tone: warm · Length: brief
-                        {connected && (
+                        {selected.source === "instantly" && (
                           <span className="ml-2 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">
                             Send via {selected.mailbox}
+                          </span>
+                        )}
+                        {selected.source === "gmail" && (
+                          <span className="ml-2 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600">
+                            Gmail read-only
                           </span>
                         )}
                       </div>
@@ -693,7 +748,7 @@ function InboxPage() {
                           )}
                           Regenerate
                         </Button>
-                        <Button size="sm" disabled={sending} onClick={handleSend}>
+                        <Button size="sm" disabled={sending || selected.source !== "instantly"} onClick={handleSend}>
                           {sending ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : (

@@ -110,7 +110,7 @@ export const Route = createFileRoute("/api/public/oauth/gmail/callback")({
         // user sees their mailbox populate on return, instead of waiting for cron.
         if (connRow?.id) {
           try {
-            const { syncGmailConnection } = await import("@/lib/gmail.functions");
+            const { syncGmailConnection } = await import("@/lib/gmail-sync.server");
             await syncGmailConnection(connRow.id).catch((e) =>
               console.error("[oauth.gmail.callback] initial sync failed", e),
             );

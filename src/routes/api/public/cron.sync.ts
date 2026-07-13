@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { runInstantlySync } from "@/lib/sync.functions";
-import { syncAllGmail } from "@/lib/gmail.functions";
+import { syncAllGmail } from "@/lib/gmail-sync.server";
 
 /**
  * Public cron endpoint — runs the AI Sync Engine for every workspace that

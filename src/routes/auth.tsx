@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { ensureCurrentWorkspace } from "@/lib/workspace.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -32,6 +34,7 @@ function GoogleIcon() {
 
 function AuthPage() {
   const navigate = useNavigate();
+  const ensureWorkspace = useServerFn(ensureCurrentWorkspace);
   const [tab, setTab] = useState<"signin" | "signup">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,19 +44,16 @@ function AuthPage() {
   // Bounce already-signed-in users
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/app" });
+      if (data.user) routeAfterAuth();
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   const routeAfterAuth = async () => {
     const { data } = await supabase.auth.getUser();
     if (!data.user) return;
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarded")
-      .eq("id", data.user.id)
-      .maybeSingle();
-    navigate({ to: profile?.onboarded ? "/app" : "/onboarding/workspace" });
+    await ensureWorkspace().catch(() => null);
+    navigate({ to: "/app" });
   };
 
   const handleGoogle = async () => {

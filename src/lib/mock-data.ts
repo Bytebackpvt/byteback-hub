@@ -25,6 +25,7 @@ export type Thread = {
   aiSummary: string;
   suggestedReply: string;
   assignedTo?: string;
+  source?: string;
 };
 
 export const MAILBOXES = [

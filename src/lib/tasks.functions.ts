@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { getCurrentWorkspaceId } from "@/lib/workspace.functions";
 
 export type TaskRow = {
   id: string;
@@ -20,15 +21,7 @@ async function getOwnedWorkspaceId(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("owner_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  return (data?.id as string | undefined) ?? null;
+  return (await getCurrentWorkspaceId(supabase, userId)) ?? null;
 }
 
 export const listTasks = createServerFn({ method: "GET" })
