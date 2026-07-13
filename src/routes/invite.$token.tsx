@@ -101,12 +101,9 @@ function InvitePage() {
                 </p>
                 <Button
                   className="w-full"
-                  onClick={() =>
-                    navigate({
-                      to: "/auth",
-                      search: { next: `/invite/${token}`, email: invite.email } as never,
-                    })
-                  }
+                  onClick={() => {
+                    window.location.href = `/auth?next=${encodeURIComponent(`/invite/${token}`)}&email=${encodeURIComponent(invite.email)}`;
+                  }}
                 >
                   Sign in / Sign up
                 </Button>
