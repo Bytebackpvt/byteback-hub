@@ -147,6 +147,9 @@ function ConnectionRow({
               <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Healthy
             </Badge>
           )}
+          {kind === "builtin" && (
+            <Badge variant="outline" className="gap-1 text-[10px]">Built-in</Badge>
+          )}
         </div>
         <div className="mt-0.5 text-xs text-muted-foreground">
           {account.last_sync_at ? (
