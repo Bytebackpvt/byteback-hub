@@ -41,6 +41,7 @@ import { Route as ApiPublicInboundEmailRouteImport } from './routes/api/public/i
 import { Route as ApiPublicCronSyncRouteImport } from './routes/api/public/cron.sync'
 import { Route as ApiPublicCronEscalateRouteImport } from './routes/api/public/cron.escalate'
 import { Route as ApiPublicCronDailyDigestRouteImport } from './routes/api/public/cron.daily-digest'
+import { Route as AuthenticatedAppSettingsAccountRouteImport } from './routes/_authenticated/app.settings.account'
 import { Route as AuthenticatedAppNotificationsSettingsRouteImport } from './routes/_authenticated/app.notifications.settings'
 import { Route as AuthenticatedAppIntegrationsWebhooksRouteImport } from './routes/_authenticated/app.integrations.webhooks'
 import { Route as AuthenticatedAppIntegrationsConnectedRouteImport } from './routes/_authenticated/app.integrations.connected'
@@ -213,6 +214,12 @@ const ApiPublicCronDailyDigestRoute =
     path: '/api/public/cron/daily-digest',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAppSettingsAccountRoute =
+  AuthenticatedAppSettingsAccountRouteImport.update({
+    id: '/settings/account',
+    path: '/settings/account',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppNotificationsSettingsRoute =
   AuthenticatedAppNotificationsSettingsRouteImport.update({
     id: '/settings',
@@ -275,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
   '/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
   '/app/notifications/settings': typeof AuthenticatedAppNotificationsSettingsRoute
+  '/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
@@ -310,6 +318,7 @@ export interface FileRoutesByTo {
   '/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
   '/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
   '/app/notifications/settings': typeof AuthenticatedAppNotificationsSettingsRoute
+  '/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
@@ -350,6 +359,7 @@ export interface FileRoutesById {
   '/_authenticated/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
   '/_authenticated/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
   '/_authenticated/app/notifications/settings': typeof AuthenticatedAppNotificationsSettingsRoute
+  '/_authenticated/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/app/integrations/connected'
     | '/app/integrations/webhooks'
     | '/app/notifications/settings'
+    | '/app/settings/account'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
@@ -425,6 +436,7 @@ export interface FileRouteTypes {
     | '/app/integrations/connected'
     | '/app/integrations/webhooks'
     | '/app/notifications/settings'
+    | '/app/settings/account'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
@@ -464,6 +476,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/integrations/connected'
     | '/_authenticated/app/integrations/webhooks'
     | '/_authenticated/app/notifications/settings'
+    | '/_authenticated/app/settings/account'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
@@ -712,6 +725,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronDailyDigestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app/settings/account': {
+      id: '/_authenticated/app/settings/account'
+      path: '/settings/account'
+      fullPath: '/app/settings/account'
+      preLoaderRoute: typeof AuthenticatedAppSettingsAccountRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/notifications/settings': {
       id: '/_authenticated/app/notifications/settings'
       path: '/settings'
@@ -804,6 +824,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppTasksRoute: typeof AuthenticatedAppTasksRoute
   AuthenticatedAppTeamRoute: typeof AuthenticatedAppTeamRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppSettingsAccountRoute: typeof AuthenticatedAppSettingsAccountRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
@@ -823,6 +844,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppTasksRoute: AuthenticatedAppTasksRoute,
   AuthenticatedAppTeamRoute: AuthenticatedAppTeamRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppSettingsAccountRoute: AuthenticatedAppSettingsAccountRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =
