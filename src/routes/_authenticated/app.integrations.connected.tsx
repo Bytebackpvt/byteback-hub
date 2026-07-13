@@ -102,12 +102,15 @@ function ConnectionRow({
   kind,
 }: {
   account: ConnectedAccount;
-  kind: "workspace_integration" | "oauth_connection";
+  kind: "workspace_integration" | "oauth_connection" | "builtin";
 }) {
   const qc = useQueryClient();
   const callDisconnect = useServerFn(disconnectAccount);
   const disconnectMut = useMutation({
-    mutationFn: () => callDisconnect({ data: { kind, id: account.id } }),
+    mutationFn: () =>
+      kind === "builtin"
+        ? Promise.resolve({ ok: true as const })
+        : callDisconnect({ data: { kind, id: account.id } }),
     onSuccess: () => {
       toast.success("Disconnected");
       qc.invalidateQueries({ queryKey: ["marketplace"] });
