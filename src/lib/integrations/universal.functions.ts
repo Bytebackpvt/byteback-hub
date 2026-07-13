@@ -35,7 +35,7 @@ export type IntegrationListRow = {
   label: string | null;
   last_sync_at: string | null;
   last_error_msg: string | null;
-  config_public: Record<string, unknown>;
+  config_public: Record<string, string | number | boolean | null>;
 };
 
 export const listAllIntegrations = createServerFn({ method: "GET" })
@@ -132,12 +132,15 @@ export const listAllIntegrations = createServerFn({ method: "GET" })
     return { registry, rows };
   });
 
-function sanitizeConfig(config: Record<string, unknown>): Record<string, unknown> {
-  // Drop any accidentally-stored secret-looking values.
-  const out: Record<string, unknown> = {};
+function sanitizeConfig(
+  config: Record<string, unknown>,
+): Record<string, string | number | boolean | null> {
+  const out: Record<string, string | number | boolean | null> = {};
   for (const [k, v] of Object.entries(config)) {
     if (typeof v === "string" && /(secret|token|api[_-]?key)/i.test(k)) continue;
-    out[k] = v;
+    if (v === null || typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+      out[k] = v;
+    }
   }
   return out;
 }
