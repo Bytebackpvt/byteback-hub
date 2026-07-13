@@ -465,8 +465,13 @@ function InboxPage() {
         </ScrollArea>
       </section>
 
-      {/* Thread detail */}
-      <section className="flex flex-col overflow-hidden">
+      {/* Thread detail — hidden on mobile until a thread is opened */}
+      <section
+        className={cn(
+          "flex-col overflow-hidden md:flex",
+          mobileReaderOpen ? "flex" : "hidden",
+        )}
+      >
         {selected ? (
           <>
             <div className="flex items-start justify-between gap-3 border-b border-border/60 p-4">
