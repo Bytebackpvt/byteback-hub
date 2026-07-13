@@ -70,6 +70,18 @@ function DashboardPage() {
   const hot = threads.filter((t) => t.priority === "hot").slice(0, 5);
   const openTasks = tasks.filter((t) => !t.done);
 
+  // Build a lookup so AI's "Name @ Company" target can resolve to a real thread id.
+  const threadIndex = useMemo(
+    () =>
+      threads.map((t) => ({
+        id: t.id,
+        name: (t.from.name ?? "").toLowerCase(),
+        company: (t.from.company ?? "").toLowerCase(),
+        email: (t.from.email ?? "").toLowerCase(),
+      })),
+    [threads],
+  );
+
   const briefingInput = useMemo(
     () => ({
       senderName: "there",
