@@ -135,11 +135,24 @@ export const inviteMember = createServerFn({ method: "POST" })
       return { added: true as const, emailed: false as const };
     }
 
-    // Otherwise store an invite so they get added when they sign up.
-    const { error } = await context.supabase
+    // Otherwise store an invite so they get added when they sign up / click the link.
+    const { data: inviteRow, error } = await context.supabase
       .from("workspace_invites")
-      .insert({ workspace_id: workspaceId, email: data.email.toLowerCase(), role: data.role });
+      .insert({ workspace_id: workspaceId, email: data.email.toLowerCase(), role: data.role, invited_by: context.userId })
+      .select("token")
+      .single();
     if (error && !String(error.message).includes("duplicate")) throw error;
+    // If duplicate, fetch the existing token.
+    let token = inviteRow?.token as string | undefined;
+    if (!token) {
+      const { data: existing } = await context.supabase
+        .from("workspace_invites")
+        .select("token")
+        .eq("workspace_id", workspaceId)
+        .eq("email", data.email.toLowerCase())
+        .maybeSingle();
+      token = existing?.token as string | undefined;
+    }
 
     // Fetch workspace name + inviter name for the email
     const [{ data: ws }, { data: inviter }] = await Promise.all([
