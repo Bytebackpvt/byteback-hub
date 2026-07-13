@@ -169,7 +169,9 @@ export const inviteMember = createServerFn({ method: "POST" })
       const lovableKey = process.env.LOVABLE_API_KEY;
       if (resendKey && lovableKey) {
         const appUrl = process.env.APP_URL || "https://byteback.digital";
-        const acceptUrl = `${appUrl}/auth?invite=${encodeURIComponent(data.email.toLowerCase())}`;
+        const acceptUrl = token
+          ? `${appUrl}/invite/${token}`
+          : `${appUrl}/auth?invite=${encodeURIComponent(data.email.toLowerCase())}`;
         const res = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
           method: "POST",
           headers: {
