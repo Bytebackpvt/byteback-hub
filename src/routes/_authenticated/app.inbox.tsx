@@ -338,6 +338,10 @@ function InboxPage() {
       await Promise.all([threadsQuery.refetch(), mailboxesQuery.refetch()]);
       if (result.connections === 0) {
         toast.error("No active Gmail mailbox. Reconnect Gmail from Email Sources.");
+      } else if (result.errors?.length) {
+        toast.error("Gmail needs reconnecting", {
+          description: result.errors[0]?.account ?? "Open Email Sources and reconnect Gmail.",
+        });
       } else {
         toast.success(
           result.processed > 0
