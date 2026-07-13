@@ -42,9 +42,7 @@ import { scanForNotifications } from "@/lib/notifications.functions";
 import { autoScheduleFollowUps } from "@/lib/followups.functions";
 import {
   CATEGORY_META,
-  MAILBOXES,
   PRIORITY_META,
-  THREADS,
   type Thread,
 } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -62,7 +60,7 @@ function InboxPage() {
   const { thread: threadParam } = Route.useSearch();
   const navigate = useNavigate({ from: "/app/inbox" });
   const [mailbox, setMailbox] = useState("all");
-  const [selectedId, setSelectedId] = useState<string>(threadParam || THREADS[0].id);
+  const [selectedId, setSelectedId] = useState<string>(threadParam || "");
   // On phones we drill into the reader; on md+ both list and reader are visible together.
   const [mobileReaderOpen, setMobileReaderOpen] = useState<boolean>(!!threadParam);
   const [search, setSearch] = useState("");
@@ -108,7 +106,7 @@ function InboxPage() {
   }, [threadsQuery.data]);
 
   const connected = threadsQuery.data?.connected === true;
-  const activeThreads: Thread[] = connected && liveThreads.length > 0 ? liveThreads : THREADS;
+  const activeThreads: Thread[] = liveThreads;
 
   // Fire notification scan + auto follow-up scheduling whenever the live inbox loads.
   useEffect(() => {
@@ -163,7 +161,6 @@ function InboxPage() {
 
   const mailboxes = useMemo(() => {
     const live = mailboxesQuery.data?.mailboxes ?? [];
-    if (!connected || live.length === 0) return MAILBOXES;
     return [
       { id: "all", label: "All inboxes", color: "bg-brand" },
       ...live.map((m, i) => ({
@@ -172,7 +169,7 @@ function InboxPage() {
         color: ["bg-emerald-500", "bg-sky-500", "bg-amber-500", "bg-pink-500", "bg-violet-500"][i % 5],
       })),
     ];
-  }, [mailboxesQuery.data, connected]);
+  }, [mailboxesQuery.data]);
 
   useEffect(() => {
     if (activeThreads.length && !activeThreads.some((t) => t.id === selectedId)) {

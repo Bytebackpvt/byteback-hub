@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { scoreLead } from "@/lib/ai.functions";
 import { listInstantlyLeads, type InstantlyLead } from "@/lib/instantly.functions";
 import { listLeadScores, saveLeadScore } from "@/lib/leads.functions";
-import { CONTACTS, type Contact } from "@/lib/mock-data";
+// mock CONTACTS removed — new accounts must see their real data (or an empty state)
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/crm")({
@@ -39,18 +39,8 @@ type Row = {
   fallbackScore: number;
 };
 
-function contactToRow(c: Contact): Row {
-  return {
-    key: c.email,
-    name: c.name,
-    email: c.email,
-    company: c.company,
-    title: c.title,
-    status: c.status,
-    lastActivity: c.lastActivity,
-    fallbackScore: c.score,
-  };
-}
+// contactToRow removed — CRM now sources rows exclusively from listInstantlyLeads
+// (which itself merges Instantly + DB-ingested contacts).
 
 function leadToRow(l: InstantlyLead): Row {
   return {
@@ -90,9 +80,8 @@ function CrmPage() {
   const connected = leadsQuery.data?.connected === true;
   const rows: Row[] = useMemo(() => {
     const live = leadsQuery.data?.leads ?? [];
-    if (connected && live.length) return live.map(leadToRow);
-    return CONTACTS.map(contactToRow);
-  }, [leadsQuery.data, connected]);
+    return live.map(leadToRow);
+  }, [leadsQuery.data]);
 
   const scoreMap = useMemo(() => {
     const map = new Map<string, { score: number; reason: string }>();
