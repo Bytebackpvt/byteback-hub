@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { OfflineBanner } from "@/components/offline-banner";
@@ -11,6 +12,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { Button } from "@/components/ui/button";
 import { HelpCircle, Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { ensureCurrentWorkspace } from "@/lib/workspace.functions";
 
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -25,8 +27,11 @@ export const Route = createFileRoute("/_authenticated/app")({
 
 function AppLayout() {
   const tour = useGuidedTour();
+  const ensureWorkspace = useServerFn(ensureCurrentWorkspace);
   useEffect(() => {
     initNativeShell();
+    ensureWorkspace().catch(() => null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

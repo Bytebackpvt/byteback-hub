@@ -18,10 +18,31 @@ export async function getCurrentWorkspaceId(
     .select("workspace_id, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .limit(20);
   if (error) throw error;
-  if (data?.workspace_id) return data.workspace_id as string;
+  const memberships = data ?? [];
+  if (memberships.length === 1 && memberships[0]?.workspace_id) {
+    return memberships[0].workspace_id as string;
+  }
+
+  if (memberships.length > 1) {
+    const workspaceIds = memberships.map((m) => m.workspace_id as string).filter(Boolean);
+
+    // Prefer the workspace that already has real mailbox data or connections.
+    // This self-heals duplicate workspaces created during early onboarding bugs.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+    const [{ data: threadRows }, { data: oauthRows }, { data: taskRows }] = await Promise.all([
+      sb.from("email_threads").select("workspace_id").in("workspace_id", workspaceIds).limit(1),
+      sb.from("oauth_connections").select("workspace_id").in("workspace_id", workspaceIds).limit(1),
+      sb.from("tasks").select("workspace_id").in("workspace_id", workspaceIds).limit(1),
+    ]);
+    const activeWorkspaceId =
+      threadRows?.[0]?.workspace_id ?? oauthRows?.[0]?.workspace_id ?? taskRows?.[0]?.workspace_id;
+    if (activeWorkspaceId) return activeWorkspaceId as string;
+
+    return memberships[0].workspace_id as string;
+  }
 
   // Fallback: use admin client to heal missing membership / auto-provision.
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -90,4 +111,11 @@ export const getCurrentWorkspace = createServerFn({ method: "GET" })
       workspace: ws,
       role: (mem?.role ?? null) as WorkspaceRole | null,
     };
+  });
+
+export const ensureCurrentWorkspace = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const workspaceId = await getCurrentWorkspaceId(context.supabase, context.userId);
+    return { workspaceId: workspaceId ?? null };
   });

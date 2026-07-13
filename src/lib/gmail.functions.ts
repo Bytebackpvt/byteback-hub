@@ -83,10 +83,13 @@ export const startGmailOAuth = createServerFn({ method: "POST" })
 export const listEmailAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const workspaceId = await getCurrentWorkspaceId(context.supabase, context.userId);
+    if (!workspaceId) return [];
     const { data, error } = await context.supabase
       .from("oauth_connections")
       .select("id, provider, account_email, account_label, status, last_error, scopes, created_at, updated_at")
-      .eq("user_id", context.userId)
+      .eq("workspace_id", workspaceId)
+      .eq("provider", "gmail")
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data ?? [];
@@ -222,13 +225,19 @@ export async function syncGmailConnection(connectionId: string): Promise<{
             last_error: null,
           })
           .eq("id", connectionId);
+      } else {
+        await admin
+          .from("oauth_connections")
+          .update({ status: "error", last_error: "Reconnect Gmail: permission expired or revoked" })
+          .eq("id", connectionId);
+        return { processed: 0, skipped: 0, error: "Reconnect Gmail" };
       }
     } catch (e) {
       await admin
         .from("oauth_connections")
-        .update({ status: "error", last_error: (e as Error).message })
+        .update({ status: "error", last_error: `Reconnect Gmail: ${(e as Error).message}` })
         .eq("id", connectionId);
-      return { processed: 0, skipped: 0, error: "token refresh failed" };
+      return { processed: 0, skipped: 0, error: "Reconnect Gmail" };
     }
   }
   if (!accessToken) return { processed: 0, skipped: 0, error: "no access token" };
@@ -320,6 +329,29 @@ export async function syncGmailConnection(connectionId: string): Promise<{
 
   return { processed, skipped };
 }
+
+export const syncWorkspaceGmailNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const workspaceId = await getCurrentWorkspaceId(context.supabase, context.userId);
+    if (!workspaceId) return { connections: 0, processed: 0, error: "No workspace" };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const admin = supabaseAdmin as any;
+    const { data } = await admin
+      .from("oauth_connections")
+      .select("id")
+      .eq("workspace_id", workspaceId)
+      .eq("provider", "gmail")
+      .eq("status", "active");
+    let processed = 0;
+    for (const row of data ?? []) {
+      const result = await syncGmailConnection(row.id);
+      processed += result.processed;
+    }
+    return { connections: (data ?? []).length, processed };
+  });
 
 /** Sync every active Gmail connection across every workspace. */
 export async function syncAllGmail(): Promise<{ connections: number; processed: number }> {
