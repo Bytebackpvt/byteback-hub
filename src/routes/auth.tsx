@@ -41,8 +41,14 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Bounce already-signed-in users
+  // Bounce already-signed-in users; prefill email from ?email=
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefill = params.get("email");
+    if (prefill) {
+      setEmail(prefill);
+      setTab("signin");
+    }
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) routeAfterAuth();
     });
@@ -53,13 +59,19 @@ function AuthPage() {
     const { data } = await supabase.auth.getUser();
     if (!data.user) return;
     await ensureWorkspace().catch(() => null);
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    if (next && next.startsWith("/")) {
+      window.location.href = next;
+      return;
+    }
     navigate({ to: "/app" });
   };
 
   const handleGoogle = async () => {
     setLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/auth",
+      redirect_uri: window.location.origin + "/auth" + window.location.search,
     });
     if (result.error) {
       toast.error("Google sign-in failed", { description: result.error.message });

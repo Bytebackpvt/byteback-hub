@@ -1033,24 +1033,33 @@ export type Database = {
       }
       workspace_invites: {
         Row: {
+          accepted_at: string | null
           created_at: string
           email: string
           id: string
+          invited_by: string | null
           role: Database["public"]["Enums"]["workspace_role"]
+          token: string
           workspace_id: string
         }
         Insert: {
+          accepted_at?: string | null
           created_at?: string
           email: string
           id?: string
+          invited_by?: string | null
           role?: Database["public"]["Enums"]["workspace_role"]
+          token?: string
           workspace_id: string
         }
         Update: {
+          accepted_at?: string | null
           created_at?: string
           email?: string
           id?: string
+          invited_by?: string | null
           role?: Database["public"]["Enums"]["workspace_role"]
+          token?: string
           workspace_id?: string
         }
         Relationships: [

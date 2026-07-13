@@ -22,6 +22,7 @@ import { Route as OnboardingTeamRouteImport } from './routes/onboarding.team'
 import { Route as OnboardingEmailAccountsRouteImport } from './routes/onboarding.email-accounts'
 import { Route as OnboardingDoneRouteImport } from './routes/onboarding.done'
 import { Route as OnboardingBusinessTypeRouteImport } from './routes/onboarding.business-type'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAppTeamRouteImport } from './routes/_authenticated/app.team'
@@ -112,6 +113,11 @@ const OnboardingBusinessTypeRoute = OnboardingBusinessTypeRouteImport.update({
   id: '/business-type',
   path: '/business-type',
   getParentRoute: () => OnboardingRoute,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
+  '/invite/$token': typeof InviteTokenRoute
   '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
   '/onboarding/done': typeof OnboardingDoneRoute
   '/onboarding/email-accounts': typeof OnboardingEmailAccountsRoute
@@ -303,6 +310,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
   '/onboarding/done': typeof OnboardingDoneRoute
   '/onboarding/email-accounts': typeof OnboardingEmailAccountsRoute
@@ -344,6 +352,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
+  '/invite/$token': typeof InviteTokenRoute
   '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
   '/onboarding/done': typeof OnboardingDoneRoute
   '/onboarding/email-accounts': typeof OnboardingEmailAccountsRoute
@@ -386,6 +395,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/app'
+    | '/invite/$token'
     | '/onboarding/business-type'
     | '/onboarding/done'
     | '/onboarding/email-accounts'
@@ -424,6 +434,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/privacy'
     | '/terms'
+    | '/invite/$token'
     | '/onboarding/business-type'
     | '/onboarding/done'
     | '/onboarding/email-accounts'
@@ -464,6 +475,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/_authenticated/app'
+    | '/invite/$token'
     | '/onboarding/business-type'
     | '/onboarding/done'
     | '/onboarding/email-accounts'
@@ -505,6 +517,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicCronDailyDigestRoute: typeof ApiPublicCronDailyDigestRoute
   ApiPublicCronEscalateRoute: typeof ApiPublicCronEscalateRoute
   ApiPublicCronSyncRoute: typeof ApiPublicCronSyncRoute
@@ -604,6 +617,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding/business-type'
       preLoaderRoute: typeof OnboardingBusinessTypeRouteImport
       parentRoute: typeof OnboardingRoute
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/app': {
       id: '/_authenticated/app'
@@ -911,6 +931,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  InviteTokenRoute: InviteTokenRoute,
   ApiPublicCronDailyDigestRoute: ApiPublicCronDailyDigestRoute,
   ApiPublicCronEscalateRoute: ApiPublicCronEscalateRoute,
   ApiPublicCronSyncRoute: ApiPublicCronSyncRoute,
