@@ -392,9 +392,40 @@ function leadStatus(s?: number, interest?: number): InstantlyLead["status"] {
   return "new";
 }
 
+async function loadDbLeads(supabase: unknown, userId: string): Promise<InstantlyLead[]> {
+  const { getCurrentWorkspaceId } = await import("@/lib/workspace.functions");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
+  const workspaceId = await getCurrentWorkspaceId(sb, userId);
+  if (!workspaceId) return [];
+  const { data } = await sb
+    .from("contacts")
+    .select("id, email, name, company, source, last_seen_at")
+    .eq("workspace_id", workspaceId)
+    .order("last_seen_at", { ascending: false })
+    .limit(200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((c: any) => ({
+    id: String(c.id),
+    email: String(c.email),
+    name: String(c.name || c.email),
+    company: String(c.company ?? companyFromEmail(c.email)),
+    title: "",
+    status: "new" as InstantlyLead["status"],
+    lastActivity: timeAgo(c.last_seen_at),
+    campaign: undefined,
+  }));
+}
+
 export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  const dbLeads = await loadDbLeads(context.supabase, context.userId).catch(() => []);
+
   if (!isInstantlyAllowed(context.claims)) {
-    return { leads: [] as InstantlyLead[], connected: false as const, error: "Not connected" };
+    return {
+      leads: dbLeads,
+      connected: dbLeads.length > 0,
+      error: dbLeads.length ? undefined : "Not connected",
+    };
   }
 
   try {
@@ -422,12 +453,17 @@ export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([
         campaign: l.campaign,
       };
     });
-    return { leads, connected: true as const };
+    // Merge Instantly + DB leads, de-duped by email
+    const merged = [...leads];
+    for (const l of dbLeads) {
+      if (!merged.some((x) => x.email.toLowerCase() === l.email.toLowerCase())) merged.push(l);
+    }
+    return { leads: merged, connected: true };
   } catch (err) {
     return {
-      leads: [] as InstantlyLead[],
-      connected: false as const,
-      error: err instanceof Error ? err.message : "Unknown error",
+      leads: dbLeads,
+      connected: dbLeads.length > 0,
+      error: dbLeads.length ? undefined : err instanceof Error ? err.message : "Unknown error",
     };
   }
 });
