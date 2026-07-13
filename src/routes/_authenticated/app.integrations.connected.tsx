@@ -169,21 +169,23 @@ function ConnectionRow({
             <RefreshCw className="h-3.5 w-3.5" /> Reconnect
           </Button>
         )}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            if (confirm(`Disconnect ${account.provider}?`)) disconnectMut.mutate();
-          }}
-          disabled={disconnectMut.isPending}
-          aria-label={`Disconnect ${account.provider}`}
-        >
-          {disconnectMut.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
-          )}
-        </Button>
+        {kind !== "builtin" && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (confirm(`Disconnect ${account.provider}?`)) disconnectMut.mutate();
+            }}
+            disabled={disconnectMut.isPending}
+            aria-label={`Disconnect ${account.provider}`}
+          >
+            {disconnectMut.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );
