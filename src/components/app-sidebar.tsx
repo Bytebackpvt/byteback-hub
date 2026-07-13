@@ -38,15 +38,17 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWorkspace } from "@/lib/workspace.functions";
+import { listInstantlyThreads } from "@/lib/instantly.functions";
+import { listTasks } from "@/lib/tasks.functions";
 import { useServerFn } from "@tanstack/react-start";
 
-const NAV: { to: string; label: string; icon: typeof Inbox; badge?: string; tour: string }[] = [
+const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox" | "tasks"; tour: string }[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
   { to: "/app/radar", label: "Opportunity Radar", icon: Radar, tour: "nav-radar" },
-  { to: "/app/inbox", label: "Inbox", icon: Inbox, badge: "12", tour: "nav-inbox" },
+  { to: "/app/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox", tour: "nav-inbox" },
   { to: "/app/crm", label: "Contacts", icon: Users, tour: "nav-crm" },
   { to: "/app/pipeline", label: "Pipeline", icon: Kanban, tour: "nav-pipeline" },
-  { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badge: "4", tour: "nav-tasks" },
+  { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badgeKey: "tasks", tour: "nav-tasks" },
   { to: "/app/analytics", label: "Analytics", icon: BarChart3, tour: "nav-analytics" },
   { to: "/app/team", label: "Team", icon: Shield, tour: "nav-team" },
   { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
