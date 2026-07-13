@@ -83,8 +83,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border/60 px-4 py-3">
-        <BrandLink />
+      <SidebarHeader className="overflow-hidden border-b border-border/60 px-4 py-3 group-data-[collapsible=icon]:px-2">
+        <div className="min-w-0 [&_a]:min-w-0 [&_span]:min-w-0 group-data-[collapsible=icon]:[&_.brand-text]:hidden">
+          <BrandLink />
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
