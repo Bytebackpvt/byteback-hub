@@ -41,8 +41,14 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Bounce already-signed-in users
+  // Bounce already-signed-in users; prefill email from ?email=
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefill = params.get("email");
+    if (prefill) {
+      setEmail(prefill);
+      setTab("signin");
+    }
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) routeAfterAuth();
     });
