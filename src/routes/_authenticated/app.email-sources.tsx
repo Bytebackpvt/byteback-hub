@@ -126,6 +126,30 @@ function EmailSourcesPage() {
             Connect Gmail
           </Button>
 
+          {/* Diagnostic: exact redirect URI for Google Cloud Console */}
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
+            <div className="mb-2 font-medium text-amber-700 dark:text-amber-400">
+              Getting a Google 403 / redirect_uri_mismatch?
+            </div>
+            <div className="mb-2 text-muted-foreground">
+              Add this <b>exact</b> URL to your Google Cloud Console → Credentials → OAuth 2.0 Client → <b>Authorized redirect URIs</b>:
+            </div>
+            <div className="mb-2 flex items-center gap-2 rounded bg-background p-2">
+              <code className="flex-1 break-all">{`${url.origin}/api/public/oauth/gmail/callback`}</code>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => copy(`${url.origin}/api/public/oauth/gmail/callback`, "Redirect URI copied")}
+              >
+                <Copy className="mr-1 h-3 w-3" /> Copy
+              </Button>
+            </div>
+            <div className="text-muted-foreground">
+              Also add each domain you use (preview + published + custom domain). And in <b>OAuth consent screen</b> either add your email under <b>Test users</b>, or publish the app.
+            </div>
+          </div>
+
+
           <Separator />
           <div className="space-y-2">
             <div className="text-sm font-medium">Connected accounts</div>
