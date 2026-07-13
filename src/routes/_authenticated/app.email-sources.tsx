@@ -70,12 +70,29 @@ function EmailSourcesPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Email Sources</h1>
-        <p className="text-sm text-muted-foreground">
-          Connect any mailbox. Gmail via one-click OAuth, or forward emails from ANY provider
-          (Resend, SendGrid, Cloudflare, Mailgun, Zapier, or your own script) into your inbox.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Email Sources</h1>
+          <p className="text-sm text-muted-foreground">
+            Connect any mailbox. Gmail via one-click OAuth, or forward emails from ANY provider
+            (Resend, SendGrid, Cloudflare, Mailgun, Zapier, or your own script) into your inbox.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => connect.mutate()} disabled={connect.isPending} size="sm">
+            {connect.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plug className="mr-2 h-4 w-4" />}
+            Add Gmail mailbox
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!inboundUrl}
+            onClick={() => inboundUrl && copy(inboundUrl, "Webhook URL copied")}
+          >
+            <Webhook className="mr-2 h-4 w-4" />
+            Copy webhook URL
+          </Button>
+        </div>
       </div>
 
       {connected && (
