@@ -190,6 +190,7 @@ function InboxPage() {
 
   function selectThread(id: string) {
     setSelectedId(id);
+    setMobileReaderOpen(true);
     navigate({ search: (prev: { thread?: string }) => ({ ...prev, thread: id }), replace: true });
   }
 
