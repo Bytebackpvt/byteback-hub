@@ -144,15 +144,40 @@ function PrivacyPage() {
           </ul>
 
           <h2>5. Data retention and deletion</h2>
+          <h3>Disconnect a Google / Gmail account</h3>
           <p>
-            You can disconnect any email account at any time from{" "}
-            <em>Settings → Email Sources</em>. When you disconnect an account, we revoke the
-            OAuth token and delete stored messages for that account within 30 days.
+            You can disconnect any connected mailbox at any time from{" "}
+            <em>Settings → Account &amp; Data → Disconnect all Google accounts</em>, or
+            individually from <em>Email Sources</em>. When you disconnect, ByteBack
+            immediately calls Google's OAuth revoke endpoint
+            (<code>https://oauth2.googleapis.com/revoke</code>), deletes the stored
+            refresh token from our database, stops all Gmail syncing, and purges any
+            messages synced from that mailbox within 30 days. You can also revoke
+            ByteBack directly from your Google Account at{" "}
+            <a href="https://myaccount.google.com/permissions" target="_blank" rel="noreferrer">
+              myaccount.google.com/permissions
+            </a>.
           </p>
+          <h3>Delete your entire ByteBack account</h3>
           <p>
-            To delete your entire ByteBack account and all associated data, email{" "}
-            <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a>. We will
-            action deletion requests within 30 days.
+            Go to <em>Settings → Account &amp; Data → Delete my account</em>, type
+            <b> DELETE</b> to confirm, and press <em>Permanently delete</em>. This
+            immediately and irreversibly:
+          </p>
+          <ul>
+            <li>Revokes every connected Google OAuth token</li>
+            <li>Deletes all OAuth connection records</li>
+            <li>
+              Deletes every workspace you own and all data inside it — emails,
+              contacts, tasks, notes, pipeline, notifications, AI embeddings
+            </li>
+            <li>Removes your membership from any shared workspaces</li>
+            <li>Deletes your login (auth user) and signs you out everywhere</li>
+          </ul>
+          <p>
+            Backups are purged within 30 days. If you cannot access the app, email{" "}
+            <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a> and
+            we will action the request within 30 days.
           </p>
 
           <h2>6. Sharing your data</h2>
