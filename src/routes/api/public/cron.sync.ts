@@ -44,8 +44,25 @@ export const Route = createFileRoute("/api/public/cron/sync")({
           return Response.json({ ok: false, error: error.message }, { status: 500 });
         }
 
-        const results: Array<{ workspaceId: string; processed: number; embedded: number; error?: string }> = [];
+        // Only sync Instantly for workspaces that have explicitly connected it
+        // via workspace_integrations (provider='instantly', status='connected').
+        // Otherwise a shared global INSTANTLY_API_KEY would leak the same
+        // Instantly mailbox data into every workspace.
+        const { data: enabled } = await admin
+          .from("workspace_integrations")
+          .select("workspace_id")
+          .eq("provider", "instantly")
+          .eq("status", "connected");
+        const enabledSet = new Set<string>(
+          ((enabled ?? []) as Array<{ workspace_id: string }>).map((r) => r.workspace_id),
+        );
+
+        const results: Array<{ workspaceId: string; processed: number; embedded: number; error?: string; skipped?: boolean }> = [];
         for (const w of (workspaces ?? []) as Array<{ id: string }>) {
+          if (!enabledSet.has(w.id)) {
+            results.push({ workspaceId: w.id, processed: 0, embedded: 0, skipped: true });
+            continue;
+          }
           try {
             const r = await runInstantlySync(w.id, { limit: 50 });
             results.push({
