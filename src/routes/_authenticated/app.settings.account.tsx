@@ -280,13 +280,13 @@ function AccountSettingsPage() {
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 pt-4 text-xs text-muted-foreground">
         <span>Learn more:</span>
-        <Link to="/privacy" target="_blank" className="underline hover:text-foreground">
+        <a href="/privacy" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
           Privacy Policy
-        </Link>
+        </a>
         <span>·</span>
-        <Link to="/terms" target="_blank" className="underline hover:text-foreground">
+        <a href="/terms" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
           Terms of Service
-        </Link>
+        </a>
       </div>
     </div>
   );
