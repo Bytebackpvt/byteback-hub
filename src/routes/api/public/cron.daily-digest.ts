@@ -21,11 +21,9 @@ export const Route = createFileRoute("/api/public/cron/daily-digest")({
         const { supabaseAdmin } = await import(
           "@/integrations/supabase/client.server"
         );
-        const resendKey = process.env.RESEND_API_KEY;
-        const lovableKey = process.env.LOVABLE_API_KEY;
-        if (!resendKey || !lovableKey) {
-          return Response.json({ ok: false, error: "email_not_configured" }, { status: 200 });
-        }
+        const { sendAppEmail } = await import(
+          "@/lib/email/send-app-email.server"
+        );
 
         // Users opted into email digest.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,6 +54,7 @@ export const Route = createFileRoute("/api/public/cron/daily-digest")({
 
         const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         let sent = 0;
+        let skipped = 0;
 
         for (const row of wantsDigest) {
           const quiet = {
@@ -64,7 +63,10 @@ export const Route = createFileRoute("/api/public/cron/daily-digest")({
             end: row.quiet_hours_end,
             timezone: row.timezone,
           };
-          if (isInQuietHours(quiet)) continue;
+          if (isInQuietHours(quiet)) {
+            skipped += 1;
+            continue;
+          }
 
           // Aggregate last 24h for this workspace.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,7 +85,10 @@ export const Route = createFileRoute("/api/public/cron/daily-digest")({
             .eq("done", false);
 
           const notifRows = (notifs ?? []) as Array<{ kind: string; title: string }>;
-          if (notifRows.length === 0 && (openTasks?.length ?? 0) === 0) continue;
+          if (notifRows.length === 0 && (openTasks?.length ?? 0) === 0) {
+            skipped += 1;
+            continue;
+          }
 
           const counts = notifRows.reduce<Record<string, number>>((acc, n) => {
             acc[n.kind] = (acc[n.kind] ?? 0) + 1;
@@ -113,27 +118,22 @@ export const Route = createFileRoute("/api/public/cron/daily-digest")({
             <h2 style="margin:0 0 4px 0;font-size:20px">Your ByteBack daily digest</h2>
             <p style="margin:0 0 20px 0;color:#475569;font-size:14px">${escapeHtml(summaryLine)}</p>
             ${topLines ? `<ul style="padding:0 0 0 18px;color:#334155;font-size:14px">${topLines}</ul>` : ""}
-            <p style="margin:24px 0 0 0"><a href="https://byteback.app/app/inbox" style="display:inline-block;background:#6366f1;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600">Open ByteBack</a></p>
+            <p style="margin:24px 0 0 0"><a href="https://byteback.digital/app/inbox" style="display:inline-block;background:#6366f1;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600">Open ByteBack</a></p>
           </div>`;
 
-          const res = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${lovableKey}`,
-              "X-Connection-Api-Key": resendKey,
-            },
-            body: JSON.stringify({
-              from: "ByteBack Digest <onboarding@resend.dev>",
-              to: [toEmail],
-              subject: `Daily digest — ${summaryLine}`,
-              html,
-            }),
-          }).catch(() => null);
-          if (res && res.ok) sent += 1;
+          const today = new Date().toISOString().slice(0, 10);
+          const res = await sendAppEmail({
+            to: toEmail,
+            label: "daily-digest",
+            idempotencyKey: `digest-${row.user_id}-${today}`,
+            subject: `Daily digest — ${summaryLine}`,
+            html,
+          });
+          if (res.ok) sent += 1;
+          else skipped += 1;
         }
 
-        return Response.json({ ok: true, sent, considered: wantsDigest.length });
+        return Response.json({ ok: true, sent, skipped, considered: wantsDigest.length });
       },
     },
   },
