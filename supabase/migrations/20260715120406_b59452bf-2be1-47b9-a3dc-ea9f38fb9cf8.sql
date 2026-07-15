@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.prevent_last_owner_removal() FROM PUBLIC, anon, authenticated;
