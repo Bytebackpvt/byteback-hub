@@ -84,11 +84,12 @@ const FOOTER_LINKS = [
     links: [
       ["Privacy", "/privacy"],
       ["Terms", "/terms"],
-      ["Security", "/security"],
-      ["DPA", "/dpa"],
-      ["Cookies", "/cookies"],
+      ["Support", "/support"],
+      ["Google OAuth", "/google-oauth"],
+      ["Account Deletion", "/account-deletion"],
     ],
   },
+
 ] as const;
 
 const INTEGRATIONS = [
@@ -902,6 +903,97 @@ function Footer() {
   );
 }
 
+function GoogleWorkspaceSection() {
+  const items = [
+    "Securely connect your Gmail or Google Workspace account using OAuth",
+    "Read customer emails to power the Unified Inbox",
+    "Generate AI summaries and categorize conversations",
+    "Reply from one unified inbox across every mailbox",
+    "Create CRM contacts and follow-up tasks automatically",
+    "Never share or sell your data — Google Limited Use compliant",
+  ];
+  return (
+    <section id="google-workspace" className="border-t border-border/60 py-20 sm:py-24">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="grid gap-10 md:grid-cols-2 md:items-center">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-brand">
+              Google Workspace Integration
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+              Gmail &amp; Google Workspace, natively integrated.
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              ByteBack connects to your Gmail or Google Workspace account with OAuth,
+              analyzes customer conversations with AI, and organizes everything into a
+              unified inbox and lightweight CRM — without ever selling or sharing your
+              data.
+            </p>
+            <ul className="mt-6 space-y-3 text-sm">
+              {items.map((line) => (
+                <li key={line} className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Link to="/google-oauth">
+                <Button size="sm" variant="outline">
+                  Google OAuth &amp; Limited Use
+                </Button>
+              </Link>
+              <Link to="/privacy">
+                <Button size="sm" variant="outline">
+                  Privacy Policy
+                </Button>
+              </Link>
+              <Link to="/account-deletion">
+                <Button size="sm" variant="outline">
+                  Disconnect &amp; delete data
+                </Button>
+              </Link>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Shield className="h-4 w-4 text-brand" /> Google Limited Use
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              The use of information received from Google Workspace APIs adheres to the{" "}
+              <a
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="text-brand hover:underline"
+              >
+                Google API Services User Data Policy
+              </a>
+              , including the Limited Use requirements. Google Workspace data is never
+              used to train generalized AI models or serve advertising.
+            </p>
+            <div className="mt-4 grid gap-2 text-xs">
+              <div className="rounded-lg border border-border/70 bg-background p-3">
+                <div className="font-medium">Requested scopes</div>
+                <div className="mt-1 text-muted-foreground">
+                  gmail.readonly, gmail.send &amp; gmail.modify (when enabled),
+                  userinfo.email, userinfo.profile, openid
+                </div>
+              </div>
+              <div className="rounded-lg border border-border/70 bg-background p-3">
+                <div className="font-medium">Disconnect any time</div>
+                <div className="mt-1 text-muted-foreground">
+                  Revoke via ByteBack settings or myaccount.google.com/permissions.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Landing() {
   return (
     <div className="min-h-dvh bg-background text-foreground">
@@ -912,6 +1004,7 @@ function Landing() {
         <ProblemBand />
         <Features />
         <AISummary />
+        <GoogleWorkspaceSection />
         <Customers />
         <Pricing />
         <Testimonials />
@@ -922,3 +1015,4 @@ function Landing() {
     </div>
   );
 }
+
