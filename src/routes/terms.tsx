@@ -257,10 +257,10 @@ function TermsPage() {
             <a href="mailto:info@byteback.co.in">info@byteback.co.in</a>
             <br />
             Support:{" "}
-            <a href="mailto:support@byteback.digital">support@byteback.digital</a>
+            <a href="mailto:info@byteback.co.in">info@byteback.co.in</a>
             <br />
             Privacy:{" "}
-            <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a>
+            <a href="mailto:info@byteback.co.in">info@byteback.co.in</a>
             <br />
             Phone: <a href="tel:+919717513277">+91 97175 13277</a>
             <br />

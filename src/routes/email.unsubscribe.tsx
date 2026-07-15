@@ -85,7 +85,7 @@ function UnsubscribePage() {
             <h1 className="mt-4 text-xl font-semibold">Invalid or expired link</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               This unsubscribe link is not valid. If you keep receiving email you
-              didn't ask for, contact <a href="mailto:hello@byteback.digital" className="underline">hello@byteback.digital</a>.
+              didn't ask for, contact <a href="mailto:info@byteback.co.in" className="underline">info@byteback.co.in</a>.
             </p>
           </>
         )}

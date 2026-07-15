@@ -110,7 +110,7 @@ function AccountDeletionPage() {
           <SummaryCard
             icon={Mail}
             title="Manual request"
-            body="Email privacy@byteback.digital if you can't access the app."
+            body="Email info@byteback.co.in if you can't access the app."
           />
         </div>
 
@@ -228,7 +228,7 @@ Delete my account`}
           <h2>Request manual deletion</h2>
           <p>
             If you can't sign in or cannot use the in-app flow, email{" "}
-            <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a> from
+            <a href="mailto:info@byteback.co.in">info@byteback.co.in</a> from
             the address on file. We will verify your identity and action the request
             within 30 days.
           </p>
@@ -238,7 +238,7 @@ Delete my account`}
             </li>
             <li>
               <strong>Support contact:</strong>{" "}
-              <a href="mailto:support@byteback.digital">support@byteback.digital</a>
+              <a href="mailto:info@byteback.co.in">info@byteback.co.in</a>
             </li>
           </ul>
 
@@ -285,7 +285,7 @@ Delete my account`}
             </a>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <a href="mailto:privacy@byteback.digital">Email privacy@byteback.digital</a>
+            <a href="mailto:info@byteback.co.in">Email info@byteback.co.in</a>
           </Button>
           <Button asChild size="sm" variant="outline">
             <Link to="/privacy">Privacy Policy</Link>

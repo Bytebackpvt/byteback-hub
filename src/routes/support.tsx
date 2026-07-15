@@ -97,11 +97,11 @@ const FAQS = [
   },
   {
     q: "How do I report a bug?",
-    a: "Use the Report Bug quick action or email support@byteback.digital with steps to reproduce, expected vs. actual behavior, screenshots, and your workspace name.",
+    a: "Use the Report Bug quick action or email info@byteback.co.in with steps to reproduce, expected vs. actual behavior, screenshots, and your workspace name.",
   },
   {
     q: "Can I request a new feature?",
-    a: "Yes — send feature requests to support@byteback.digital or vote on our public roadmap. We ship the most-requested items first.",
+    a: "Yes — send feature requests to info@byteback.co.in or vote on our public roadmap. We ship the most-requested items first.",
   },
   {
     q: "Where can I check if there's an outage?",
@@ -174,7 +174,7 @@ function SupportPage() {
               <p className="col-span-full text-sm text-muted-foreground">
                 No results. Try a different search or{" "}
                 <a
-                  href="mailto:support@byteback.digital"
+                  href="mailto:info@byteback.co.in"
                   className="text-brand hover:underline"
                 >
                   contact support
@@ -212,7 +212,7 @@ function SupportPage() {
               desc="Get a human response in a few hours."
               cta={
                 <Button asChild size="sm" className="w-full">
-                  <a href="mailto:support@byteback.digital">Email support</a>
+                  <a href="mailto:info@byteback.co.in">Email support</a>
                 </Button>
               }
             />
@@ -234,7 +234,7 @@ function SupportPage() {
               desc="Send steps, screenshots, expected result."
               cta={
                 <Button asChild size="sm" variant="outline" className="w-full">
-                  <a href="mailto:support@byteback.digital?subject=Bug%20report">
+                  <a href="mailto:info@byteback.co.in?subject=Bug%20report">
                     Report bug
                   </a>
                 </Button>
@@ -246,7 +246,7 @@ function SupportPage() {
               desc="Tell us what to build next."
               cta={
                 <Button asChild size="sm" variant="outline" className="w-full">
-                  <a href="mailto:support@byteback.digital?subject=Feature%20request">
+                  <a href="mailto:info@byteback.co.in?subject=Feature%20request">
                     Suggest a feature
                   </a>
                 </Button>
@@ -285,7 +285,7 @@ function SupportPage() {
                 In-depth guides for every feature — inbox, CRM, AI, tasks, integrations.
               </p>
               <Button asChild size="sm" variant="outline" className="mt-4">
-                <a href="mailto:support@byteback.digital?subject=Knowledge%20base%20request">
+                <a href="mailto:info@byteback.co.in?subject=Knowledge%20base%20request">
                   Request an article
                 </a>
               </Button>
@@ -343,10 +343,10 @@ function SupportPage() {
             title="Support email"
             body={
               <a
-                href="mailto:support@byteback.digital"
+                href="mailto:info@byteback.co.in"
                 className="text-brand hover:underline"
               >
-                support@byteback.digital
+                info@byteback.co.in
               </a>
             }
           />
