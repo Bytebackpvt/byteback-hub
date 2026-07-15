@@ -128,8 +128,8 @@ function GoogleOAuthPage() {
           <ul>
             <li><strong>Application name:</strong> ByteBack Inbox AI</li>
             <li><strong>Website:</strong> <a href="https://byteback.digital" target="_blank" rel="noreferrer noopener">byteback.digital</a></li>
-            <li><strong>Support email:</strong> <a href="mailto:support@byteback.digital">support@byteback.digital</a></li>
-            <li><strong>Privacy contact:</strong> <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a></li>
+            <li><strong>Support email:</strong> <a href="mailto:info@byteback.co.in">info@byteback.co.in</a></li>
+            <li><strong>Privacy contact:</strong> <a href="mailto:info@byteback.co.in">info@byteback.co.in</a></li>
           </ul>
 
           <h2>Core features</h2>
@@ -222,7 +222,7 @@ function GoogleOAuthPage() {
           </p>
           <p>
             <a
-              href="mailto:privacy@byteback.digital?subject=Google%20OAuth%20verification%20-%20demo%20video"
+              href="mailto:info@byteback.co.in?subject=Google%20OAuth%20verification%20-%20demo%20video"
               className="inline-flex items-center gap-1"
             >
               <PlayCircle className="inline h-4 w-4" /> Request current demo video link
@@ -234,7 +234,7 @@ function GoogleOAuthPage() {
           <p>
             Test credentials for the Google reviewer are provided directly through the
             OAuth verification submission. Reviewers may also request new credentials
-            at <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a>.
+            at <a href="mailto:info@byteback.co.in">info@byteback.co.in</a>.
           </p>
 
           <h2>Data flow</h2>
@@ -347,14 +347,14 @@ ByteBack UI displays inbox, summaries, CRM, tasks`}
             available on the{" "}
             <Link to="/account-deletion">Account &amp; Data Deletion</Link> page.
             Manual deletion requests can be sent to{" "}
-            <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a> and
+            <a href="mailto:info@byteback.co.in">info@byteback.co.in</a> and
             are actioned within 30 days.
           </p>
 
           <h2>Contact</h2>
           <ul>
-            <li><strong>Privacy &amp; verification:</strong> <a href="mailto:privacy@byteback.digital">privacy@byteback.digital</a></li>
-            <li><strong>Support:</strong> <a href="mailto:support@byteback.digital">support@byteback.digital</a></li>
+            <li><strong>Privacy &amp; verification:</strong> <a href="mailto:info@byteback.co.in">info@byteback.co.in</a></li>
+            <li><strong>Support:</strong> <a href="mailto:info@byteback.co.in">info@byteback.co.in</a></li>
             <li><strong>General:</strong> <a href="mailto:info@byteback.co.in">info@byteback.co.in</a></li>
             <li><strong>Phone:</strong> <a href="tel:+919717513277">+91 97175 13277</a></li>
           </ul>
