@@ -10,9 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SupportRouteImport } from './routes/support'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as GoogleOauthRouteImport } from './routes/google-oauth'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AccountDeletionRouteImport } from './routes/account-deletion'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -58,6 +61,11 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -68,9 +76,19 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GoogleOauthRoute = GoogleOauthRouteImport.update({
+  id: '/google-oauth',
+  path: '/google-oauth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountDeletionRoute = AccountDeletionRouteImport.update({
+  id: '/account-deletion',
+  path: '/account-deletion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SlugRoute = SlugRouteImport.update({
@@ -286,9 +304,12 @@ const ApiPublicOauthGmailCallbackRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
+  '/account-deletion': typeof AccountDeletionRoute
   '/auth': typeof AuthRoute
+  '/google-oauth': typeof GoogleOauthRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
@@ -330,8 +351,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
+  '/account-deletion': typeof AccountDeletionRoute
   '/auth': typeof AuthRoute
+  '/google-oauth': typeof GoogleOauthRoute
   '/privacy': typeof PrivacyRoute
+  '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -373,9 +397,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$slug': typeof SlugRoute
+  '/account-deletion': typeof AccountDeletionRoute
   '/auth': typeof AuthRoute
+  '/google-oauth': typeof GoogleOauthRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
@@ -419,9 +446,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$slug'
+    | '/account-deletion'
     | '/auth'
+    | '/google-oauth'
     | '/onboarding'
     | '/privacy'
+    | '/support'
     | '/terms'
     | '/app'
     | '/email/unsubscribe'
@@ -463,8 +493,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$slug'
+    | '/account-deletion'
     | '/auth'
+    | '/google-oauth'
     | '/privacy'
+    | '/support'
     | '/terms'
     | '/email/unsubscribe'
     | '/invite/$token'
@@ -505,9 +538,12 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/$slug'
+    | '/account-deletion'
     | '/auth'
+    | '/google-oauth'
     | '/onboarding'
     | '/privacy'
+    | '/support'
     | '/terms'
     | '/_authenticated/app'
     | '/email/unsubscribe'
@@ -551,9 +587,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   SlugRoute: typeof SlugRoute
+  AccountDeletionRoute: typeof AccountDeletionRoute
   AuthRoute: typeof AuthRoute
+  GoogleOauthRoute: typeof GoogleOauthRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
+  SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -575,6 +614,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -589,11 +635,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/google-oauth': {
+      id: '/google-oauth'
+      path: '/google-oauth'
+      fullPath: '/google-oauth'
+      preLoaderRoute: typeof GoogleOauthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account-deletion': {
+      id: '/account-deletion'
+      path: '/account-deletion'
+      fullPath: '/account-deletion'
+      preLoaderRoute: typeof AccountDeletionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$slug': {
@@ -989,9 +1049,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   SlugRoute: SlugRoute,
+  AccountDeletionRoute: AccountDeletionRoute,
   AuthRoute: AuthRoute,
+  GoogleOauthRoute: GoogleOauthRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
+  SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   InviteTokenRoute: InviteTokenRoute,

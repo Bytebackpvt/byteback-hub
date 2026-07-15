@@ -78,35 +78,42 @@ function PrivacyPage() {
         </div>
 
         <div className="prose prose-sm mt-10 max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-h2:mt-10 prose-h2:text-xl prose-h3:text-base prose-p:leading-relaxed prose-a:text-brand">
+          <h2>What ByteBack does</h2>
           <p>
-            ByteBack ("we", "us", "our") operates the ByteBack Inbox AI platform available at
-            byteback.digital (the "Service"). This Privacy Policy explains what information we
-            collect, how we use it, and the choices you have. By using the Service you agree to
-            this policy.
+            ByteBack is an enterprise AI-powered Unified Inbox and Customer Communication
+            Platform. It enables organizations to connect multiple email accounts from
+            Gmail, Google Workspace, Microsoft 365, Outlook, and other supported providers
+            into one intelligent inbox. The platform helps users manage customer
+            communications, generate AI-powered summaries, organize conversations, create
+            CRM records, assign follow-up tasks, and improve response times.
+          </p>
+          <p>
+            This Privacy Policy explains what information ByteBack ("we", "us", "our")
+            collects, how we use it, and the choices you have. By using the Service you
+            agree to this policy.
           </p>
 
           <h2>1. Information we collect</h2>
           <h3>Account data</h3>
           <p>
             When you sign up we collect your name, email address, workspace name, and
-            authentication identifiers. Passwords are hashed by our authentication provider and
-            are never accessible to us in plaintext.
+            authentication identifiers. Passwords are hashed by our authentication provider
+            and are never accessible to us in plaintext.
           </p>
           <h3>Connected email accounts</h3>
           <p>
             When you connect a Gmail, Google Workspace, Outlook, Microsoft 365, IMAP, or
-            third-party sending tool (Instantly, Smartlead) to ByteBack, we access:
+            other supported email service provider to ByteBack, we access:
           </p>
           <ul>
             <li>Message metadata (sender, recipient, subject, date, thread id, labels)</li>
-            <li>Message bodies (plain text and HTML) required to classify replies</li>
+            <li>Message bodies (plain text and HTML) required to power inbox and AI features</li>
             <li>Your email address and basic profile from the OAuth provider</li>
           </ul>
           <p>
-            We request the minimum OAuth scopes required — for Gmail this is{" "}
-            <code>gmail.readonly</code>, <code>openid</code>, <code>email</code>, and{" "}
-            <code>profile</code>. We do <strong>not</strong> request send, delete, or modify
-            scopes.
+            We request the minimum OAuth scopes required for the features you enable.
+            Additional scopes (such as send or modify) are requested only if you enable
+            features that need them, and always with an explicit user consent screen.
           </p>
           <h3>Usage data</h3>
           <p>
@@ -116,24 +123,25 @@ function PrivacyPage() {
 
           <h2>2. How we use your data</h2>
           <ul>
-            <li>To provide the unified inbox, reply classification, and CRM features</li>
+            <li>To provide the unified inbox and analyze customer conversations to provide AI-powered summaries, categorization, CRM timelines, and productivity features</li>
             <li>To create follow-up tasks and send you notifications</li>
             <li>To secure your account and detect abuse</li>
             <li>To provide customer support</li>
           </ul>
           <p>
-            We <strong>do not train AI models on your email content</strong>. Reply
-            classification is performed by third-party LLM providers (Google Gemini via the
-            Lovable AI Gateway) under zero-retention agreements — your data is not stored or
-            used for training by these providers.
+            We <strong>do not train AI models on your email content</strong>. AI inference
+            is performed by authorized AI processing providers operating under
+            zero-retention agreements — your data is not stored or used for training by
+            these providers.
           </p>
 
           <h2>3. Google Workspace data</h2>
           <p>
             ByteBack accesses Gmail and Google Workspace data only after explicit user
             authorization via Google OAuth, to provide the following user-facing features:
-            Unified Inbox, AI-powered email classification, CRM timeline generation,
-            follow-up reminders, and email management features.
+            Unified Inbox, AI-powered summaries and categorization of customer
+            conversations, CRM timeline generation, follow-up reminders, and email
+            management features.
           </p>
           <p>Specifically, we access:</p>
           <ul>
@@ -143,28 +151,30 @@ function PrivacyPage() {
               you connect.
             </li>
             <li>
-              <strong>Why:</strong> to display incoming replies in the unified inbox,
-              classify them with AI, generate CRM contacts and timelines, and create
-              follow-up tasks and reminders.
+              <strong>Why:</strong> to display incoming messages in the unified inbox,
+              analyze customer conversations with AI, generate CRM contacts and timelines,
+              and create follow-up tasks and reminders.
             </li>
             <li>
-              <strong>Which features use it:</strong> Unified Inbox, Reply Classification,
-              CRM &amp; Timeline, Tasks &amp; Follow-ups, Analytics, Notifications.
+              <strong>Which features use it:</strong> Unified Inbox, AI Summaries &amp;
+              Categorization, CRM &amp; Timeline, Tasks &amp; Follow-ups, Analytics
+              (mailbox health, response time, inbox activity, and productivity metrics),
+              Notifications.
             </li>
           </ul>
 
           <h3>AI processing</h3>
           <p>
-            Email content may be processed to generate AI summaries, reply classification,
-            and productivity features (such as suggested next actions and follow-up drafts).
+            Email content may be processed to generate AI summaries, categorization, and
+            productivity features (such as suggested next actions and follow-up drafts).
           </p>
           <p>
             <strong>
               Google Workspace data is never used to train generalized AI models.
             </strong>{" "}
-            AI inference is performed by third-party LLM providers (Google Gemini via the
-            Lovable AI Gateway) under zero-retention agreements — your data is not stored
-            or used for training by these providers.
+            AI inference is performed by authorized AI processing providers operating
+            under zero-retention agreements — your data is not stored or used for training
+            by these providers.
           </p>
 
           <h3>Google Limited Use statement</h3>
@@ -183,11 +193,13 @@ function PrivacyPage() {
           <ul>
             <li>
               We only use Google Workspace data to provide user-facing features in the
-              ByteBack app (unified inbox, classification, CRM, tasks, analytics).
+              ByteBack app (unified inbox, AI summaries and categorization, CRM, tasks,
+              analytics).
             </li>
             <li>
-              We do not transfer Google Workspace data to third parties except as required
-              to provide the Service, comply with law, or with your explicit consent.
+              We do not transfer Google Workspace data to third parties except as
+              required to provide the Service, comply with law, or with your explicit
+              consent.
             </li>
             <li>We do not use Google Workspace data for serving advertisements.</li>
             <li>
@@ -202,14 +214,23 @@ function PrivacyPage() {
           <ul>
             <li>
               <code>https://www.googleapis.com/auth/gmail.readonly</code> — read incoming
-              messages in the connected mailbox so ByteBack can display them in the unified
-              inbox, classify replies with AI, and create CRM contacts and follow-up tasks.
-              We never send, modify, delete, or archive messages.
+              messages in the connected mailbox so ByteBack can display them in the
+              unified inbox, analyze customer conversations, and create CRM contacts and
+              follow-up tasks.
             </li>
             <li>
-              <code>https://www.googleapis.com/auth/userinfo.email</code> — identify which
-              Google account the user connected, so we can label the mailbox in the app and
-              prevent duplicate connections.
+              <code>https://www.googleapis.com/auth/gmail.send</code> and{" "}
+              <code>https://www.googleapis.com/auth/gmail.modify</code> — requested only
+              if you enable reply, compose, or mailbox-action features. Depending on the
+              permissions explicitly granted by the user, ByteBack may allow composing,
+              sending, replying to emails, and performing mailbox actions such as marking
+              messages as read or applying labels. These actions occur only after direct
+              user initiation.
+            </li>
+            <li>
+              <code>https://www.googleapis.com/auth/userinfo.email</code> — identify
+              which Google account the user connected, so we can label the mailbox in the
+              app and prevent duplicate connections.
             </li>
             <li>
               <code>https://www.googleapis.com/auth/userinfo.profile</code> — display the
@@ -220,6 +241,8 @@ function PrivacyPage() {
               Google user.
             </li>
           </ul>
+
+
 
 
           <h2>4. Data storage and security</h2>
