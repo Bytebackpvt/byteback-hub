@@ -128,9 +128,48 @@ function PrivacyPage() {
             used for training by these providers.
           </p>
 
-          <h2>3. Google user data — limited use disclosure</h2>
+          <h2>3. Google Workspace data</h2>
           <p>
-            ByteBack's use and transfer of information received from Google APIs adheres to the{" "}
+            ByteBack accesses Gmail and Google Workspace data only after explicit user
+            authorization via Google OAuth, to provide the following user-facing features:
+            Unified Inbox, AI-powered email classification, CRM timeline generation,
+            follow-up reminders, and email management features.
+          </p>
+          <p>Specifically, we access:</p>
+          <ul>
+            <li>
+              <strong>What:</strong> message metadata (sender, recipient, subject, date,
+              thread id, labels) and message bodies (plain text and HTML) from mailboxes
+              you connect.
+            </li>
+            <li>
+              <strong>Why:</strong> to display incoming replies in the unified inbox,
+              classify them with AI, generate CRM contacts and timelines, and create
+              follow-up tasks and reminders.
+            </li>
+            <li>
+              <strong>Which features use it:</strong> Unified Inbox, Reply Classification,
+              CRM &amp; Timeline, Tasks &amp; Follow-ups, Analytics, Notifications.
+            </li>
+          </ul>
+
+          <h3>AI processing</h3>
+          <p>
+            Email content may be processed to generate AI summaries, reply classification,
+            and productivity features (such as suggested next actions and follow-up drafts).
+          </p>
+          <p>
+            <strong>
+              Google Workspace data is never used to train generalized AI models.
+            </strong>{" "}
+            AI inference is performed by third-party LLM providers (Google Gemini via the
+            Lovable AI Gateway) under zero-retention agreements — your data is not stored
+            or used for training by these providers.
+          </p>
+
+          <h3>Google Limited Use statement</h3>
+          <p>
+            The use of information received from Google Workspace APIs adheres to the{" "}
             <a
               href="https://developers.google.com/terms/api-services-user-data-policy"
               target="_blank"
@@ -138,16 +177,24 @@ function PrivacyPage() {
             >
               Google API Services User Data Policy
             </a>
-            , including the Limited Use requirements. Specifically:
+            , including the Limited Use requirements.
           </p>
+          <p>Specifically:</p>
           <ul>
             <li>
-              We only use Gmail data to provide user-facing features in the ByteBack app
-              (unified inbox, classification, CRM, tasks, analytics).
+              We only use Google Workspace data to provide user-facing features in the
+              ByteBack app (unified inbox, classification, CRM, tasks, analytics).
             </li>
-            <li>We do not transfer Gmail data to third parties except as required to provide the Service, comply with law, or with your explicit consent.</li>
-            <li>We do not use Gmail data for serving advertisements.</li>
-            <li>We do not allow humans to read Gmail data unless you explicitly grant permission for support, we need to for security or to comply with the law, or the data is aggregated and anonymized for internal operations.</li>
+            <li>
+              We do not transfer Google Workspace data to third parties except as required
+              to provide the Service, comply with law, or with your explicit consent.
+            </li>
+            <li>We do not use Google Workspace data for serving advertisements.</li>
+            <li>
+              We do not allow humans to read Google Workspace data unless you explicitly
+              grant permission for support, we need to for security or to comply with the
+              law, or the data is aggregated and anonymized for internal operations.
+            </li>
           </ul>
 
           <h3>Google OAuth scope justification</h3>
@@ -173,6 +220,7 @@ function PrivacyPage() {
               Google user.
             </li>
           </ul>
+
 
           <h2>4. Data storage and security</h2>
           <ul>
