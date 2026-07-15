@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -56,6 +57,11 @@ import { Route as AuthenticatedAppIntegrationsConnectedRouteImport } from './rou
 import { Route as AuthenticatedAppIntegrationsProviderIdRouteImport } from './routes/_authenticated/app.integrations.$providerId'
 import { Route as ApiPublicOauthGmailCallbackRouteImport } from './routes/api/public/oauth.gmail.callback'
 
+const VerificationRoute = VerificationRouteImport.update({
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -311,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/verification': typeof VerificationRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -357,6 +364,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/verification': typeof VerificationRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
@@ -404,6 +412,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/verification': typeof VerificationRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -453,6 +462,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/support'
     | '/terms'
+    | '/verification'
     | '/app'
     | '/email/unsubscribe'
     | '/invite/$token'
@@ -499,6 +509,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/support'
     | '/terms'
+    | '/verification'
     | '/email/unsubscribe'
     | '/invite/$token'
     | '/onboarding/business-type'
@@ -545,6 +556,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/support'
     | '/terms'
+    | '/verification'
     | '/_authenticated/app'
     | '/email/unsubscribe'
     | '/invite/$token'
@@ -594,6 +606,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
+  VerificationRoute: typeof VerificationRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicCronDailyDigestRoute: typeof ApiPublicCronDailyDigestRoute
@@ -607,6 +620,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verification': {
+      id: '/verification'
+      path: '/verification'
+      fullPath: '/verification'
+      preLoaderRoute: typeof VerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -1056,6 +1076,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
+  VerificationRoute: VerificationRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   InviteTokenRoute: InviteTokenRoute,
   ApiPublicCronDailyDigestRoute: ApiPublicCronDailyDigestRoute,
