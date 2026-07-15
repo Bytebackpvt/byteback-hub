@@ -230,7 +230,62 @@ function PrivacyPage() {
             <li>Hosted on hardened cloud infrastructure with regular security review.</li>
           </ul>
 
-          <h2>5. Data retention and deletion</h2>
+          <h2>5. Data retention</h2>
+          <ul>
+            <li>
+              <strong>Synced emails:</strong> messages fetched from connected mailboxes are
+              retained for as long as the mailbox remains connected and your ByteBack
+              workspace is active, so classification, CRM timelines, and search continue
+              to work.
+            </li>
+            <li>
+              <strong>On mailbox disconnect:</strong> messages synced from that mailbox are
+              purged from our primary database within 30 days of disconnect.
+            </li>
+            <li>
+              <strong>On account deletion:</strong> all workspace data — emails, contacts,
+              tasks, notes, pipeline, notifications, AI embeddings — is deleted immediately
+              from the primary database.
+            </li>
+            <li>
+              <strong>Backups:</strong> encrypted backups are retained for up to 30 days
+              for disaster recovery, after which deleted data is fully purged from backups
+              as they roll off.
+            </li>
+            <li>
+              <strong>Account &amp; billing records:</strong> minimal account records
+              (name, email, invoices) may be retained as required by applicable tax and
+              accounting law.
+            </li>
+          </ul>
+
+          <h2>6. Data deletion</h2>
+          <p>You have full control over your data at any time:</p>
+          <ul>
+            <li>
+              <strong>Disconnect Google:</strong> revoke a single mailbox or all connected
+              Google accounts from <em>Settings → Account &amp; Data</em>. ByteBack calls
+              Google's OAuth revoke endpoint, deletes the stored refresh token, and stops
+              all Gmail syncing.
+            </li>
+            <li>
+              <strong>Delete synced emails:</strong> disconnecting a mailbox purges the
+              messages synced from it within 30 days.
+            </li>
+            <li>
+              <strong>Delete account:</strong> permanently delete your entire ByteBack
+              account and all workspace data from <em>Settings → Account &amp; Data →
+              Delete my account</em>.
+            </li>
+            <li>
+              <strong>Request deletion:</strong> if you cannot access the app, email{" "}
+              <a href="mailto:info@byteback.co.in">info@byteback.co.in</a> and we will
+              action the request within 30 days.
+            </li>
+          </ul>
+
+          <h3>Disconnect a Google / Gmail account</h3>
+
           <h3>Disconnect a Google / Gmail account</h3>
           <p>
             You can disconnect any connected mailbox at any time from{" "}
