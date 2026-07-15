@@ -65,13 +65,25 @@ function BusinessTypeStep() {
         >
           <ArrowLeft className="mr-1.5 h-4 w-4" /> Back
         </Button>
-        <Button
-          onClick={() => navigate({ to: "/onboarding/done" })}
-          disabled={!businessType}
-          className="rounded-lg"
-        >
-          Continue <ArrowRight className="ml-1.5 h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (!businessType) setBusinessType("other");
+              navigate({ to: "/onboarding/done" });
+            }}
+            className="rounded-lg"
+          >
+            Skip
+          </Button>
+          <Button
+            onClick={() => navigate({ to: "/onboarding/done" })}
+            disabled={!businessType}
+            className="rounded-lg"
+          >
+            Continue <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

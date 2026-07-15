@@ -40,9 +40,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWorkspace } from "@/lib/workspace.functions";
 import { listInstantlyThreads } from "@/lib/instantly.functions";
 import { listTasks } from "@/lib/tasks.functions";
+import { listNotifications } from "@/lib/notifications.functions";
 import { useServerFn } from "@tanstack/react-start";
 
-const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox" | "tasks"; tour: string }[] = [
+const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox" | "tasks" | "notifications"; tour: string }[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
   { to: "/app/radar", label: "Opportunity Radar", icon: Radar, tour: "nav-radar" },
   { to: "/app/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox", tour: "nav-inbox" },
@@ -53,7 +54,7 @@ const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox" |
   { to: "/app/team", label: "Team", icon: Shield, tour: "nav-team" },
   { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
   { to: "/app/email-sources", label: "Email Sources", icon: Mail, tour: "nav-email-sources" },
-  { to: "/app/notifications", label: "Notifications", icon: Bell, tour: "nav-notifications" },
+  { to: "/app/notifications", label: "Notifications", icon: Bell, badgeKey: "notifications", tour: "nav-notifications" },
   { to: "/app/memory", label: "AI Memory", icon: Brain, tour: "nav-memory" },
   { to: "/app/help", label: "Help", icon: HelpCircle, tour: "nav-help" },
 ];
@@ -66,6 +67,7 @@ export function AppSidebar() {
   const callWorkspace = useServerFn(getCurrentWorkspace);
   const callThreads = useServerFn(listInstantlyThreads);
   const callTasks = useServerFn(listTasks);
+  const callNotifs = useServerFn(listNotifications);
   const wsQuery = useQuery({
     queryKey: ["workspace", "current"],
     queryFn: () => callWorkspace(),
@@ -81,9 +83,16 @@ export function AppSidebar() {
     queryFn: () => callTasks(),
     staleTime: 30_000,
   });
+  const notifQ = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => callNotifs(),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
   const role = wsQuery.data?.role ?? null;
-  const inboxCount = inboxQ.data?.threads?.length ?? 0;
+  const inboxUnread = inboxQ.data?.threads?.filter((t) => t.unread).length ?? 0;
   const tasksCount = tasksQ.data?.tasks?.filter((t) => !t.done).length ?? 0;
+  const notifUnread = notifQ.data?.unread ?? 0;
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
@@ -119,11 +128,16 @@ export function AppSidebar() {
                         <item.icon className="h-4 w-4" />
                         <span className="flex-1">{item.label}</span>
                         {item.badgeKey && (() => {
-                          const n = item.badgeKey === "inbox" ? inboxCount : tasksCount;
+                          const n =
+                            item.badgeKey === "inbox"
+                              ? inboxUnread
+                              : item.badgeKey === "tasks"
+                                ? tasksCount
+                                : notifUnread;
                           if (!n) return null;
                           return (
                             <span className="ml-auto rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
-                              {n}
+                              {n > 99 ? "99+" : n}
                             </span>
                           );
                         })()}

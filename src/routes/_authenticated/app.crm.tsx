@@ -314,7 +314,12 @@ function CrmPage() {
                       </Button>
                     </div>
                   ) : (
-                    "No contacts yet. Connect a mailbox to start syncing leads."
+                    <div className="flex flex-col items-center gap-3">
+                      <p>No contacts yet. Connect a mailbox to start syncing leads.</p>
+                      <Button asChild size="sm">
+                        <a href="/app/email-sources">Connect a mailbox</a>
+                      </Button>
+                    </div>
                   )}
                 </td>
               </tr>
