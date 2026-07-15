@@ -1,91 +1,52 @@
-## Goal
+## Final Polish — All 5 Items
 
-Make the integrations flow **universal** — same connect / configure / disconnect / sync UX for every provider — and start closing the remaining product gaps (invites, digest emails, analytics, notifications settings).
+Sab kuch ek saath karta hun. Yeh raha exact breakdown:
 
----
+### 1. Sidebar Unread Badges
+- `src/lib/notifications.functions.ts` → add `getUnreadCounts` server fn (inbox unread + notifications unread)
+- `src/components/app-sidebar.tsx` → useQuery for counts, render badge pill next to Inbox and Notifications items
+- Auto-refetch on 30s interval + invalidate on route change
 
-## Part 1 — Universal Integrations Flow
+### 2. Empty States Audit
+- `src/routes/_authenticated/app.inbox.tsx` → "Connect your first mailbox" CTA when no threads
+- `src/routes/_authenticated/app.pipeline.tsx` → "Add your first lead" CTA when no deals
+- `src/routes/_authenticated/app.tasks.tsx` → "Create task" CTA when no tasks
+- `src/routes/_authenticated/app.crm.tsx` → "Import contacts" CTA when no contacts
+- Consistent style: icon + heading + subtext + primary action button
 
-Right now Instantly and Gmail each have their own custom UI + server code. Everything else in the marketplace is just a "Request" button. Make one generic pattern that all providers plug into.
+### 3. Onboarding Mobile Polish
+- `src/routes/onboarding.tsx` → verify progress bar + step labels wrap cleanly on mobile
+- `src/routes/onboarding.team.tsx` + `onboarding.business-type.tsx` → add "Skip for now" button
+- Test flow on 375px viewport
 
-### 1.1 Provider registry (single source of truth)
+### 4. Security Scan + Fixes
+- Run `security--run_security_scan`
+- Fix any critical findings (missing RLS / GRANTs)
+- Update security memory
 
-Create `src/lib/integrations/registry.ts` — one entry per provider with:
-- `id`, `name`, `logo_slug`, `category`
-- `auth_kind`: `"oauth"` | `"api_key"` | `"webhook_in"` | `"webhook_out"`
-- `fields`: schema of what the user must enter (label, type, placeholder, secret y/n)
-- `capabilities`: `["ingest_email", "send_email", "crm_sync", "notify", "sheets"]`
-- `test_fn`: server function name to validate credentials
-- `sync_fn` (optional): server function to pull data
+### 5. Pre-Launch Verification
+- Confirm cron routes registered (`cron.daily-digest`, `cron.escalate`, `cron.sync`)
+- Check publish settings (`byteback.digital` custom domain)
+- Verify env: `RESEND_API_KEY`, `LOVABLE_API_KEY` present
+- Confirm build passes
 
-Providers to seed: Gmail, Outlook, Instantly, Smartlead, Apollo, HubSpot, Salesforce, Pipedrive, Slack, Teams, Discord, Zapier, Google Sheets, generic webhook.
+### Execution Order
+1. Backend: notifications count server fn
+2. Frontend: sidebar badges + all empty states in parallel
+3. Onboarding polish
+4. Security scan → fix findings
+5. Final verification checklist
 
-### 1.2 One generic table row shape
+### Files Touched (est. ~8-10)
+- `src/lib/notifications.functions.ts` (edit)
+- `src/components/app-sidebar.tsx` (edit)
+- `src/routes/_authenticated/app.inbox.tsx` (edit)
+- `src/routes/_authenticated/app.pipeline.tsx` (edit)
+- `src/routes/_authenticated/app.tasks.tsx` (edit)
+- `src/routes/_authenticated/app.crm.tsx` (edit)
+- `src/routes/onboarding.tsx` (edit)
+- `src/routes/onboarding.team.tsx` (edit)
+- `src/routes/onboarding.business-type.tsx` (edit)
+- Plus any migrations from security findings
 
-`workspace_integrations` already stores `provider`, `config`, `secret`, `status`. Keep it — just make sure every new provider writes here (no more per-provider tables).
-
-### 1.3 Universal server functions
-
-Replace the scattered per-provider fns with:
-- `connectIntegration({ provider, fields })` — validates via registry, encrypts secret, upserts row.
-- `testIntegration({ id })` — calls the provider's `test_fn`.
-- `syncIntegration({ id })` — calls the provider's `sync_fn` if it has one.
-- `disconnectIntegration({ id })` — deletes row + revokes tokens where possible.
-
-Existing Gmail / Instantly code becomes just two of the registry entries; their internals stay, but the UI calls the universal fns.
-
-### 1.4 Universal UI
-
-Replace the current marketplace + Instantly-specific screens with:
-- **`/app/integrations`** — grid of all providers from registry. Each card shows status (Not connected / Connected / Error) and Connect / Manage button.
-- **`/app/integrations/$providerId`** — renders a generic form from `fields`; OAuth providers show "Connect with X" button; API-key providers show input fields; webhook-in providers show the generated inbound URL to paste elsewhere. Same page also shows Test, Sync now, Disconnect.
-- **`/app/integrations/connected`** — filtered view of connected only.
-
-All rendering is data-driven from the registry — adding a new provider = one registry entry + optional test/sync fn, zero UI code.
-
-### 1.5 Data pipeline hooks
-
-Wire capabilities so the rest of the app reacts:
-- `ingest_email` capability → thread listing merges from all such integrations for the workspace (already works for Gmail/Instantly — generalize the merge).
-- `notify` capability → notification dispatcher fans out to every connected notifier (Slack, Teams, Discord, webhook).
-- `crm_sync` capability → contact/deal syncers pick up connected CRMs.
-
----
-
-## Part 2 — Remaining product work
-
-### 2.1 Team invites (accept flow)
-- Public route `/invite/$token` that reads `workspace_invites`, prompts sign-in / sign-up, then joins the workspace (`workspace_members` insert) and marks invite accepted.
-- Send invite email via Lovable Emails using existing auth-email infra.
-
-### 2.2 Notifications settings UI polish
-- `notification_preferences` table already exists — the settings page needs per-channel toggles (in-app, email, Slack, digest) tied to real prefs.
-- Respect prefs in the notification dispatcher.
-
-### 2.3 Daily digest email
-- `cron.daily-digest` route exists; wire it to real per-user digest content (new replies, hot leads, pending tasks) using Lovable Emails.
-- Add unsubscribe link → toggles `notification_preferences.digest_email`.
-
-### 2.4 Analytics
-- Replace mock numbers with real queries: reply rate over time, response time, hot-lead conversion, per-account performance.
-- Add date-range filter.
-
-### 2.5 Small polish
-- Sidebar badges already dynamic — add unread notifications count too.
-- Empty states across Inbox / Pipeline / Radar link into the right integration to fix.
-
----
-
-## Suggested order of delivery
-
-1. Provider registry + universal server fns + universal UI (Part 1.1 – 1.4). Instantly and Gmail migrate onto it.
-2. Capability wiring (Part 1.5).
-3. Invite accept flow (2.1).
-4. Digest email + notification prefs (2.3 + 2.2).
-5. Analytics (2.4).
-6. Polish (2.5).
-
-## What I need from you
-
-- Confirm the order above works, ya kisi ek cheez ko pehle chahiye (invites / digest / analytics)?
-- Kya main abhi step 1 (universal integrations) se shuru kar du?
+Approve karo toh build mode me shuru karta hun.
