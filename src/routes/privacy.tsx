@@ -321,7 +321,7 @@ function PrivacyPage() {
             we will action the request within 30 days.
           </p>
 
-          <h2>6. Sharing your data</h2>
+          <h2>7. Sharing your data</h2>
           <p>We share data only with subprocessors that help us operate the Service:</p>
           <ul>
             <li>Cloud hosting and database provider</li>
@@ -334,7 +334,7 @@ function PrivacyPage() {
             protect the rights, safety, and property of ByteBack, our users, or the public.
           </p>
 
-          <h2>7. Your rights</h2>
+          <h2>8. Your rights</h2>
           <p>
             Subject to applicable law (including GDPR and CCPA), you have the right to access,
             correct, export, or delete your personal data. Contact{" "}
@@ -342,16 +342,17 @@ function PrivacyPage() {
             these rights.
           </p>
 
-          <h2>8. Children</h2>
+          <h2>9. Children</h2>
           <p>The Service is not directed to individuals under 16 and we do not knowingly collect data from them.</p>
 
-          <h2>9. Changes to this policy</h2>
+          <h2>10. Changes to this policy</h2>
           <p>
             We may update this policy from time to time. Material changes will be announced in
             the app or by email at least 7 days before they take effect.
           </p>
 
-          <h2>10. Contact</h2>
+          <h2>11. Contact</h2>
+
           <p>
             Questions? Contact us at{" "}
             <a href="mailto:info@byteback.co.in">info@byteback.co.in</a>.
