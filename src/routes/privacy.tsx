@@ -128,9 +128,48 @@ function PrivacyPage() {
             used for training by these providers.
           </p>
 
-          <h2>3. Google user data — limited use disclosure</h2>
+          <h2>3. Google Workspace data</h2>
           <p>
-            ByteBack's use and transfer of information received from Google APIs adheres to the{" "}
+            ByteBack accesses Gmail and Google Workspace data only after explicit user
+            authorization via Google OAuth, to provide the following user-facing features:
+            Unified Inbox, AI-powered email classification, CRM timeline generation,
+            follow-up reminders, and email management features.
+          </p>
+          <p>Specifically, we access:</p>
+          <ul>
+            <li>
+              <strong>What:</strong> message metadata (sender, recipient, subject, date,
+              thread id, labels) and message bodies (plain text and HTML) from mailboxes
+              you connect.
+            </li>
+            <li>
+              <strong>Why:</strong> to display incoming replies in the unified inbox,
+              classify them with AI, generate CRM contacts and timelines, and create
+              follow-up tasks and reminders.
+            </li>
+            <li>
+              <strong>Which features use it:</strong> Unified Inbox, Reply Classification,
+              CRM &amp; Timeline, Tasks &amp; Follow-ups, Analytics, Notifications.
+            </li>
+          </ul>
+
+          <h3>AI processing</h3>
+          <p>
+            Email content may be processed to generate AI summaries, reply classification,
+            and productivity features (such as suggested next actions and follow-up drafts).
+          </p>
+          <p>
+            <strong>
+              Google Workspace data is never used to train generalized AI models.
+            </strong>{" "}
+            AI inference is performed by third-party LLM providers (Google Gemini via the
+            Lovable AI Gateway) under zero-retention agreements — your data is not stored
+            or used for training by these providers.
+          </p>
+
+          <h3>Google Limited Use statement</h3>
+          <p>
+            The use of information received from Google Workspace APIs adheres to the{" "}
             <a
               href="https://developers.google.com/terms/api-services-user-data-policy"
               target="_blank"
@@ -138,16 +177,24 @@ function PrivacyPage() {
             >
               Google API Services User Data Policy
             </a>
-            , including the Limited Use requirements. Specifically:
+            , including the Limited Use requirements.
           </p>
+          <p>Specifically:</p>
           <ul>
             <li>
-              We only use Gmail data to provide user-facing features in the ByteBack app
-              (unified inbox, classification, CRM, tasks, analytics).
+              We only use Google Workspace data to provide user-facing features in the
+              ByteBack app (unified inbox, classification, CRM, tasks, analytics).
             </li>
-            <li>We do not transfer Gmail data to third parties except as required to provide the Service, comply with law, or with your explicit consent.</li>
-            <li>We do not use Gmail data for serving advertisements.</li>
-            <li>We do not allow humans to read Gmail data unless you explicitly grant permission for support, we need to for security or to comply with the law, or the data is aggregated and anonymized for internal operations.</li>
+            <li>
+              We do not transfer Google Workspace data to third parties except as required
+              to provide the Service, comply with law, or with your explicit consent.
+            </li>
+            <li>We do not use Google Workspace data for serving advertisements.</li>
+            <li>
+              We do not allow humans to read Google Workspace data unless you explicitly
+              grant permission for support, we need to for security or to comply with the
+              law, or the data is aggregated and anonymized for internal operations.
+            </li>
           </ul>
 
           <h3>Google OAuth scope justification</h3>
@@ -174,6 +221,7 @@ function PrivacyPage() {
             </li>
           </ul>
 
+
           <h2>4. Data storage and security</h2>
           <ul>
             <li>All data is encrypted in transit (TLS 1.2+) and at rest.</li>
@@ -182,8 +230,62 @@ function PrivacyPage() {
             <li>Hosted on hardened cloud infrastructure with regular security review.</li>
           </ul>
 
-          <h2>5. Data retention and deletion</h2>
+          <h2>5. Data retention</h2>
+          <ul>
+            <li>
+              <strong>Synced emails:</strong> messages fetched from connected mailboxes are
+              retained for as long as the mailbox remains connected and your ByteBack
+              workspace is active, so classification, CRM timelines, and search continue
+              to work.
+            </li>
+            <li>
+              <strong>On mailbox disconnect:</strong> messages synced from that mailbox are
+              purged from our primary database within 30 days of disconnect.
+            </li>
+            <li>
+              <strong>On account deletion:</strong> all workspace data — emails, contacts,
+              tasks, notes, pipeline, notifications, AI embeddings — is deleted immediately
+              from the primary database.
+            </li>
+            <li>
+              <strong>Backups:</strong> encrypted backups are retained for up to 30 days
+              for disaster recovery, after which deleted data is fully purged from backups
+              as they roll off.
+            </li>
+            <li>
+              <strong>Account &amp; billing records:</strong> minimal account records
+              (name, email, invoices) may be retained as required by applicable tax and
+              accounting law.
+            </li>
+          </ul>
+
+          <h2>6. Data deletion</h2>
+          <p>You have full control over your data at any time:</p>
+          <ul>
+            <li>
+              <strong>Disconnect Google:</strong> revoke a single mailbox or all connected
+              Google accounts from <em>Settings → Account &amp; Data</em>. ByteBack calls
+              Google's OAuth revoke endpoint, deletes the stored refresh token, and stops
+              all Gmail syncing.
+            </li>
+            <li>
+              <strong>Delete synced emails:</strong> disconnecting a mailbox purges the
+              messages synced from it within 30 days.
+            </li>
+            <li>
+              <strong>Delete account:</strong> permanently delete your entire ByteBack
+              account and all workspace data from <em>Settings → Account &amp; Data →
+              Delete my account</em>.
+            </li>
+            <li>
+              <strong>Request deletion:</strong> if you cannot access the app, email{" "}
+              <a href="mailto:info@byteback.co.in">info@byteback.co.in</a> and we will
+              action the request within 30 days.
+            </li>
+          </ul>
+
           <h3>Disconnect a Google / Gmail account</h3>
+
           <p>
             You can disconnect any connected mailbox at any time from{" "}
             <em>Settings → Account &amp; Data → Disconnect all Google accounts</em>, or
@@ -219,7 +321,7 @@ function PrivacyPage() {
             we will action the request within 30 days.
           </p>
 
-          <h2>6. Sharing your data</h2>
+          <h2>7. Sharing your data</h2>
           <p>We share data only with subprocessors that help us operate the Service:</p>
           <ul>
             <li>Cloud hosting and database provider</li>
@@ -232,7 +334,7 @@ function PrivacyPage() {
             protect the rights, safety, and property of ByteBack, our users, or the public.
           </p>
 
-          <h2>7. Your rights</h2>
+          <h2>8. Your rights</h2>
           <p>
             Subject to applicable law (including GDPR and CCPA), you have the right to access,
             correct, export, or delete your personal data. Contact{" "}
@@ -240,16 +342,17 @@ function PrivacyPage() {
             these rights.
           </p>
 
-          <h2>8. Children</h2>
+          <h2>9. Children</h2>
           <p>The Service is not directed to individuals under 16 and we do not knowingly collect data from them.</p>
 
-          <h2>9. Changes to this policy</h2>
+          <h2>10. Changes to this policy</h2>
           <p>
             We may update this policy from time to time. Material changes will be announced in
             the app or by email at least 7 days before they take effect.
           </p>
 
-          <h2>10. Contact</h2>
+          <h2>11. Contact</h2>
+
           <p>
             Questions? Contact us at{" "}
             <a href="mailto:info@byteback.co.in">info@byteback.co.in</a>.
