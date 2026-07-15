@@ -286,7 +286,6 @@ function PrivacyPage() {
 
           <h3>Disconnect a Google / Gmail account</h3>
 
-          <h3>Disconnect a Google / Gmail account</h3>
           <p>
             You can disconnect any connected mailbox at any time from{" "}
             <em>Settings → Account &amp; Data → Disconnect all Google accounts</em>, or
