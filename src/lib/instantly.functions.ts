@@ -5,28 +5,41 @@ import { getCurrentWorkspaceId } from "@/lib/workspace.functions";
 
 const BASE = "https://api.instantly.ai/api/v2";
 
-// Only these accounts (workspace owners) can see the shared Instantly workspace.
-// Other users see an empty/not-connected state and must connect their own tool.
-const INSTANTLY_ALLOWED_EMAILS = new Set(
-  (process.env.INSTANTLY_ALLOWED_EMAILS ?? "anjali@byteback.co.in,abhishek.rathore@byteback.co.in")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean),
-);
-
-function isInstantlyAllowed(claims: unknown): boolean {
-  const email = (claims as { email?: string } | null)?.email?.toLowerCase();
-  return !!email && INSTANTLY_ALLOWED_EMAILS.has(email);
+/**
+ * Load the current workspace's Instantly API key from workspace_integrations.
+ * Each workspace connects its own Instantly account via the Integrations page —
+ * there is no shared/global key. Returns null if not connected.
+ */
+async function loadWorkspaceInstantlyKey(
+  supabase: unknown,
+  userId: string,
+): Promise<{ workspaceId: string; key: string } | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
+  const workspaceId = await getCurrentWorkspaceId(sb, userId);
+  if (!workspaceId) return null;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabaseAdmin as any)
+    .from("workspace_integrations")
+    .select("secret, status")
+    .eq("workspace_id", workspaceId)
+    .eq("provider", "instantly")
+    .maybeSingle();
+  if (!data?.secret || data.status !== "connected") return null;
+  try {
+    const { decryptSecret } = await import("@/lib/integrations/crypto.server");
+    const key = await decryptSecret(data.secret as string);
+    if (!key) return null;
+    return { workspaceId, key };
+  } catch {
+    // Legacy plaintext row
+    return { workspaceId, key: data.secret as string };
+  }
 }
-
-function getKey() {
-  const key = process.env.INSTANTLY_API_KEY;
-  if (!key) throw new Error("Missing INSTANTLY_API_KEY");
-  return key;
-}
-
 
 async function instantly<T>(
+  key: string,
   path: string,
   init?: { method?: string; body?: unknown; query?: Record<string, string | number | undefined> },
 ): Promise<T> {
@@ -39,7 +52,7 @@ async function instantly<T>(
   const res = await fetch(url.toString(), {
     method: init?.method ?? "GET",
     headers: {
-      Authorization: `Bearer ${getKey()}`,
+      Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
       Accept: "application/json",
     },
@@ -67,6 +80,7 @@ async function instantly<T>(
   }
   return (await res.json()) as T;
 }
+
 
 export type InstantlyThread = {
   id: string;
