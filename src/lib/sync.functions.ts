@@ -202,9 +202,15 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
     .maybeSingle();
   const seen = new Set<string>(state?.cursor ? String(state.cursor).split(",").filter(Boolean) : []);
 
+  const wsKey = await loadWorkspaceInstantlyKeyAdmin(workspaceId);
+  if (!wsKey) {
+    result.error = "Instantly is not connected for this workspace";
+    return result;
+  }
   let items: RawEmail[] = [];
   try {
-    items = await fetchInstantly(limit);
+    items = await fetchInstantly(wsKey, limit);
+
   } catch (err) {
     result.error = err instanceof Error ? err.message : "fetch failed";
     await admin.from("sync_state").upsert(
