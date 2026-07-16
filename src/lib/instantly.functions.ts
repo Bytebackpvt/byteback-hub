@@ -545,18 +545,17 @@ const UpdateStatusInput = z.object({
 export const updateLeadStatus = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => UpdateStatusInput.parse(raw))
   .handler(async ({ data, context }) => {
-    const instantlyConnected =
-      isInstantlyAllowed(context.claims) &&
-      (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
-    if (!instantlyConnected) throw new Error("Instantly is not connected for this workspace");
+    const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
+    if (!conn) throw new Error("Instantly is not connected for this workspace");
 
     const interest = STATUS_TO_INTEREST[data.status];
-    await instantly("/leads/update-interest-status", {
+    await instantly(conn.key, "/leads/update-interest-status", {
       method: "POST",
       body: { id: data.leadId, interest_status: interest },
     });
     return { ok: true as const };
   });
+
 
 export type InstantlyAnalytics = {
   emailsSent: number;
