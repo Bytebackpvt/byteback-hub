@@ -351,11 +351,9 @@ export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middlewa
       status: c.status ?? "active",
     }));
 
-  const instantlyConnected =
-    isInstantlyAllowed(context.claims) &&
-    (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
+  const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
 
-  if (!instantlyConnected) {
+  if (!conn) {
     return {
       mailboxes: oauthMailboxes,
       connected: oauthMailboxes.length > 0,
@@ -365,9 +363,11 @@ export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middlewa
 
   try {
     const data = await instantly<{ items?: Array<{ email: string; status?: string; id?: string }> }>(
+      conn.key,
       "/accounts",
       { query: { limit: 100 } },
     );
+
     const items = data.items ?? [];
     const mailboxes: InstantlyMailbox[] = items.map((a) => ({
       id: a.email,
