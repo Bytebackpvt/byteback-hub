@@ -5,28 +5,41 @@ import { getCurrentWorkspaceId } from "@/lib/workspace.functions";
 
 const BASE = "https://api.instantly.ai/api/v2";
 
-// Only these accounts (workspace owners) can see the shared Instantly workspace.
-// Other users see an empty/not-connected state and must connect their own tool.
-const INSTANTLY_ALLOWED_EMAILS = new Set(
-  (process.env.INSTANTLY_ALLOWED_EMAILS ?? "anjali@byteback.co.in,abhishek.rathore@byteback.co.in")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean),
-);
-
-function isInstantlyAllowed(claims: unknown): boolean {
-  const email = (claims as { email?: string } | null)?.email?.toLowerCase();
-  return !!email && INSTANTLY_ALLOWED_EMAILS.has(email);
+/**
+ * Load the current workspace's Instantly API key from workspace_integrations.
+ * Each workspace connects its own Instantly account via the Integrations page —
+ * there is no shared/global key. Returns null if not connected.
+ */
+async function loadWorkspaceInstantlyKey(
+  supabase: unknown,
+  userId: string,
+): Promise<{ workspaceId: string; key: string } | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
+  const workspaceId = await getCurrentWorkspaceId(sb, userId);
+  if (!workspaceId) return null;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabaseAdmin as any)
+    .from("workspace_integrations")
+    .select("secret, status")
+    .eq("workspace_id", workspaceId)
+    .eq("provider", "instantly")
+    .maybeSingle();
+  if (!data?.secret || data.status !== "connected") return null;
+  try {
+    const { decryptSecret } = await import("@/lib/integrations/crypto.server");
+    const key = await decryptSecret(data.secret as string);
+    if (!key) return null;
+    return { workspaceId, key };
+  } catch {
+    // Legacy plaintext row
+    return { workspaceId, key: data.secret as string };
+  }
 }
-
-function getKey() {
-  const key = process.env.INSTANTLY_API_KEY;
-  if (!key) throw new Error("Missing INSTANTLY_API_KEY");
-  return key;
-}
-
 
 async function instantly<T>(
+  key: string,
   path: string,
   init?: { method?: string; body?: unknown; query?: Record<string, string | number | undefined> },
 ): Promise<T> {
@@ -39,7 +52,7 @@ async function instantly<T>(
   const res = await fetch(url.toString(), {
     method: init?.method ?? "GET",
     headers: {
-      Authorization: `Bearer ${getKey()}`,
+      Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
       Accept: "application/json",
     },
@@ -67,6 +80,7 @@ async function instantly<T>(
   }
   return (await res.json()) as T;
 }
+
 
 export type InstantlyThread = {
   id: string;
@@ -249,38 +263,20 @@ async function getWorkspaceMailStatus(supabase: unknown, userId: string) {
   };
 }
 
-async function workspaceHasActiveInstantly(supabase: unknown, userId: string): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sb = supabase as any;
-  const workspaceId = await getCurrentWorkspaceId(sb, userId);
-  if (!workspaceId) return false;
-  const { data } = await sb
-    .from("workspace_integrations")
-    .select("id")
-    .eq("workspace_id", workspaceId)
-    .eq("provider", "instantly")
-    .eq("status", "connected")
-    .limit(1)
-    .maybeSingle();
-  return Boolean(data?.id);
-}
-
 export const listInstantlyThreads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     // Always load DB-ingested threads (Gmail, webhook, etc.) — these belong to
-    // every workspace member, not only Instantly-allowed accounts.
+    // every workspace member.
     const dbThreads = await loadDbThreads(context.supabase, context.userId).catch(() => []);
     const mailStatus = await getWorkspaceMailStatus(context.supabase, context.userId).catch(() => ({
       workspaceId: null,
       hasActiveMailbox: false,
       mailError: null,
     }));
-    const instantlyConnected =
-      isInstantlyAllowed(context.claims) &&
-      (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
+    const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
 
-    if (!instantlyConnected) {
+    if (!conn) {
       return {
         threads: dbThreads,
         connected: dbThreads.length > 0 || mailStatus.hasActiveMailbox,
@@ -294,9 +290,10 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
     }
 
     try {
-      const data = await instantly<{ items?: RawEmail[] }>("/emails", {
+      const data = await instantly<{ items?: RawEmail[] }>(conn.key, "/emails", {
         query: { limit: 50, email_type: "received" },
       });
+
       const items = data.items ?? [];
       const threads: InstantlyThread[] = items.map((e) => {
         const fromJson = e.from_address_json?.[0];
@@ -354,11 +351,9 @@ export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middlewa
       status: c.status ?? "active",
     }));
 
-  const instantlyConnected =
-    isInstantlyAllowed(context.claims) &&
-    (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
+  const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
 
-  if (!instantlyConnected) {
+  if (!conn) {
     return {
       mailboxes: oauthMailboxes,
       connected: oauthMailboxes.length > 0,
@@ -368,9 +363,11 @@ export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middlewa
 
   try {
     const data = await instantly<{ items?: Array<{ email: string; status?: string; id?: string }> }>(
+      conn.key,
       "/accounts",
       { query: { limit: 100 } },
     );
+
     const items = data.items ?? [];
     const mailboxes: InstantlyMailbox[] = items.map((a) => ({
       id: a.email,
@@ -402,12 +399,10 @@ const ReplyInput = z.object({
 export const sendInstantlyReply = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ReplyInput.parse(raw))
   .handler(async ({ data, context }) => {
-    const instantlyConnected =
-      isInstantlyAllowed(context.claims) &&
-      (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
-    if (!instantlyConnected) throw new Error("Instantly is not connected for this workspace");
+    const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
+    if (!conn) throw new Error("Instantly is not connected for this workspace");
 
-    const res = await instantly<{ id?: string }>("/emails/reply", {
+    const res = await instantly<{ id?: string }>(conn.key, "/emails/reply", {
       method: "POST",
       body: {
         reyto_email_id: data.replyToId,
@@ -418,6 +413,7 @@ export const sendInstantlyReply = createServerFn({ method: "POST" }).middleware(
     });
     return { ok: true as const, id: res.id };
   });
+
 
 export type InstantlyLead = {
   id: string;
@@ -481,11 +477,9 @@ async function loadDbLeads(supabase: unknown, userId: string): Promise<Instantly
 
 export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const dbLeads = await loadDbLeads(context.supabase, context.userId).catch(() => []);
-  const instantlyConnected =
-    isInstantlyAllowed(context.claims) &&
-    (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
+  const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
 
-  if (!instantlyConnected) {
+  if (!conn) {
     return {
       leads: dbLeads,
       connected: dbLeads.length > 0,
@@ -494,10 +488,11 @@ export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([
   }
 
   try {
-    const data = await instantly<{ items?: RawLead[] }>("/leads/list", {
+    const data = await instantly<{ items?: RawLead[] }>(conn.key, "/leads/list", {
       method: "POST",
       body: { limit: 100 },
     });
+
     const items = data.items ?? [];
     const leads: InstantlyLead[] = items.map((l) => {
       const name =
@@ -550,18 +545,17 @@ const UpdateStatusInput = z.object({
 export const updateLeadStatus = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => UpdateStatusInput.parse(raw))
   .handler(async ({ data, context }) => {
-    const instantlyConnected =
-      isInstantlyAllowed(context.claims) &&
-      (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
-    if (!instantlyConnected) throw new Error("Instantly is not connected for this workspace");
+    const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
+    if (!conn) throw new Error("Instantly is not connected for this workspace");
 
     const interest = STATUS_TO_INTEREST[data.status];
-    await instantly("/leads/update-interest-status", {
+    await instantly(conn.key, "/leads/update-interest-status", {
       method: "POST",
       body: { id: data.leadId, interest_status: interest },
     });
     return { ok: true as const };
   });
+
 
 export type InstantlyAnalytics = {
   emailsSent: number;
@@ -597,24 +591,23 @@ type DailyRow = {
 };
 
 export const getInstantlyAnalytics = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
-  const instantlyConnected =
-    isInstantlyAllowed(context.claims) &&
-    (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
-  if (!instantlyConnected) {
+  const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
+  if (!conn) {
     return { connected: false as const, error: "Not connected" };
   }
 
   try {
     const [overview, dailyRes, leadsRes] = await Promise.all([
-      instantly<OverviewResponse>("/campaigns/analytics/overview"),
-      instantly<{ items?: DailyRow[] } | DailyRow[]>("/campaigns/analytics/daily", {
+      instantly<OverviewResponse>(conn.key, "/campaigns/analytics/overview"),
+      instantly<{ items?: DailyRow[] } | DailyRow[]>(conn.key, "/campaigns/analytics/daily", {
         query: { limit: 14 },
       }).catch(() => ({ items: [] as DailyRow[] })),
-      instantly<{ items?: RawLead[] }>("/leads/list", {
+      instantly<{ items?: RawLead[] }>(conn.key, "/leads/list", {
         method: "POST",
         body: { limit: 500 },
       }).catch(() => ({ items: [] as RawLead[] })),
     ]);
+
 
     const dailyItems: DailyRow[] = Array.isArray(dailyRes)
       ? dailyRes

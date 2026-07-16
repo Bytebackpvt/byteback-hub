@@ -131,9 +131,7 @@ async function embed(text: string): Promise<number[] | null> {
   }
 }
 
-async function fetchInstantly(limit: number): Promise<RawEmail[]> {
-  const key = process.env.INSTANTLY_API_KEY;
-  if (!key) return [];
+async function fetchInstantly(key: string, limit: number): Promise<RawEmail[]> {
   const url = new URL(INSTANTLY_BASE + "/emails");
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("email_type", "received");
@@ -144,6 +142,25 @@ async function fetchInstantly(limit: number): Promise<RawEmail[]> {
   const json = (await res.json()) as { items?: RawEmail[] };
   return json.items ?? [];
 }
+
+async function loadWorkspaceInstantlyKeyAdmin(workspaceId: string): Promise<string | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabaseAdmin as any)
+    .from("workspace_integrations")
+    .select("secret, status")
+    .eq("workspace_id", workspaceId)
+    .eq("provider", "instantly")
+    .maybeSingle();
+  if (!data?.secret || data.status !== "connected") return null;
+  try {
+    const { decryptSecret } = await import("@/lib/integrations/crypto.server");
+    return await decryptSecret(data.secret as string);
+  } catch {
+    return data.secret as string;
+  }
+}
+
 
 type SyncResult = {
   workspaceId: string;
@@ -185,9 +202,15 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
     .maybeSingle();
   const seen = new Set<string>(state?.cursor ? String(state.cursor).split(",").filter(Boolean) : []);
 
+  const wsKey = await loadWorkspaceInstantlyKeyAdmin(workspaceId);
+  if (!wsKey) {
+    result.error = "Instantly is not connected for this workspace";
+    return result;
+  }
   let items: RawEmail[] = [];
   try {
-    items = await fetchInstantly(limit);
+    items = await fetchInstantly(wsKey, limit);
+
   } catch (err) {
     result.error = err instanceof Error ? err.message : "fetch failed";
     await admin.from("sync_state").upsert(
