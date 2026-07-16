@@ -477,11 +477,9 @@ async function loadDbLeads(supabase: unknown, userId: string): Promise<Instantly
 
 export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const dbLeads = await loadDbLeads(context.supabase, context.userId).catch(() => []);
-  const instantlyConnected =
-    isInstantlyAllowed(context.claims) &&
-    (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
+  const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
 
-  if (!instantlyConnected) {
+  if (!conn) {
     return {
       leads: dbLeads,
       connected: dbLeads.length > 0,
@@ -490,10 +488,11 @@ export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([
   }
 
   try {
-    const data = await instantly<{ items?: RawLead[] }>("/leads/list", {
+    const data = await instantly<{ items?: RawLead[] }>(conn.key, "/leads/list", {
       method: "POST",
       body: { limit: 100 },
     });
+
     const items = data.items ?? [];
     const leads: InstantlyLead[] = items.map((l) => {
       const name =
