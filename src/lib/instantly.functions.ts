@@ -399,12 +399,10 @@ const ReplyInput = z.object({
 export const sendInstantlyReply = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ReplyInput.parse(raw))
   .handler(async ({ data, context }) => {
-    const instantlyConnected =
-      isInstantlyAllowed(context.claims) &&
-      (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
-    if (!instantlyConnected) throw new Error("Instantly is not connected for this workspace");
+    const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
+    if (!conn) throw new Error("Instantly is not connected for this workspace");
 
-    const res = await instantly<{ id?: string }>("/emails/reply", {
+    const res = await instantly<{ id?: string }>(conn.key, "/emails/reply", {
       method: "POST",
       body: {
         reyto_email_id: data.replyToId,
@@ -415,6 +413,7 @@ export const sendInstantlyReply = createServerFn({ method: "POST" }).middleware(
     });
     return { ok: true as const, id: res.id };
   });
+
 
 export type InstantlyLead = {
   id: string;
