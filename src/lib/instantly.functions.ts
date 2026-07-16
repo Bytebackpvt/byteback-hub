@@ -263,38 +263,20 @@ async function getWorkspaceMailStatus(supabase: unknown, userId: string) {
   };
 }
 
-async function workspaceHasActiveInstantly(supabase: unknown, userId: string): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sb = supabase as any;
-  const workspaceId = await getCurrentWorkspaceId(sb, userId);
-  if (!workspaceId) return false;
-  const { data } = await sb
-    .from("workspace_integrations")
-    .select("id")
-    .eq("workspace_id", workspaceId)
-    .eq("provider", "instantly")
-    .eq("status", "connected")
-    .limit(1)
-    .maybeSingle();
-  return Boolean(data?.id);
-}
-
 export const listInstantlyThreads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     // Always load DB-ingested threads (Gmail, webhook, etc.) — these belong to
-    // every workspace member, not only Instantly-allowed accounts.
+    // every workspace member.
     const dbThreads = await loadDbThreads(context.supabase, context.userId).catch(() => []);
     const mailStatus = await getWorkspaceMailStatus(context.supabase, context.userId).catch(() => ({
       workspaceId: null,
       hasActiveMailbox: false,
       mailError: null,
     }));
-    const instantlyConnected =
-      isInstantlyAllowed(context.claims) &&
-      (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
+    const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
 
-    if (!instantlyConnected) {
+    if (!conn) {
       return {
         threads: dbThreads,
         connected: dbThreads.length > 0 || mailStatus.hasActiveMailbox,
@@ -308,9 +290,10 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
     }
 
     try {
-      const data = await instantly<{ items?: RawEmail[] }>("/emails", {
+      const data = await instantly<{ items?: RawEmail[] }>(conn.key, "/emails", {
         query: { limit: 50, email_type: "received" },
       });
+
       const items = data.items ?? [];
       const threads: InstantlyThread[] = items.map((e) => {
         const fromJson = e.from_address_json?.[0];
