@@ -591,24 +591,23 @@ type DailyRow = {
 };
 
 export const getInstantlyAnalytics = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
-  const instantlyConnected =
-    isInstantlyAllowed(context.claims) &&
-    (await workspaceHasActiveInstantly(context.supabase, context.userId).catch(() => false));
-  if (!instantlyConnected) {
+  const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
+  if (!conn) {
     return { connected: false as const, error: "Not connected" };
   }
 
   try {
     const [overview, dailyRes, leadsRes] = await Promise.all([
-      instantly<OverviewResponse>("/campaigns/analytics/overview"),
-      instantly<{ items?: DailyRow[] } | DailyRow[]>("/campaigns/analytics/daily", {
+      instantly<OverviewResponse>(conn.key, "/campaigns/analytics/overview"),
+      instantly<{ items?: DailyRow[] } | DailyRow[]>(conn.key, "/campaigns/analytics/daily", {
         query: { limit: 14 },
       }).catch(() => ({ items: [] as DailyRow[] })),
-      instantly<{ items?: RawLead[] }>("/leads/list", {
+      instantly<{ items?: RawLead[] }>(conn.key, "/leads/list", {
         method: "POST",
         body: { limit: 500 },
       }).catch(() => ({ items: [] as RawLead[] })),
     ]);
+
 
     const dailyItems: DailyRow[] = Array.isArray(dailyRes)
       ? dailyRes
