@@ -349,7 +349,7 @@ function PrivacyPage() {
           <ul>
             <li>Cloud hosting and database provider</li>
             <li>Google (Gmail API) — only for accounts you connect</li>
-            <li>Lovable AI Gateway (LLM inference, zero retention)</li>
+            <li>AI inference provider (LLM inference, zero retention)</li>
             <li>Transactional email provider for notifications</li>
           </ul>
           <p>
