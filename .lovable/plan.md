@@ -1,38 +1,45 @@
-Aapki 5 problems samajh gayi. Ek-ek karke fix karungi. Confirm karo phir shuru:
+Aapki 4 complaints samajh gayi. Ek-ek ka fix:
 
-## 1. Global AI Assistant (naya floating chat)
-Har page pe bottom-right ek floating chat button. Aap kuch bhi pooch sakti ho:
-- **Info queries**: "is section me kya hota hai?", "hot leads kitni hain?", "is week kitni warm leads aayi?"
-- **Actions**: "Acme Corp ko hot mark karo", "John ke liye follow-up email draft karo", "Instantly disconnect karo", "is lead ka summary do"
+## 1. AI assistant khud kaam kare (guide nahi, doer bane)
+Abhi bs "yaha jao, click karo" bolta hai. Naya version me **tools** honge — assistant khud database me action karega:
+- `set_lead_status(email, hot|warm|cold|not-interested)` — turant mark
+- `set_lead_stage(email, open|contacted|meeting|won|lost|churned)`
+- `list_leads(status?, stage?, since?, limit?)` — actual data DB se
+- `get_stats(range: today|week|month)` — real counts
+- `list_tasks(status?)`, `complete_task(id)`, `snooze_task(id, days)`
+- `draft_reply(threadId, intent)` — draft banake dikhaye, user edit/send kare
+- `send_reply(threadId, body)` — confirm ke baad bhejna
 
-Assistant ke paas tools honge jo actual app functions call karenge (mark lead, draft email, list leads by status/date, connect/disconnect integration, summarize lead, navigate to section). Chat history localStorage me save hogi.
+Chat me tool calls dikhenge ("✓ Marked Acme Corp as hot"). Reply karne ka draft chat me aayega + **Edit** aur **Send** buttons.
 
-## 2. Manual lead controls (Contacts page)
-Har contact row me:
-- **Status dropdown**: hot / warm / cold / not-interested (AI score ke saath override kar sakti ho)
-- **Stage dropdown**: open / contacted / meeting / won / lost / churned
-- Dono changes DB me save honge, AI ke score ko override karenge (manual = source of truth).
+## 2. Lead status/stage Inbox me shift
+Contacts se dropdowns hata dungi. Inbox me har thread ke top-right pe:
+- Status pill (hot/warm/cold/not-interested) — click to change
+- Stage pill (open→won etc.)
+- "Mark as..." quick menu
 
-Pipeline page pe bhi drag ya dropdown se stage change hoga (already partial hai, complete karungi).
+Contacts page sirf directory rahega (search + view), koi editing waha nahi.
 
-## 3. UI cleanup
-- Contacts, Inbox, Pipeline: sticky headers + independent scroll areas (page scroll aur list scroll alag).
-- Detail panels (lead open karne pe) side drawer me — pura page dhakke nahi lagega.
-- Density kam karungi: extra borders, gradients, badges hatake clean look.
+## 3. Task pe action buttons + editable AI drafts
+Har task card me abhi sirf checkbox hai. Add karungi:
+- **Reply** button → AI draft khulega inline (editable textarea, pre-filled)
+- **Send** / **Save draft** / **Regenerate** buttons
+- **Snooze** dropdown (1d / 3d / 1w)
+- **Skip** (task close bina reply ke)
+Checkbox turant complete karega jaisa abhi hai, but ab options bhi milenge.
 
-## 4. Lovable branding hatana
-- Har jagah "Lovable" mention / logo / powered-by badge check karke hatana.
-- Error pages, meta tags, footer, email templates sab me.
-
-## 5. Scroll fix
-Root cause: `main` element ka overflow galat set hai, aur kuch pages me nested scroll containers nahi hain. Har major page ko `h-full flex flex-col` + inner `flex-1 overflow-auto` pattern pe convert karungi taki header sticky rahe aur sirf list scroll ho.
+## 4. Real data audit (dashboard + radar + inbox sort)
+- Dashboard priority tasks: query me `order by created_at desc` + real join se lead info fix.
+- Opportunity Radar: check karungi ki signals actual emails se aa rahe hain, mock nahi.
+- Inbox: sort by `received_at desc` enforce (abhi kahi kahi random hai).
+- Full email sync check: Instantly + Gmail dono ka last-sync timestamp aur count log karke verify karungi.
 
 ---
 
-## Technical breakdown
-- **New**: `src/components/ai-assistant.tsx` (floating chat with AI SDK), `src/routes/api/assistant.ts` (streaming endpoint with tool-calling using existing server fns).
-- **DB**: `contacts` table me `manual_status` aur `stage` columns add karungi (migration).
-- **Edited**: `app.crm.tsx` (dropdowns), `app.pipeline.tsx` (stage update), `app.tsx` layout (mount assistant + scroll fix), `__root.tsx` (branding), plus grep-based Lovable branding sweep.
-- **Assistant tools**: `listLeadsByStatus`, `setLeadStatus`, `setLeadStage`, `draftEmail`, `summarizeLead`, `navigateTo`, `disconnectIntegration`, `getStats`.
+## Technical
+- **New tools in** `src/lib/assistant.functions.ts` — replace plain chat call with tool-calling loop (Gemini function calling).
+- **UI**: chat message renderer me tool-result cards + reply-draft card with edit/send.
+- **Edited**: `app.inbox.tsx` (status/stage pills per thread), `app.crm.tsx` (remove dropdowns), `app.tasks.tsx` (action buttons + inline draft), `app.index.tsx` (dashboard queries), `app.radar.tsx` (data check).
+- **Server fns reused**: `setLeadManualStatus`, `setLeadStage`, `saveLeadScore`, existing draft/send fns from `followups.functions.ts`.
 
-Kaafi bada kaam hai — 30-45 min lagenge. Approve karo toh shuru karu?
+Bada kaam hai (~45 min). Priority order — pehle 1+3 (assistant + task actions) karu ya 2+4 (inbox controls + data fix) pehle? Ya sab ek saath approve?

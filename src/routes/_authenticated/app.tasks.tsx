@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Sparkles, Trash2, Loader2 } from "lucide-react";
+import { Plus, Sparkles, Trash2, Loader2, Reply, Clock, X, Send } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,7 +26,8 @@ import {
   generateTasksFromThreads,
   type TaskRow,
 } from "@/lib/tasks.functions";
-import { listInstantlyThreads } from "@/lib/instantly.functions";
+import { listInstantlyThreads, sendInstantlyReply } from "@/lib/instantly.functions";
+import { generateReply } from "@/lib/ai.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/tasks")({
@@ -61,8 +63,14 @@ function TasksPage() {
   const remove = useServerFn(deleteTask);
   const generate = useServerFn(generateTasksFromThreads);
 
+  const genReply = useServerFn(generateReply);
+  const sendReply = useServerFn(sendInstantlyReply);
+
   const tasksQ = useQuery({ queryKey: ["tasks"], queryFn: () => fetchTasks() });
   const threadsQ = useQuery({ queryKey: ["inbox"], queryFn: () => fetchThreads() });
+
+  // Per-task reply state
+  const [drafts, setDrafts] = useState<Record<string, { body: string; loading: boolean; sending: boolean }>>({});
 
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<"high" | "med" | "low">("med");
