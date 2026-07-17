@@ -7,9 +7,23 @@ import { Filter, Loader2, Plug, Plus, Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { scoreLead } from "@/lib/ai.functions";
 import { listInstantlyLeads, type InstantlyLead } from "@/lib/instantly.functions";
-import { listLeadScores, saveLeadScore } from "@/lib/leads.functions";
+import {
+  listLeadScores,
+  saveLeadScore,
+  setLeadManualStatus,
+  setLeadStage,
+} from "@/lib/leads.functions";
 // mock CONTACTS removed — new accounts must see their real data (or an empty state)
 import { cn } from "@/lib/utils";
 
