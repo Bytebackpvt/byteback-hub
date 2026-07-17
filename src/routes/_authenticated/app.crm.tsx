@@ -255,8 +255,8 @@ function CrmPage() {
             <tr className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
               <th className="px-6 py-3 font-semibold">Contact</th>
               <th className="px-6 py-3 font-semibold">Company</th>
-              <th className="px-6 py-3 font-semibold">Title</th>
-              <th className="px-6 py-3 font-semibold">Status</th>
+              <th className="px-4 py-3 font-semibold">Status</th>
+              <th className="px-4 py-3 font-semibold">Stage</th>
               <th className="px-6 py-3 font-semibold">AI score</th>
               <th className="px-6 py-3 font-semibold">Last activity</th>
               <th className="px-6 py-3" />
@@ -288,16 +288,41 @@ function CrmPage() {
                     </div>
                   </td>
                   <td className="px-6 py-3">{row.company}</td>
-                  <td className="px-6 py-3 text-muted-foreground">{row.title}</td>
-                  <td className="px-6 py-3">
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
-                        STATUS_STYLE[row.status] ?? STATUS_STYLE.new,
-                      )}
+                  <td className="px-4 py-3">
+                    <Select
+                      value={persisted?.manual_status ?? "auto"}
+                      onValueChange={(v) => updateStatus(row, v)}
                     >
-                      {row.status.replace("-", " ")}
-                    </span>
+                      <SelectTrigger className="h-8 w-32 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Auto (AI)</SelectItem>
+                        <SelectItem value="hot">🔥 Hot</SelectItem>
+                        <SelectItem value="warm">Warm</SelectItem>
+                        <SelectItem value="cold">Cold</SelectItem>
+                        <SelectItem value="not-interested">Not interested</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Select
+                      value={persisted?.stage ?? "none"}
+                      onValueChange={(v) => updateStage(row, v)}
+                    >
+                      <SelectTrigger className="h-8 w-32 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— None —</SelectItem>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="contacted">Contacted</SelectItem>
+                        <SelectItem value="meeting">Meeting</SelectItem>
+                        <SelectItem value="won">Won</SelectItem>
+                        <SelectItem value="lost">Lost</SelectItem>
+                        <SelectItem value="churned">Churned</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </td>
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-2">
