@@ -607,8 +607,10 @@ export type Database = {
           created_at: string
           id: string
           lead_key: string
+          manual_status: string | null
           reason: string
           score: number
+          stage: string | null
           updated_at: string
           workspace_id: string
         }
@@ -616,8 +618,10 @@ export type Database = {
           created_at?: string
           id?: string
           lead_key: string
+          manual_status?: string | null
           reason?: string
           score: number
+          stage?: string | null
           updated_at?: string
           workspace_id: string
         }
@@ -625,8 +629,10 @@ export type Database = {
           created_at?: string
           id?: string
           lead_key?: string
+          manual_status?: string | null
           reason?: string
           score?: number
+          stage?: string | null
           updated_at?: string
           workspace_id?: string
         }
