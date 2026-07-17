@@ -73,6 +73,8 @@ function CrmPage() {
   const callListLeads = useServerFn(listInstantlyLeads);
   const callListScores = useServerFn(listLeadScores);
   const callSaveScore = useServerFn(saveLeadScore);
+  const callSetStatus = useServerFn(setLeadManualStatus);
+  const callSetStage = useServerFn(setLeadStage);
 
   const leadsQuery = useQuery({
     queryKey: ["instantly", "leads"],
@@ -96,12 +98,50 @@ function CrmPage() {
   }, [leadsQuery.data]);
 
   const scoreMap = useMemo(() => {
-    const map = new Map<string, { score: number; reason: string }>();
+    const map = new Map<
+      string,
+      { score: number; reason: string; manual_status: string | null; stage: string | null }
+    >();
     for (const s of scoresQuery.data?.scores ?? []) {
-      map.set(s.lead_key, { score: s.score, reason: s.reason });
+      map.set(s.lead_key, {
+        score: s.score,
+        reason: s.reason,
+        manual_status: s.manual_status ?? null,
+        stage: s.stage ?? null,
+      });
     }
     return map;
   }, [scoresQuery.data]);
+
+  async function updateStatus(row: Row, value: string) {
+    try {
+      await callSetStatus({
+        data: {
+          leadKey: row.key,
+          manualStatus: value === "auto" ? null : (value as "hot" | "warm" | "cold" | "not-interested"),
+        },
+      });
+      qc.invalidateQueries({ queryKey: ["lead_scores"] });
+      toast.success("Status updated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
+  }
+
+  async function updateStage(row: Row, value: string) {
+    try {
+      await callSetStage({
+        data: {
+          leadKey: row.key,
+          stage: value === "none" ? null : (value as "open" | "contacted" | "meeting" | "won" | "lost" | "churned"),
+        },
+      });
+      qc.invalidateQueries({ queryKey: ["lead_scores"] });
+      toast.success("Stage updated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
+  }
 
   const filtered = useMemo(() => {
     if (!search) return rows;
