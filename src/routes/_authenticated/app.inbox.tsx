@@ -42,6 +42,14 @@ import {
 import { syncWorkspaceGmailNow } from "@/lib/gmail.functions";
 import { scanForNotifications } from "@/lib/notifications.functions";
 import { autoScheduleFollowUps } from "@/lib/followups.functions";
+import { listLeadScores, setLeadManualStatus, setLeadStage } from "@/lib/leads.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   CATEGORY_META,
   PRIORITY_META,
