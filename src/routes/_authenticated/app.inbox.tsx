@@ -42,6 +42,14 @@ import {
 import { syncWorkspaceGmailNow } from "@/lib/gmail.functions";
 import { scanForNotifications } from "@/lib/notifications.functions";
 import { autoScheduleFollowUps } from "@/lib/followups.functions";
+import { listLeadScores, setLeadManualStatus, setLeadStage } from "@/lib/leads.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   CATEGORY_META,
   PRIORITY_META,
@@ -87,6 +95,9 @@ function InboxPage() {
   const callSyncGmail = useServerFn(syncWorkspaceGmailNow);
   const callScan = useServerFn(scanForNotifications);
   const callAutoSchedule = useServerFn(autoScheduleFollowUps);
+  const callListScores = useServerFn(listLeadScores);
+  const callSetStatus = useServerFn(setLeadManualStatus);
+  const callSetStage = useServerFn(setLeadStage);
 
   const threadsQuery = useQuery({
     queryKey: ["instantly", "threads"],
@@ -96,6 +107,11 @@ function InboxPage() {
   const mailboxesQuery = useQuery({
     queryKey: ["instantly", "mailboxes"],
     queryFn: () => callListMailboxes(),
+    staleTime: 60_000,
+  });
+  const scoresQuery = useQuery({
+    queryKey: ["lead_scores"],
+    queryFn: () => callListScores(),
     staleTime: 60_000,
   });
 
@@ -558,6 +574,38 @@ function InboxPage() {
                   <span className="font-medium text-foreground">{selected.from.name}</span>{" "}
                   · {selected.from.email} · {selected.from.company}
                 </div>
+                <LeadControls
+                  leadKey={selected.from.email}
+                  score={scoresQuery.data?.scores.find((s) => s.lead_key === selected.from.email)}
+                  onStatus={async (v) => {
+                    try {
+                      await callSetStatus({
+                        data: {
+                          leadKey: selected.from.email,
+                          manualStatus: v === "auto" ? null : (v as "hot" | "warm" | "cold" | "not-interested"),
+                        },
+                      });
+                      scoresQuery.refetch();
+                      toast.success("Status updated");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Update failed");
+                    }
+                  }}
+                  onStage={async (v) => {
+                    try {
+                      await callSetStage({
+                        data: {
+                          leadKey: selected.from.email,
+                          stage: v === "none" ? null : (v as "open" | "contacted" | "meeting" | "won" | "lost" | "churned"),
+                        },
+                      });
+                      scoresQuery.refetch();
+                      toast.success("Stage updated");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Update failed");
+                    }
+                  }}
+                />
               </div>
               <div className="flex shrink-0 gap-1">
                 <Button
@@ -816,5 +864,50 @@ function ThreadRow({
       </div>
       <div className="line-clamp-1 text-xs text-muted-foreground">{thread.preview}</div>
     </button>
+  );
+}
+
+function LeadControls({
+  score,
+  onStatus,
+  onStage,
+}: {
+  leadKey: string;
+  score: { manual_status: string | null; stage: string | null; score: number } | undefined;
+  onStatus: (v: string) => void;
+  onStage: (v: string) => void;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Lead
+      </span>
+      <Select value={score?.manual_status ?? "auto"} onValueChange={onStatus}>
+        <SelectTrigger className="h-7 w-[140px] text-xs" aria-label="Lead status">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="auto">Auto (AI)</SelectItem>
+          <SelectItem value="hot">🔥 Hot</SelectItem>
+          <SelectItem value="warm">Warm</SelectItem>
+          <SelectItem value="cold">Cold</SelectItem>
+          <SelectItem value="not-interested">Not interested</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={score?.stage ?? "none"} onValueChange={onStage}>
+        <SelectTrigger className="h-7 w-[130px] text-xs" aria-label="Pipeline stage">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">No stage</SelectItem>
+          <SelectItem value="open">Open</SelectItem>
+          <SelectItem value="contacted">Contacted</SelectItem>
+          <SelectItem value="meeting">Meeting</SelectItem>
+          <SelectItem value="won">Won</SelectItem>
+          <SelectItem value="lost">Lost</SelectItem>
+          <SelectItem value="churned">Churned</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
