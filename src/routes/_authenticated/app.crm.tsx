@@ -29,16 +29,6 @@ export const Route = createFileRoute("/_authenticated/app/crm")({
   component: CrmPage,
 });
 
-const STATUS_STYLE: Record<string, string> = {
-  new: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
-  interested: "bg-brand/10 text-brand",
-  qualified: "bg-brand/10 text-brand",
-  meeting: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-  customer: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  "not-interested": "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-  bounced: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  churned: "bg-muted text-muted-foreground",
-};
 
 type Row = {
   key: string;
