@@ -574,6 +574,38 @@ function InboxPage() {
                   <span className="font-medium text-foreground">{selected.from.name}</span>{" "}
                   · {selected.from.email} · {selected.from.company}
                 </div>
+                <LeadControls
+                  leadKey={selected.from.email}
+                  score={scoresQuery.data?.scores.find((s) => s.lead_key === selected.from.email)}
+                  onStatus={async (v) => {
+                    try {
+                      await callSetStatus({
+                        data: {
+                          leadKey: selected.from.email,
+                          manualStatus: v === "auto" ? null : (v as "hot" | "warm" | "cold" | "not-interested"),
+                        },
+                      });
+                      scoresQuery.refetch();
+                      toast.success("Status updated");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Update failed");
+                    }
+                  }}
+                  onStage={async (v) => {
+                    try {
+                      await callSetStage({
+                        data: {
+                          leadKey: selected.from.email,
+                          stage: v === "none" ? null : (v as "open" | "contacted" | "meeting" | "won" | "lost" | "churned"),
+                        },
+                      });
+                      scoresQuery.refetch();
+                      toast.success("Stage updated");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Update failed");
+                    }
+                  }}
+                />
               </div>
               <div className="flex shrink-0 gap-1">
                 <Button
