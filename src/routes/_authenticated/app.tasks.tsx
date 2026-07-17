@@ -403,7 +403,7 @@ function TasksPage() {
   );
 }
 
-type Thread = { id: string; from: { name: string; email: string; company: string }; subject: string; body: string; mailbox: string; source: string };
+type Thread = { id: string; from: { name: string; email: string; company: string }; subject: string; body: string; mailbox: string; source?: string };
 
 function TaskRowView({
   task,
