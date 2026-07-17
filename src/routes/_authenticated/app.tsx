@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { HelpCircle, Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { ensureCurrentWorkspace } from "@/lib/workspace.functions";
+import { AiAssistant } from "@/components/ai-assistant";
 
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -72,6 +73,7 @@ function AppLayout() {
       <GuidedTour open={tour.open} onClose={tour.close} />
       <ShortcutsOverlay />
       <CommandPalette />
+      <AiAssistant />
     </SidebarProvider>
 
   );

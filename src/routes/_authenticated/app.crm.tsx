@@ -7,9 +7,21 @@ import { Filter, Loader2, Plug, Plus, Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { scoreLead } from "@/lib/ai.functions";
 import { listInstantlyLeads, type InstantlyLead } from "@/lib/instantly.functions";
-import { listLeadScores, saveLeadScore } from "@/lib/leads.functions";
+import {
+  listLeadScores,
+  saveLeadScore,
+  setLeadManualStatus,
+  setLeadStage,
+} from "@/lib/leads.functions";
 // mock CONTACTS removed — new accounts must see their real data (or an empty state)
 import { cn } from "@/lib/utils";
 
@@ -17,16 +29,6 @@ export const Route = createFileRoute("/_authenticated/app/crm")({
   component: CrmPage,
 });
 
-const STATUS_STYLE: Record<string, string> = {
-  new: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
-  interested: "bg-brand/10 text-brand",
-  qualified: "bg-brand/10 text-brand",
-  meeting: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-  customer: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  "not-interested": "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-  bounced: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  churned: "bg-muted text-muted-foreground",
-};
 
 type Row = {
   key: string;
@@ -61,6 +63,8 @@ function CrmPage() {
   const callListLeads = useServerFn(listInstantlyLeads);
   const callListScores = useServerFn(listLeadScores);
   const callSaveScore = useServerFn(saveLeadScore);
+  const callSetStatus = useServerFn(setLeadManualStatus);
+  const callSetStage = useServerFn(setLeadStage);
 
   const leadsQuery = useQuery({
     queryKey: ["instantly", "leads"],
@@ -84,12 +88,50 @@ function CrmPage() {
   }, [leadsQuery.data]);
 
   const scoreMap = useMemo(() => {
-    const map = new Map<string, { score: number; reason: string }>();
+    const map = new Map<
+      string,
+      { score: number; reason: string; manual_status: string | null; stage: string | null }
+    >();
     for (const s of scoresQuery.data?.scores ?? []) {
-      map.set(s.lead_key, { score: s.score, reason: s.reason });
+      map.set(s.lead_key, {
+        score: s.score,
+        reason: s.reason,
+        manual_status: s.manual_status ?? null,
+        stage: s.stage ?? null,
+      });
     }
     return map;
   }, [scoresQuery.data]);
+
+  async function updateStatus(row: Row, value: string) {
+    try {
+      await callSetStatus({
+        data: {
+          leadKey: row.key,
+          manualStatus: value === "auto" ? null : (value as "hot" | "warm" | "cold" | "not-interested"),
+        },
+      });
+      qc.invalidateQueries({ queryKey: ["lead_scores"] });
+      toast.success("Status updated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
+  }
+
+  async function updateStage(row: Row, value: string) {
+    try {
+      await callSetStage({
+        data: {
+          leadKey: row.key,
+          stage: value === "none" ? null : (value as "open" | "contacted" | "meeting" | "won" | "lost" | "churned"),
+        },
+      });
+      qc.invalidateQueries({ queryKey: ["lead_scores"] });
+      toast.success("Stage updated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
+  }
 
   const filtered = useMemo(() => {
     if (!search) return rows;
@@ -203,8 +245,8 @@ function CrmPage() {
             <tr className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
               <th className="px-6 py-3 font-semibold">Contact</th>
               <th className="px-6 py-3 font-semibold">Company</th>
-              <th className="px-6 py-3 font-semibold">Title</th>
-              <th className="px-6 py-3 font-semibold">Status</th>
+              <th className="px-4 py-3 font-semibold">Status</th>
+              <th className="px-4 py-3 font-semibold">Stage</th>
               <th className="px-6 py-3 font-semibold">AI score</th>
               <th className="px-6 py-3 font-semibold">Last activity</th>
               <th className="px-6 py-3" />
@@ -236,16 +278,41 @@ function CrmPage() {
                     </div>
                   </td>
                   <td className="px-6 py-3">{row.company}</td>
-                  <td className="px-6 py-3 text-muted-foreground">{row.title}</td>
-                  <td className="px-6 py-3">
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
-                        STATUS_STYLE[row.status] ?? STATUS_STYLE.new,
-                      )}
+                  <td className="px-4 py-3">
+                    <Select
+                      value={persisted?.manual_status ?? "auto"}
+                      onValueChange={(v) => updateStatus(row, v)}
                     >
-                      {row.status.replace("-", " ")}
-                    </span>
+                      <SelectTrigger className="h-8 w-32 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Auto (AI)</SelectItem>
+                        <SelectItem value="hot">🔥 Hot</SelectItem>
+                        <SelectItem value="warm">Warm</SelectItem>
+                        <SelectItem value="cold">Cold</SelectItem>
+                        <SelectItem value="not-interested">Not interested</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Select
+                      value={persisted?.stage ?? "none"}
+                      onValueChange={(v) => updateStage(row, v)}
+                    >
+                      <SelectTrigger className="h-8 w-32 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— None —</SelectItem>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="contacted">Contacted</SelectItem>
+                        <SelectItem value="meeting">Meeting</SelectItem>
+                        <SelectItem value="won">Won</SelectItem>
+                        <SelectItem value="lost">Lost</SelectItem>
+                        <SelectItem value="churned">Churned</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </td>
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-2">

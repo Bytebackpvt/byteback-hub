@@ -22,7 +22,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Which AI model powers reply classification?",
-    a: "ByteBack uses the Lovable AI Gateway (Google Gemini by default). Every reply is classified into one of 22 categories (Interested, Objection, Booked, Unsubscribe, etc.) with a confidence score and reason.",
+    a: "ByteBack uses a state-of-the-art large language model (Google Gemini class) via our secure AI gateway. Every reply is classified into one of 22 categories (Interested, Objection, Booked, Unsubscribe, etc.) with a confidence score and reason.",
   },
   {
     q: "Can I export my lead data?",
