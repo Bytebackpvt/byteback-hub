@@ -95,6 +95,9 @@ function InboxPage() {
   const callSyncGmail = useServerFn(syncWorkspaceGmailNow);
   const callScan = useServerFn(scanForNotifications);
   const callAutoSchedule = useServerFn(autoScheduleFollowUps);
+  const callListScores = useServerFn(listLeadScores);
+  const callSetStatus = useServerFn(setLeadManualStatus);
+  const callSetStage = useServerFn(setLeadStage);
 
   const threadsQuery = useQuery({
     queryKey: ["instantly", "threads"],
@@ -104,6 +107,11 @@ function InboxPage() {
   const mailboxesQuery = useQuery({
     queryKey: ["instantly", "mailboxes"],
     queryFn: () => callListMailboxes(),
+    staleTime: 60_000,
+  });
+  const scoresQuery = useQuery({
+    queryKey: ["lead_scores"],
+    queryFn: () => callListScores(),
     staleTime: 60_000,
   });
 
