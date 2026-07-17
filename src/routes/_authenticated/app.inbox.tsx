@@ -866,3 +866,48 @@ function ThreadRow({
     </button>
   );
 }
+
+function LeadControls({
+  score,
+  onStatus,
+  onStage,
+}: {
+  leadKey: string;
+  score: { manual_status: string | null; stage: string | null; score: number } | undefined;
+  onStatus: (v: string) => void;
+  onStage: (v: string) => void;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Lead
+      </span>
+      <Select value={score?.manual_status ?? "auto"} onValueChange={onStatus}>
+        <SelectTrigger className="h-7 w-[140px] text-xs" aria-label="Lead status">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="auto">Auto (AI)</SelectItem>
+          <SelectItem value="hot">🔥 Hot</SelectItem>
+          <SelectItem value="warm">Warm</SelectItem>
+          <SelectItem value="cold">Cold</SelectItem>
+          <SelectItem value="not-interested">Not interested</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={score?.stage ?? "none"} onValueChange={onStage}>
+        <SelectTrigger className="h-7 w-[130px] text-xs" aria-label="Pipeline stage">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">No stage</SelectItem>
+          <SelectItem value="open">Open</SelectItem>
+          <SelectItem value="contacted">Contacted</SelectItem>
+          <SelectItem value="meeting">Meeting</SelectItem>
+          <SelectItem value="won">Won</SelectItem>
+          <SelectItem value="lost">Lost</SelectItem>
+          <SelectItem value="churned">Churned</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
