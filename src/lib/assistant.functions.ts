@@ -250,6 +250,55 @@ async function execGetStats(ctx: Ctx) {
   };
 }
 
+async function execSummarizeToday(ctx: Ctx) {
+  const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
+  const [threads, tasks, scores] = await Promise.all([
+    ctx.supabase
+      .from("email_threads")
+      .select("thread_id, subject, contact_email, priority, category, meta, last_received_at")
+      .eq("workspace_id", ctx.workspaceId)
+      .gte("last_received_at", dayAgo)
+      .order("last_received_at", { ascending: false })
+      .limit(100),
+    ctx.supabase
+      .from("tasks")
+      .select("id, title, due, priority, done")
+      .eq("workspace_id", ctx.workspaceId)
+      .eq("done", false),
+    ctx.supabase
+      .from("lead_scores")
+      .select("lead_key, score, manual_status")
+      .eq("workspace_id", ctx.workspaceId),
+  ]);
+  const t = (threads.data ?? []).filter((r) => {
+    const dir = (r.meta as { direction?: string } | null)?.direction;
+    return dir !== "out";
+  });
+  const nowMs = Date.now();
+  const dueToday = (tasks.data ?? []).filter(
+    (r) => r.due && new Date(r.due).getTime() <= nowMs + 86_400_000,
+  );
+  const top = (scores.data ?? [])
+    .filter((r) => (r.manual_status ?? "").toLowerCase() === "hot" || (r.score ?? 0) >= 75)
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .slice(0, 3)
+    .map((r) => ({ email: r.lead_key, score: r.score }));
+  return {
+    threads_today: t.length,
+    hot_today: t.filter((r) => r.priority === "hot").length,
+    warm_today: t.filter((r) => r.priority === "warm").length,
+    tasks_due_today: dueToday.length,
+    top_hot_leads: top,
+    recent: t.slice(0, 5).map((r) => ({
+      thread_id: r.thread_id,
+      from: r.contact_email,
+      subject: r.subject,
+      category: r.category,
+      priority: r.priority,
+    })),
+  };
+}
+
 async function execListLeads(
   ctx: Ctx,
   args: { status?: string; stage?: string; limit?: number },
