@@ -201,11 +201,12 @@ async function loadDbThreads(
   const { data } = await sb
     .from("email_threads")
     .select(
-      "thread_id, subject, last_body, mailbox, source, category, priority, last_received_at, contact_email",
+      "thread_id, subject, last_body, mailbox, source, category, priority, last_received_at, contact_email, meta",
     )
     .eq("workspace_id", workspaceId)
     .order("last_received_at", { ascending: false })
-    .limit(100);
+    .limit(200);
+
   const catMap: Record<string, InstantlyThread["category"]> = {
     meeting_request: "meeting",
     demo_request: "interested",
