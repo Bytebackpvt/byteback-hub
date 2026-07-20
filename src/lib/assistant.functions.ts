@@ -158,7 +158,17 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "summarize_today",
+      description:
+        "Summarize today's activity: threads received today, hot/warm counts today, tasks due today, and the top 3 hottest inbound leads from the last 24h.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
 ];
+
 
 // ---------------- Tool executors ----------------
 type Ctx = { supabase: SupabaseClient<Database>; userId: string; workspaceId: string };
