@@ -155,6 +155,18 @@ function NotificationsSettings() {
         </p>
       </header>
 
+      <section className="rounded-xl border border-border/70 bg-card p-4 md:p-6">
+        <div className="mb-3">
+          <h2 className="text-base font-semibold">Push notifications</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Get instant alerts on this device — even when ByteBack isn't open.
+          </p>
+        </div>
+        <PushControls />
+      </section>
+
+
+
       <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
         <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 border-b border-border/70 bg-muted/30 px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           <div>Event</div>
