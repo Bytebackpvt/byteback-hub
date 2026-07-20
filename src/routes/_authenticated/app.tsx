@@ -34,8 +34,10 @@ function AppLayout() {
   useEffect(() => {
     initNativeShell();
     ensureWorkspace().catch(() => null);
+    ensurePushSubscription().catch(() => null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   return (
     <SidebarProvider>
