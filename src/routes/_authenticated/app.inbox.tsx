@@ -85,6 +85,7 @@ function InboxPage() {
   type ThreadFlags = { starred?: boolean; snoozedUntil?: number; archived?: boolean; read?: boolean };
   const [flags, setFlags] = useState<Record<string, ThreadFlags>>({});
   const [filter, setFilter] = useState<"all" | "unread" | "starred">("all");
+  const [folder, setFolder] = useState<"all" | "in" | "out">("all");
 
 
   const callGenerateReply = useServerFn(generateReply);
@@ -252,13 +253,14 @@ function InboxPage() {
       if (f.archived) return false;
       if (f.snoozedUntil && f.snoozedUntil > now) return false;
       if (mailbox !== "all" && t.mailbox !== mailbox) return false;
+      if (folder !== "all" && (t.direction ?? "in") !== folder) return false;
       if (search && !`${t.from.name} ${t.subject} ${t.preview}`.toLowerCase().includes(search.toLowerCase()))
         return false;
       if (filter === "unread" && (f.read || !t.unread)) return false;
       if (filter === "starred" && !f.starred) return false;
       return true;
     });
-  }, [activeThreads, mailbox, search, flags, filter]);
+  }, [activeThreads, mailbox, search, flags, filter, folder]);
 
   const selected = activeThreads.find((t) => t.id === selectedId) ?? filtered[0];
   const selFlags = selected ? (flags[selected.id] ?? {}) : {};
@@ -452,37 +454,58 @@ function InboxPage() {
           mobileReaderOpen ? "hidden" : "flex",
         )}
       >
-        <div className="flex items-center gap-2 border-b border-border/60 p-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id="inbox-search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search replies…  (press /)"
-              className="h-8 pl-8"
-              aria-label="Search replies"
-            />
+        <div className="flex flex-col gap-2 border-b border-border/60 p-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="inbox-search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search replies…  (press /)"
+                className="h-8 pl-8"
+                aria-label="Search replies"
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant={filter === "all" ? "ghost" : "secondary"}
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Filter threads"
+                  title="Filter threads"
+                >
+                  <Filter className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setFilter("all")}>All</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setFilter("unread")}>Unread only</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setFilter("starred")}>Starred only</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant={filter === "all" ? "ghost" : "secondary"}
-                size="icon"
-                className="h-8 w-8"
-                aria-label="Filter threads"
-                title="Filter threads"
+          <div className="flex items-center gap-1 rounded-md bg-muted/50 p-0.5 text-[11px]">
+            {([
+              { id: "all", label: "All" },
+              { id: "in", label: "Received" },
+              { id: "out", label: "Sent" },
+            ] as const).map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFolder(f.id)}
+                className={cn(
+                  "flex-1 rounded px-2 py-1 font-medium transition",
+                  folder === f.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
               >
-                <Filter className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setFilter("all")}>All</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setFilter("unread")}>Unread only</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setFilter("starred")}>Starred only</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
+
 
         <ScrollArea className="flex-1">
           <div>
@@ -855,6 +878,11 @@ function ThreadRow({
         <span className="shrink-0 text-[10px] text-muted-foreground">{thread.receivedAt}</span>
       </div>
       <div className="flex items-center gap-1.5">
+        {thread.direction === "out" && (
+          <span className="rounded bg-sky-500/15 px-1 text-[9px] font-bold uppercase text-sky-600">
+            Sent
+          </span>
+        )}
         {thread.priority === "hot" && (
           <span className="rounded bg-rose-500/15 px-1 text-[9px] font-bold uppercase text-rose-500">
             Hot
