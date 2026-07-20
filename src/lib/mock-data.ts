@@ -26,6 +26,7 @@ export type Thread = {
   suggestedReply: string;
   assignedTo?: string;
   source?: string;
+  direction?: "in" | "out";
 };
 
 export const MAILBOXES = [
