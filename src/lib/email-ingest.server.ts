@@ -53,16 +53,19 @@ export function classify(subject: string, body: string, interest?: number) {
   else if (/pickup|collect/.test(t)) category = "pickup_request";
   else if (/interested|tell me more|sounds good/.test(t)) category = "interested";
 
-  if (interest === 1 || /urgent|asap|budget approved/.test(t)) {
+  if (category === "spam" || category === "out_of_office") {
+    priority = "cold";
+    confidence = 0.9;
+  } else if (interest === 1 || /\burgent\b|\basap\b|budget approved/.test(t)) {
+    // Only upgrade to hot when the message isn't an auto-reply / OOO.
+    // OOO messages often say "if anything urgent, call…" — don't be fooled.
     priority = "hot";
     confidence = 0.85;
   } else if (category === "pricing_request" || category === "demo_request" || category === "meeting_request") {
     priority = "warm";
     confidence = 0.7;
-  } else if (category === "spam" || category === "out_of_office") {
-    priority = "cold";
-    confidence = 0.9;
   }
+
   return { category, priority, confidence };
 }
 

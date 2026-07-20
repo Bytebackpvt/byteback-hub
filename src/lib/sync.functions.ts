@@ -76,16 +76,20 @@ function classify(subject: string, body: string, interest?: number) {
   else if (/pickup|collect/.test(t)) category = "pickup_request";
   else if (/interested|tell me more|sounds good/.test(t)) category = "interested";
 
-  if (interest === 1 || /urgent|asap|budget approved/.test(t)) {
+  if (category === "spam" || category === "out_of_office") {
+    priority = "cold";
+    confidence = 0.9;
+  } else if (interest === 1 || /\burgent\b|\basap\b|budget approved/.test(t)) {
     priority = "hot";
     confidence = 0.85;
   } else if (interest === 2 || category === "meeting_request" || category === "demo_request" || category === "pricing_request") {
     priority = "warm";
     confidence = 0.7;
-  } else if (category !== "unknown" && category !== "spam" && category !== "out_of_office") {
+  } else if (category !== "unknown") {
     priority = "warm";
     confidence = 0.6;
   }
+
   return { category, priority, confidence };
 }
 

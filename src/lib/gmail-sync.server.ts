@@ -136,17 +136,19 @@ export async function syncGmailConnection(connectionId: string): Promise<{
   const seen = new Set<string>(state?.cursor ? String(state.cursor).split(",").filter(Boolean) : []);
 
   const items: Array<GmailListItem & { _label: "INBOX" | "SENT" }> = [];
-  const MAX_MESSAGES = 500;
-  // Paginate INBOX and SENT (Gmail returns newest first). Stop once we hit an
-  // already-synced id or the safety cap.
+  const MAX_MESSAGES = 4000;
+  // Paginate INBOX and SENT (Gmail returns newest first). Backfill ~1 month;
+  // stop only at the safety cap or when Gmail runs out of pages.
+  const sinceEpoch = Math.floor((Date.now() - 35 * 24 * 60 * 60 * 1000) / 1000);
   for (const label of ["INBOX", "SENT"] as const) {
     let pageToken: string | undefined;
     let pulled = 0;
     const perLabelCap = MAX_MESSAGES / 2;
     while (pulled < perLabelCap) {
       const url = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
-      url.searchParams.set("maxResults", "100");
+      url.searchParams.set("maxResults", "500");
       url.searchParams.set("labelIds", label);
+      url.searchParams.set("q", `after:${sinceEpoch}`);
       if (pageToken) url.searchParams.set("pageToken", pageToken);
       const listRes = await fetch(url.toString(), {
         headers: { authorization: `Bearer ${accessToken}` },
@@ -163,11 +165,11 @@ export async function syncGmailConnection(connectionId: string): Promise<{
       const batch = list.messages ?? [];
       items.push(...batch.map((m) => ({ ...m, _label: label })));
       pulled += batch.length;
-      if (batch.some((m) => seen.has(m.id))) break;
       if (!list.nextPageToken) break;
       pageToken = list.nextPageToken;
     }
   }
+
 
 
   let processed = 0;
