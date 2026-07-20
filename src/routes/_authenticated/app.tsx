@@ -6,6 +6,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { OfflineBanner } from "@/components/offline-banner";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { initNativeShell } from "@/lib/native";
+import { ensurePushSubscription } from "@/lib/push";
+
 import { GuidedTour, useGuidedTour } from "@/components/guided-tour";
 import { ShortcutsOverlay } from "@/components/shortcuts-overlay";
 import { CommandPalette } from "@/components/command-palette";
