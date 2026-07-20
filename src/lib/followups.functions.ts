@@ -193,7 +193,7 @@ export const autoScheduleFollowUps = createServerFn({ method: "POST" })
 
     const { data: inserted, error } = await context.supabase
       .from("tasks")
-      .insert(toInsert)
+      .upsert(toInsert, { onConflict: "workspace_id,thread_id", ignoreDuplicates: true })
       .select("id");
     if (error) throw error;
     return { scheduled: inserted?.length ?? 0 };
