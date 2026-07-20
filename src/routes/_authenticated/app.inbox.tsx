@@ -454,37 +454,58 @@ function InboxPage() {
           mobileReaderOpen ? "hidden" : "flex",
         )}
       >
-        <div className="flex items-center gap-2 border-b border-border/60 p-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id="inbox-search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search replies…  (press /)"
-              className="h-8 pl-8"
-              aria-label="Search replies"
-            />
+        <div className="flex flex-col gap-2 border-b border-border/60 p-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="inbox-search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search replies…  (press /)"
+                className="h-8 pl-8"
+                aria-label="Search replies"
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant={filter === "all" ? "ghost" : "secondary"}
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Filter threads"
+                  title="Filter threads"
+                >
+                  <Filter className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setFilter("all")}>All</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setFilter("unread")}>Unread only</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setFilter("starred")}>Starred only</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant={filter === "all" ? "ghost" : "secondary"}
-                size="icon"
-                className="h-8 w-8"
-                aria-label="Filter threads"
-                title="Filter threads"
+          <div className="flex items-center gap-1 rounded-md bg-muted/50 p-0.5 text-[11px]">
+            {([
+              { id: "all", label: "All" },
+              { id: "in", label: "Received" },
+              { id: "out", label: "Sent" },
+            ] as const).map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFolder(f.id)}
+                className={cn(
+                  "flex-1 rounded px-2 py-1 font-medium transition",
+                  folder === f.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
               >
-                <Filter className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setFilter("all")}>All</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setFilter("unread")}>Unread only</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setFilter("starred")}>Starred only</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
+
 
         <ScrollArea className="flex-1">
           <div>
