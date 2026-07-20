@@ -37,9 +37,10 @@ function AppLayout() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-dvh w-full bg-background text-foreground">
+      <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
         <AppSidebar />
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+
           <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border/60 bg-background/80 px-3 backdrop-blur">
             <SidebarTrigger />
             <span className="text-sm font-medium text-muted-foreground md:hidden">ByteBack</span>
