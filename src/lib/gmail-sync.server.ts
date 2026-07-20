@@ -186,12 +186,12 @@ export async function syncGmailConnection(connectionId: string): Promise<{
     );
     if (!msgRes.ok) continue;
     const msg = (await msgRes.json()) as GmailMessage;
+    const isSent = item._label === "SENT";
     const from = parseFrom(headerVal(msg, "From"));
-    if (!from.email) continue;
-    if (conn.account_email && from.email === String(conn.account_email).toLowerCase()) {
-      skipped++;
-      continue;
-    }
+    const to = parseFrom(headerVal(msg, "To"));
+    // For sent items, thread key by counterparty (recipient); for inbox, by sender.
+    const counterparty = isSent ? to : from;
+    if (!counterparty.email) continue;
     const subject = headerVal(msg, "Subject") || "(no subject)";
     const body = extractBody(msg);
     const bodyText = body.text || (body.html ? stripHtml(body.html) : "");
@@ -202,17 +202,22 @@ export async function syncGmailConnection(connectionId: string): Promise<{
     await ingestEmail({
       workspaceId: conn.workspace_id,
       emailId: msg.threadId ?? msg.id,
-      fromEmail: from.email,
-      fromName: from.name,
+      fromEmail: counterparty.email,
+      fromName: counterparty.name,
       subject,
       bodyText,
       receivedAt,
       source: "gmail",
       mailbox: conn.account_email,
-      meta: { gmail_message_id: msg.id, connection_id: connectionId },
+      meta: {
+        gmail_message_id: msg.id,
+        connection_id: connectionId,
+        direction: isSent ? "out" : "in",
+      },
     });
     processed++;
   }
+
 
   const cursorArr = Array.from(nextCursor).slice(-500);
   await admin.from("sync_state").upsert(
