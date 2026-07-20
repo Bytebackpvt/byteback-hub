@@ -6,6 +6,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { OfflineBanner } from "@/components/offline-banner";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { initNativeShell } from "@/lib/native";
+import { ensurePushSubscription } from "@/lib/push";
+
 import { GuidedTour, useGuidedTour } from "@/components/guided-tour";
 import { ShortcutsOverlay } from "@/components/shortcuts-overlay";
 import { CommandPalette } from "@/components/command-palette";
@@ -32,8 +34,10 @@ function AppLayout() {
   useEffect(() => {
     initNativeShell();
     ensureWorkspace().catch(() => null);
+    ensurePushSubscription().catch(() => null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   return (
     <SidebarProvider>
