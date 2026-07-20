@@ -163,9 +163,23 @@ export const autoScheduleFollowUps = createServerFn({ method: "POST" })
       });
     }
     if (rows.length === 0) return { scheduled: 0 };
+    const threadIds = rows.map((r) => r.thread_id);
+    // Skip threads whose last message is outbound (we already replied) — avoids task noise.
+    const { data: threadRows } = await context.supabase
+      .from("email_threads")
+      .select("thread_id, meta")
+      .eq("workspace_id", workspaceId)
+      .in("thread_id", threadIds);
+    const outbound = new Set(
+      (threadRows ?? [])
+        .filter((r) => {
+          const m = r.meta as { direction?: string } | null;
+          return m?.direction === "out";
+        })
+        .map((r) => r.thread_id as string),
+    );
     // Partial unique index (source='ai') can't be used by PostgREST onConflict,
     // so pre-filter thread_ids that already have an AI task.
-    const threadIds = rows.map((r) => r.thread_id);
     const { data: existing, error: existingErr } = await context.supabase
       .from("tasks")
       .select("thread_id")
@@ -174,8 +188,9 @@ export const autoScheduleFollowUps = createServerFn({ method: "POST" })
       .in("thread_id", threadIds);
     if (existingErr) throw existingErr;
     const taken = new Set((existing ?? []).map((r) => r.thread_id as string));
-    const toInsert = rows.filter((r) => !taken.has(r.thread_id));
+    const toInsert = rows.filter((r) => !taken.has(r.thread_id) && !outbound.has(r.thread_id));
     if (toInsert.length === 0) return { scheduled: 0 };
+
     const { data: inserted, error } = await context.supabase
       .from("tasks")
       .insert(toInsert)
