@@ -327,6 +327,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
           priority: priorityFrom(cat, e.ai_interest_value),
           campaign: e.campaign_id,
           source: "instantly",
+          direction: "in",
         };
       });
       return { threads: [...threads, ...dbThreads], connected: true };
