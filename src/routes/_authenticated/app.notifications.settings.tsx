@@ -26,6 +26,7 @@ import {
   type PrefMap,
   type QuietHours,
 } from "@/lib/notification-prefs.functions";
+import { PushControls } from "@/components/push-controls";
 
 export const Route = createFileRoute("/_authenticated/app/notifications/settings")({
   head: () => ({
