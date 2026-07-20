@@ -67,16 +67,45 @@ const SummaryInput = z.object({
   company: z.string(),
   subject: z.string(),
   body: z.string(),
+  history: z
+    .array(
+      z.object({
+        direction: z.enum(["in", "out"]),
+        from: z.string().optional(),
+        date: z.string().optional(),
+        text: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 export const summarizeThread = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => SummaryInput.parse(raw))
   .handler(async ({ data }) => {
-    const system =
-      "You analyze sales reply emails. Output ONE crisp sentence (max 25 words): intent, buying signal, and suggested next action. No preamble.";
-    const user = `From: ${data.from} (${data.company})
-Subject: ${data.subject}
-Body: ${data.body}`;
+    const system = `You write a chronological narrative of a sales email thread — like a colleague briefing a rep.
+Rules:
+- 2–4 short sentences, past tense, plain English.
+- Cover WHO messaged WHOM, WHEN, and the INTENT of each turn (intro / follow-up / question / quote / negotiation / objection / close / no-reply).
+- End with the CURRENT STATE (e.g. "awaiting your reply", "they went silent 3 days ago", "quote sent, no response yet").
+- No preamble, no headings, no bullet points, no emoji.
+Example: "You emailed Alex at Acme on Jun 12 introducing the service. Alex replied Jun 14 asking for pricing. You sent a quote Jun 15. Alex counter-offered Jun 18 at 20% lower. Awaiting your response."`;
+
+    const historyBlock =
+      data.history && data.history.length
+        ? data.history
+            .map(
+              (m, i) =>
+                `${i + 1}. [${m.direction === "out" ? "YOU" : "THEM"}] ${m.date ?? ""} ${
+                  m.from ? `from ${m.from}` : ""
+                }\n${m.text.slice(0, 800)}`,
+            )
+            .join("\n---\n")
+        : `[THEM] ${data.body.slice(0, 1500)}`;
+
+    const user = `Thread with ${data.from} at ${data.company} — Subject: "${data.subject}"
+
+Messages (oldest → newest):
+${historyBlock}`;
     const text = await callGateway([
       { role: "system", content: system },
       { role: "user", content: user },
