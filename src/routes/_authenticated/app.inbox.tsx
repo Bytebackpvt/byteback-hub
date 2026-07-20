@@ -878,6 +878,11 @@ function ThreadRow({
         <span className="shrink-0 text-[10px] text-muted-foreground">{thread.receivedAt}</span>
       </div>
       <div className="flex items-center gap-1.5">
+        {thread.direction === "out" && (
+          <span className="rounded bg-sky-500/15 px-1 text-[9px] font-bold uppercase text-sky-600">
+            Sent
+          </span>
+        )}
         {thread.priority === "hot" && (
           <span className="rounded bg-rose-500/15 px-1 text-[9px] font-bold uppercase text-rose-500">
             Hot
