@@ -122,9 +122,15 @@ export function AppSidebar() {
               <Settings className="h-3.5 w-3.5" /> Settings
             </Link>
           </Button>
+          <Button asChild variant="ghost" size="sm" className="text-xs" title="Notifications">
+            <Link to="/app/notifications/settings">
+              <Bell className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
           <Button variant="ghost" size="sm" onClick={signOut} className="text-xs">
             <LogOut className="h-3.5 w-3.5" />
           </Button>
+
         </div>
       </SidebarFooter>
     </Sidebar>
