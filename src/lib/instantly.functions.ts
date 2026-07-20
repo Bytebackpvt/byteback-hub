@@ -220,28 +220,34 @@ async function loadDbThreads(
     spam: "spam",
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data ?? []).map((r: any) => {
-    const email = String(r.contact_email ?? "");
-    const name = email
-      ? email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-      : "Unknown";
-    const cat: InstantlyThread["category"] = catMap[r.category as string] ?? "interested";
-    const pri: InstantlyThread["priority"] =
-      r.priority === "hot" ? "hot" : r.priority === "warm" ? "warm" : "low";
-    return {
-      id: String(r.thread_id),
-      from: { name, email, company: companyFromEmail(email) },
-      subject: (r.subject as string) ?? "(no subject)",
-      preview: String(r.last_body ?? "").slice(0, 140),
-      body: String(r.last_body ?? ""),
-      mailbox: (r.mailbox as string) ?? (r.source as string) ?? "inbox",
-      receivedAt: timeAgo(r.last_received_at as string),
-      unread: true,
-      category: cat,
-      priority: pri,
-      source: (r.source as string) ?? "gmail",
-    };
-  });
+  return (data ?? [])
+    .filter((r: any) => {
+      const dir = (r.meta && typeof r.meta === "object" && (r.meta as { direction?: string }).direction) || "in";
+      return dir !== "out"; // hide threads whose last message is outbound
+    })
+    .map((r: any) => {
+      const email = String(r.contact_email ?? "");
+      const name = email
+        ? email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+        : "Unknown";
+      const cat: InstantlyThread["category"] = catMap[r.category as string] ?? "interested";
+      const pri: InstantlyThread["priority"] =
+        r.priority === "hot" ? "hot" : r.priority === "warm" ? "warm" : "low";
+      return {
+        id: String(r.thread_id),
+        from: { name, email, company: companyFromEmail(email) },
+        subject: (r.subject as string) ?? "(no subject)",
+        preview: String(r.last_body ?? "").slice(0, 140),
+        body: String(r.last_body ?? ""),
+        mailbox: (r.mailbox as string) ?? (r.source as string) ?? "inbox",
+        receivedAt: timeAgo(r.last_received_at as string),
+        unread: true,
+        category: cat,
+        priority: pri,
+        source: (r.source as string) ?? "gmail",
+      };
+    });
+
 }
 
 async function getWorkspaceMailStatus(supabase: unknown, userId: string) {
