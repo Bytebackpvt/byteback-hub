@@ -13,8 +13,18 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
 
     const token = await getFreshAccessToken();
 
+    // No session on the client — don't fire an unauthenticated RPC that would
+    // 401 and blank the current route. Bounce to /auth instead.
+    if (!token) {
+      if (!window.location.pathname.startsWith("/auth")) {
+        const next = window.location.pathname + window.location.search;
+        window.location.replace(`/auth?next=${encodeURIComponent(next)}`);
+      }
+      throw new Error("Not signed in");
+    }
+
     try {
-      return await next({ headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      return await next({ headers: { Authorization: `Bearer ${token}` } });
     } catch (err) {
       if (!isUnauthorized(err)) throw err;
 
