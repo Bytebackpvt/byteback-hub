@@ -85,6 +85,7 @@ function InboxPage() {
   type ThreadFlags = { starred?: boolean; snoozedUntil?: number; archived?: boolean; read?: boolean };
   const [flags, setFlags] = useState<Record<string, ThreadFlags>>({});
   const [filter, setFilter] = useState<"all" | "unread" | "starred">("all");
+  const [folder, setFolder] = useState<"all" | "in" | "out">("all");
 
 
   const callGenerateReply = useServerFn(generateReply);
@@ -252,13 +253,14 @@ function InboxPage() {
       if (f.archived) return false;
       if (f.snoozedUntil && f.snoozedUntil > now) return false;
       if (mailbox !== "all" && t.mailbox !== mailbox) return false;
+      if (folder !== "all" && (t.direction ?? "in") !== folder) return false;
       if (search && !`${t.from.name} ${t.subject} ${t.preview}`.toLowerCase().includes(search.toLowerCase()))
         return false;
       if (filter === "unread" && (f.read || !t.unread)) return false;
       if (filter === "starred" && !f.starred) return false;
       return true;
     });
-  }, [activeThreads, mailbox, search, flags, filter]);
+  }, [activeThreads, mailbox, search, flags, filter, folder]);
 
   const selected = activeThreads.find((t) => t.id === selectedId) ?? filtered[0];
   const selFlags = selected ? (flags[selected.id] ?? {}) : {};
