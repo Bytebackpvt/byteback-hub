@@ -43,8 +43,9 @@ export async function ensurePushSubscription(): Promise<PushSubscription | null>
     if (existing) return existing;
     return await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapid),
+      applicationServerKey: urlBase64ToUint8Array(vapid).buffer as ArrayBuffer,
     });
+
   } catch (err) {
     console.warn("[push] registration failed", err);
     return null;
