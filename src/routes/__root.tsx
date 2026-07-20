@@ -39,18 +39,70 @@ function NotFoundComponent() {
   );
 }
 
+function isUnauthorizedError(error: unknown): boolean {
+  if (!error) return false;
+  const msg =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error && "message" in error
+        ? String((error as { message: unknown }).message)
+        : String(error);
+  return /Unauthorized|\b401\b|No authorization header|Not signed in|Invalid token/i.test(msg);
+}
+
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const unauthorized = isUnauthorizedError(error);
+
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-    // Graceful fallback: bounce to sign-in when a protected server fn fails auth.
-    if (typeof error?.message === "string" && /Unauthorized/i.test(error.message)) {
-      if (typeof window !== "undefined" && window.location.pathname !== "/auth") {
-        window.location.replace("/auth");
-      }
-    }
-  }, [error]);
+    reportLovableError(error, {
+      boundary: "tanstack_root_error_component",
+      unauthorized,
+    });
+  }, [error, unauthorized]);
+
+  if (unauthorized) {
+    const nextPath =
+      typeof window !== "undefined"
+        ? window.location.pathname + window.location.search
+        : "/";
+    const signInHref =
+      nextPath && nextPath !== "/auth" && !nextPath.startsWith("/auth")
+        ? `/auth?next=${encodeURIComponent(nextPath)}`
+        : "/auth";
+
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background px-4">
+        <div className="max-w-md text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-brand">
+            Session expired
+          </p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
+            Please sign in to continue
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your session has ended or you're not signed in. Sign back in and
+            we'll bring you right back to this page.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <a
+              href={signInHref}
+              className="inline-flex items-center justify-center rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition hover:opacity-90"
+            >
+              Sign in
+            </a>
+            <a
+              href="/"
+              className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
+            >
+              Go home
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-4">
