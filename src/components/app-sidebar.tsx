@@ -1,21 +1,12 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  BarChart3,
-  Bell,
-  Brain,
-  CheckSquare,
   HelpCircle,
   Inbox,
-  Mail,
   Kanban,
   LayoutDashboard,
   LogOut,
   Plug,
-  Radar,
   Settings,
-  Shield,
-  Sparkles,
-  Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -39,23 +30,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentWorkspace } from "@/lib/workspace.functions";
 import { listInstantlyThreads } from "@/lib/instantly.functions";
-import { listTasks } from "@/lib/tasks.functions";
-import { listNotifications } from "@/lib/notifications.functions";
 import { useServerFn } from "@tanstack/react-start";
 
-const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox" | "tasks" | "notifications"; tour: string }[] = [
+const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox"; tour: string }[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
-  { to: "/app/radar", label: "Opportunity Radar", icon: Radar, tour: "nav-radar" },
-  { to: "/app/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox", tour: "nav-inbox" },
-  { to: "/app/crm", label: "Contacts", icon: Users, tour: "nav-crm" },
-  { to: "/app/pipeline", label: "Pipeline", icon: Kanban, tour: "nav-pipeline" },
-  { to: "/app/tasks", label: "Tasks", icon: CheckSquare, badgeKey: "tasks", tour: "nav-tasks" },
-  { to: "/app/analytics", label: "Analytics", icon: BarChart3, tour: "nav-analytics" },
-  { to: "/app/team", label: "Team", icon: Shield, tour: "nav-team" },
+  { to: "/app/inbox", label: "Unibox", icon: Inbox, badgeKey: "inbox", tour: "nav-inbox" },
+  { to: "/app/pipeline", label: "Stages", icon: Kanban, tour: "nav-pipeline" },
   { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
-  { to: "/app/email-sources", label: "Email Sources", icon: Mail, tour: "nav-email-sources" },
-  { to: "/app/notifications", label: "Notifications", icon: Bell, badgeKey: "notifications", tour: "nav-notifications" },
-  { to: "/app/memory", label: "AI Memory", icon: Brain, tour: "nav-memory" },
   { to: "/app/help", label: "Help", icon: HelpCircle, tour: "nav-help" },
 ];
 
@@ -66,8 +47,6 @@ export function AppSidebar() {
   const [email, setEmail] = useState<string>("");
   const callWorkspace = useServerFn(getCurrentWorkspace);
   const callThreads = useServerFn(listInstantlyThreads);
-  const callTasks = useServerFn(listTasks);
-  const callNotifs = useServerFn(listNotifications);
   const wsQuery = useQuery({
     queryKey: ["workspace", "current"],
     queryFn: () => callWorkspace(),
@@ -78,21 +57,8 @@ export function AppSidebar() {
     queryFn: () => callThreads(),
     staleTime: 30_000,
   });
-  const tasksQ = useQuery({
-    queryKey: ["tasks"],
-    queryFn: () => callTasks(),
-    staleTime: 30_000,
-  });
-  const notifQ = useQuery({
-    queryKey: ["notifications"],
-    queryFn: () => callNotifs(),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
-  });
   const role = wsQuery.data?.role ?? null;
   const inboxUnread = inboxQ.data?.threads?.filter((t) => t.unread).length ?? 0;
-  const tasksCount = tasksQ.data?.tasks?.filter((t) => !t.done).length ?? 0;
-  const notifUnread = notifQ.data?.unread ?? 0;
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
@@ -127,41 +93,17 @@ export function AppSidebar() {
                       <Link to={item.to} className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
                         <span className="flex-1">{item.label}</span>
-                        {item.badgeKey && (() => {
-                          const n =
-                            item.badgeKey === "inbox"
-                              ? inboxUnread
-                              : item.badgeKey === "tasks"
-                                ? tasksCount
-                                : notifUnread;
-                          if (!n) return null;
-                          return (
-                            <span className="ml-auto rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
-                              {n > 99 ? "99+" : n}
-                            </span>
-                          );
-                        })()}
+                        {item.badgeKey === "inbox" && inboxUnread > 0 && (
+                          <span className="ml-auto rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
+                            {inboxUnread > 99 ? "99+" : inboxUnread}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
               })}
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>AI</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <div className="rounded-lg border border-border/70 bg-gradient-to-br from-brand/10 to-transparent p-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                <Sparkles className="h-3.5 w-3.5 text-brand" /> Daily summary
-              </div>
-              <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">6 hot leads</span> replied
-                overnight. 2 want to book a call this week.
-              </p>
-            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

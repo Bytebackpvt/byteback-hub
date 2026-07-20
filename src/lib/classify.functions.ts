@@ -126,6 +126,18 @@ Read the incoming email and classify INTENT based on CONTEXT, not keywords. Dist
 - pickup_request vs inspection_request (physical asset handling)
 - out_of_office / auto_reply / wrong_person / spam are non-actionable
 
+PRIORITY RUBRIC (be strict — do not inflate to hot):
+- HOT — explicit buying signal: asks for a demo, quote, pricing, meeting, PO, contract, dates, budget, "when can we start", "send proposal", "book a call".
+- WARM — engaged and curious but NO buying signal yet: asks clarifying questions, wants more info, "tell me more", "how does it work", replies but non-committal.
+- COLD — auto-reply, out-of-office, unsubscribe, "not interested", "remove me", bounce, wrong person, spam, or generic acknowledgement with no follow-up needed.
+
+Few-shot examples:
+- "Can you send pricing for 50 laptops? Need by Friday." → very_interested, HOT
+- "Interesting, tell me more about your ITAD process." → interested, WARM
+- "Out of office until Monday." → out_of_office, COLD
+- "Please remove me from your list." → wrong_person, COLD
+- "Thanks, will review internally." → interested, WARM (not hot — no commitment)
+
 Return STRICT JSON only, no prose, no markdown fences. Schema:
 {
   "category": one of [${AI_CATEGORIES.join(", ")}],
@@ -135,8 +147,7 @@ Return STRICT JSON only, no prose, no markdown fences. Schema:
   "next_action_reason": string (max 20 words),
   "priority": one of [hot, warm, cold],
   "signals": array of up to 4 short evidence tags (max 4 words each)
-}
-Priority rubric: hot = strong buying intent / urgency / budget / dates. warm = interested but exploratory. cold = low intent, auto-reply, spam, ooo, wrong person.`;
+}`;
 
     const user = `From: ${data.from}${data.company ? ` (${data.company})` : ""}
 Subject: ${data.subject}

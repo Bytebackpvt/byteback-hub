@@ -1,45 +1,73 @@
-Aapki 4 complaints samajh gayi. Ek-ek ka fix:
 
-## 1. AI assistant khud kaam kare (guide nahi, doer bane)
-Abhi bs "yaha jao, click karo" bolta hai. Naya version me **tools** honge — assistant khud database me action karega:
-- `set_lead_status(email, hot|warm|cold|not-interested)` — turant mark
-- `set_lead_stage(email, open|contacted|meeting|won|lost|churned)`
-- `list_leads(status?, stage?, since?, limit?)` — actual data DB se
-- `get_stats(range: today|week|month)` — real counts
-- `list_tasks(status?)`, `complete_task(id)`, `snooze_task(id, days)`
-- `draft_reply(threadId, intent)` — draft banake dikhaye, user edit/send kare
-- `send_reply(threadId, body)` — confirm ke baad bhejna
+## Goal
+Make ByteBack minimalist and focused. Remove clutter, fix AI quality, and make the core loop (connect email → unibox → auto-detect hot/warm/cold → move through stages) work correctly.
 
-Chat me tool calls dikhenge ("✓ Marked Acme Corp as hot"). Reply karne ka draft chat me aayega + **Edit** aur **Send** buttons.
+## 1. Navigation — remove clutter
+Keep only these in sidebar:
+- **Dashboard** (with Priority Tasks + Opportunity Radar inside)
+- **Unibox** (renamed from Inbox — shows both sent + received from all connected mailboxes)
+- **Stages** (renamed from Pipeline — simple Kanban: New → Contacted → Hot → Negotiation → Won / Lost)
+- **Integrations** (email connect)
+- **Settings**
 
-## 2. Lead status/stage Inbox me shift
-Contacts se dropdowns hata dungi. Inbox me har thread ke top-right pe:
-- Status pill (hot/warm/cold/not-interested) — click to change
-- Stage pill (open→won etc.)
-- "Mark as..." quick menu
+Remove from sidebar & routes:
+- Contacts / CRM (merge lead status into Unibox thread header)
+- Tasks (surface only inside Dashboard → Priority Tasks card)
+- Analytics
+- Radar as a separate page (merge into Dashboard)
+- Notifications page (bell dropdown stays)
+- Memory, Team-as-separate, Search page (⌘K palette stays)
 
-Contacts page sirf directory rahega (search + view), koi editing waha nahi.
+## 2. Unibox fixes
+- Sync **sent items too** (Gmail: add `in:sent` to the query, merge with inbox).
+- Thread view shows the full back-and-forth (inbound + outbound messages in order).
+- Hot/Warm/Cold pill + Stage pill stay in the thread header (already added).
+- Manual override dropdowns for both.
 
-## 3. Task pe action buttons + editable AI drafts
-Har task card me abhi sirf checkbox hai. Add karungi:
-- **Reply** button → AI draft khulega inline (editable textarea, pre-filled)
-- **Send** / **Save draft** / **Regenerate** buttons
-- **Snooze** dropdown (1d / 3d / 1w)
-- **Skip** (task close bina reply ke)
-Checkbox turant complete karega jaisa abhi hai, but ab options bhi milenge.
+## 3. AI Summary — real narrative
+Rewrite `summarizeThread` prompt so output is a chronological story, not a one-liner:
+> "You emailed X on Jun 12 introducing the service. X replied Jun 14 asking for pricing (warm). You sent a quote Jun 15. X counter-offered Jun 18 at 20% lower. Currently awaiting your response."
 
-## 4. Real data audit (dashboard + radar + inbox sort)
-- Dashboard priority tasks: query me `order by created_at desc` + real join se lead info fix.
-- Opportunity Radar: check karungi ki signals actual emails se aa rahe hain, mock nahi.
-- Inbox: sort by `received_at desc` enforce (abhi kahi kahi random hai).
-- Full email sync check: Instantly + Gmail dono ka last-sync timestamp aur count log karke verify karungi.
+Include: who mailed whom, when, intent (intro / followup / quote / negotiation / objection / close), and current state.
 
----
+## 4. Hot/Warm/Cold classification fix
+Rewrite `classifyEmail` prompt with explicit rules + few-shot examples:
+- **Hot** — asks for demo, pricing, meeting, or replies with buying intent
+- **Warm** — engaged reply, questions, but no buying signal yet
+- **Cold** — auto-reply, out-of-office, unsubscribe, "not interested", no reply after N days
+Re-run classification on existing threads when user hits "Re-analyze" button.
 
-## Technical
-- **New tools in** `src/lib/assistant.functions.ts` — replace plain chat call with tool-calling loop (Gemini function calling).
-- **UI**: chat message renderer me tool-result cards + reply-draft card with edit/send.
-- **Edited**: `app.inbox.tsx` (status/stage pills per thread), `app.crm.tsx` (remove dropdowns), `app.tasks.tsx` (action buttons + inline draft), `app.index.tsx` (dashboard queries), `app.radar.tsx` (data check).
-- **Server fns reused**: `setLeadManualStatus`, `setLeadStage`, `saveLeadScore`, existing draft/send fns from `followups.functions.ts`.
+## 5. Task auto-creation — stop the noise
+Only create a task when:
+- Inbound message is unreplied for >24h AND classified hot/warm, OR
+- User explicitly clicks "Remind me"
+Skip if the last message in the thread is **from us** (we already replied).
 
-Bada kaam hai (~45 min). Priority order — pehle 1+3 (assistant + task actions) karu ya 2+4 (inbox controls + data fix) pehle? Ya sab ek saath approve?
+## 6. AI Assistant — actually do things
+Assistant already has tools; add missing ones:
+- `getHotLeadsCount(range)`, `getStageBreakdown()`, `summarizeToday()`
+- When user asks "how many hot leads this week", answer with the number, not "go click here".
+
+## 7. Push notifications (PWA)
+- Add web push registration via service worker.
+- Fire push for: new hot lead, reply received on hot thread, task due.
+
+## 8. UI polish
+- Fix layout jitter: wrap main scroll area with `min-h-0` and `overflow-y-auto` on the content column only (header stays fixed). Currently everything scrolls together because flex parents don't constrain height.
+- Consistent card padding (`p-4`), consistent gap (`gap-3`), remove nested cards.
+- Empty states everywhere with clear next action.
+
+## Technical notes
+- Sidebar: edit `src/components/app-sidebar.tsx` — remove Contacts, Tasks, Analytics, Notifications, Memory, Search, Radar items.
+- Routes: keep files but they become unreachable; deletion optional (safer to keep so old bookmarks don't 404 — redirect to Dashboard).
+- `src/routes/_authenticated/app.index.tsx` — merge Radar + Priority Tasks into single dashboard.
+- `src/lib/ai.functions.ts` — rewrite `summarizeThread` and `classifyEmail` prompts.
+- `src/lib/gmail-sync.server.ts` — add sent folder sync.
+- `src/lib/tasks.functions.ts` (or wherever auto-tasks are created) — add "last message is outbound" guard.
+- `src/routes/_authenticated/app.tsx` — fix flex/overflow so only main scrolls.
+
+## Out of scope this round
+- Full push notification backend (VAPID keys, subscription table) — will scaffold service worker + subscribe flow, but actual delivery requires a cron job we can add next.
+
+## Confirm before I start
+This deletes a lot. Say **"go"** and I ship it in one batch.
