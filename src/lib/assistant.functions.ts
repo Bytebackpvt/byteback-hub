@@ -457,8 +457,11 @@ async function runTool(ctx: Ctx, name: string, argsRaw: string, apiKey: string) 
         return await execListRecentThreads(ctx, args as never);
       case "draft_reply":
         return await execDraftReply(ctx, args as never, apiKey);
+      case "summarize_today":
+        return await execSummarizeToday(ctx);
       default:
         return { error: `Unknown tool ${name}` };
+
     }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Tool failed" };
