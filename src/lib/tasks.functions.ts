@@ -148,15 +148,29 @@ export const generateTasksFromThreads = createServerFn({ method: "POST" })
     const workspaceId = await getOwnedWorkspaceId(context.supabase, context.userId);
     if (!workspaceId) throw new Error("No workspace found");
 
-    // Skip threads that already produced an AI task
-    const { data: existing } = await context.supabase
-      .from("tasks")
-      .select("thread_id")
-      .eq("workspace_id", workspaceId)
-      .eq("source", "ai")
-      .not("thread_id", "is", null);
+    // Skip threads already producing an AI task, or whose last message is outbound.
+    const threadIds = data.threads.map((t) => t.id);
+    const [{ data: existing }, { data: threadRows }] = await Promise.all([
+      context.supabase
+        .from("tasks")
+        .select("thread_id")
+        .eq("workspace_id", workspaceId)
+        .eq("source", "ai")
+        .not("thread_id", "is", null),
+      context.supabase
+        .from("email_threads")
+        .select("thread_id, meta")
+        .eq("workspace_id", workspaceId)
+        .in("thread_id", threadIds),
+    ]);
     const taken = new Set((existing ?? []).map((r) => r.thread_id));
-    const pending = data.threads.filter((t: ThreadSeed) => !taken.has(t.id));
+    const outbound = new Set(
+      (threadRows ?? [])
+        .filter((r) => (r.meta as { direction?: string } | null)?.direction === "out")
+        .map((r) => r.thread_id as string),
+    );
+    const pending = data.threads.filter((t: ThreadSeed) => !taken.has(t.id) && !outbound.has(t.id));
+
     if (pending.length === 0) return { created: 0, tasks: [] as TaskRow[] };
 
     const system =
