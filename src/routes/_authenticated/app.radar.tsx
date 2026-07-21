@@ -174,10 +174,6 @@ function RadarPage() {
             <p className="mt-1 text-lg font-medium leading-snug">{s?.headline}</p>
             <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
               <span>
-                Total potential:{" "}
-                <span className="font-semibold text-foreground">{inr(s?.totalPotential ?? 0)}</span>
-              </span>
-              <span>
                 Hot unreplied:{" "}
                 <span className="font-semibold text-foreground">{s?.hotUnreplied ?? 0}</span>
               </span>
