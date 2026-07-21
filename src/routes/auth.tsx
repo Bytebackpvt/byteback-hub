@@ -40,20 +40,26 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [alreadySignedIn, setAlreadySignedIn] = useState(false);
 
-  // Bounce already-signed-in users; prefill email from ?email=
+  // Prefill email; only auto-route away when a ?next= redirect target was set
+  // (i.e. an expired session bumped the user here). Otherwise let them see the
+  // form — clicking "Sign up" should NEVER redirect a stale session into the app.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const prefill = params.get("email");
-    if (prefill) {
-      setEmail(prefill);
-      setTab("signin");
-    }
+    if (prefill) setEmail(prefill);
+    const next = params.get("next");
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) routeAfterAuth();
+      if (!data.user) return;
+      if (next && next.startsWith("/")) {
+        routeAfterAuth();
+      } else {
+        setAlreadySignedIn(true);
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate]);
+  }, []);
 
   const routeAfterAuth = async () => {
     const { data } = await supabase.auth.getUser();
