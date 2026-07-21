@@ -242,14 +242,20 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
   let hasMoreManual = false;
   try {
     const perType = Math.floor(limit / 3);
-    const [received, sent, manual] = await Promise.all([
+    const [receivedResult, sentResult, manualResult] = await Promise.allSettled([
       fetchInstantlyType(wsKey, "received", perType),
       fetchInstantlyType(wsKey, "sent", perType),
       fetchInstantlyType(wsKey, "manual", perType),
     ]);
+    const received = receivedResult.status === "fulfilled" ? receivedResult.value : { items: [], hasMore: false };
+    const sent = sentResult.status === "fulfilled" ? sentResult.value : { items: [], hasMore: false };
+    const manual = manualResult.status === "fulfilled" ? manualResult.value : { items: [], hasMore: false };
     hasMoreReceived = received.hasMore;
     hasMoreSent = sent.hasMore;
     hasMoreManual = manual.hasMore;
+    if (receivedResult.status === "rejected" && sentResult.status === "rejected" && manualResult.status === "rejected") {
+      throw receivedResult.reason;
+    }
     typedItems = [
       ...received.items.map((email) => ({ email, direction: "in" as const, type: "received" as const })),
       ...sent.items.map((email) => ({ email, direction: "out" as const, type: "sent" as const })),

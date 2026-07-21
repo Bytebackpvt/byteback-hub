@@ -89,8 +89,8 @@ function InboxPage() {
   const [folder, setFolder] = useState<"all" | "in" | "out">("all");
   // Pagination window: bump these to load more history without a full re-mount.
   const [pageWindow, setPageWindow] = useState({
-    receivedPages: 8,
-    sentPages: 8,
+    receivedPages: 1,
+    sentPages: 1,
     dbLimit: 5000,
   });
 
@@ -582,13 +582,14 @@ function InboxPage() {
                       size="sm"
                       className="h-7 text-xs"
                       disabled={threadsQuery.isFetching}
-                      onClick={() =>
+                      onClick={async () => {
+                        await handleSyncAllSources();
                         setPageWindow((w) => ({
-                          receivedPages: hm?.received ? w.receivedPages + 30 : w.receivedPages,
-                          sentPages: hm?.sent ? w.sentPages + 8 : w.sentPages,
+                          receivedPages: hm?.received ? w.receivedPages + 1 : w.receivedPages,
+                          sentPages: hm?.sent ? w.sentPages + 1 : w.sentPages,
                           dbLimit: hm?.db ? w.dbLimit + 5000 : w.dbLimit,
-                        }))
-                      }
+                        }));
+                      }}
                     >
                       {threadsQuery.isFetching ? (
                         <Loader2 className="mr-1 h-3 w-3 animate-spin" />

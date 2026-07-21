@@ -198,12 +198,13 @@ async function loadDbThreads(
   supabase: unknown,
   userId: string,
   limit: number,
+  mailbox?: string,
 ): Promise<{ threads: InstantlyThread[]; hasMore: boolean }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = supabase as any;
   const workspaceId = await getCurrentWorkspaceId(sb, userId);
   if (!workspaceId) return { threads: [], hasMore: false };
-  const { data } = await sb
+  let query = sb
     .from("email_threads")
     .select(
       "thread_id, subject, last_body, mailbox, source, category, priority, last_received_at, contact_email, meta",
@@ -211,6 +212,10 @@ async function loadDbThreads(
     .eq("workspace_id", workspaceId)
     .order("last_received_at", { ascending: false })
     .limit(limit + 1); // fetch one extra to detect hasMore
+
+  if (mailbox) query = query.ilike("mailbox", mailbox);
+
+  const { data } = await query;
 
   const rows = (data ?? []) as unknown[];
   const hasMore = rows.length > limit;
@@ -296,15 +301,15 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ListInput.parse(raw) ?? {})
   .handler(async ({ data, context }) => {
-    const receivedPages = data?.receivedPages ?? 30;
-    const sentPages = data?.sentPages ?? 30;
+    const receivedPages = data?.receivedPages ?? 1;
+    const sentPages = data?.sentPages ?? 1;
     const dbLimit = data?.dbLimit ?? 500;
     const sinceDays = data?.sinceDays ?? 90;
     const focusMailbox = data?.mailbox && data.mailbox !== "all" ? data.mailbox.toLowerCase() : undefined;
 
     // Always load DB-ingested threads (Gmail, webhook, etc.) — these belong to
     // every workspace member.
-    const dbResult = await loadDbThreads(context.supabase, context.userId, dbLimit).catch(() => ({
+    const dbResult = await loadDbThreads(context.supabase, context.userId, dbLimit, focusMailbox).catch(() => ({
       threads: [] as InstantlyThread[],
       hasMore: false,
     }));
@@ -349,6 +354,24 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
 
     const key = conn.key;
     try {
+      // The inbox should primarily show persisted, synced data. Live API reads
+      // are only a tiny fallback for brand-new connections; otherwise repeated
+      // page reads hit Instantly's 20/minute rate limit and make sent history
+      // disappear intermittently.
+      if (dbThreads.length > 0) {
+        return {
+          threads: dbThreads,
+          connected: true,
+          counts: {
+            received: dbThreads.filter((t) => t.direction !== "out").length,
+            sent: dbThreads.filter((t) => t.direction === "out").length,
+            db: dbThreads.length,
+          },
+          hasMore: { received: false, sent: false, db: dbResult.hasMore },
+          params,
+        };
+      }
+
       const SINCE = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString();
       async function loadType(
         email_type: "received" | "sent" | "manual",
@@ -394,15 +417,15 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       }
 
       const [received, sent, manual] = await Promise.all([
-        loadType("received", receivedPages).catch((e) => {
+        loadType("received", Math.min(receivedPages, 1)).catch((e) => {
           console.error("Instantly received fetch failed:", e);
           return { items: [] as RawEmail[], hasMore: false };
         }),
-        loadType("sent", sentPages).catch((e) => {
+        loadType("sent", Math.min(sentPages, 1)).catch((e) => {
           console.error("Instantly sent fetch failed:", e);
           return { items: [] as RawEmail[], hasMore: false };
         }),
-        loadType("manual", sentPages).catch((e) => {
+        loadType("manual", 1).catch((e) => {
           console.error("Instantly manual fetch failed:", e);
           return { items: [] as RawEmail[], hasMore: false };
         }),
