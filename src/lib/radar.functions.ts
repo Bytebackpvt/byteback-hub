@@ -274,6 +274,16 @@ export const getRadarSummary = createServerFn({ method: "POST" })
       headline = "Nothing urgent right now. Radar is quiet.";
     }
 
+    const summary: RadarSummary = {
+      headline,
+      totalPotential,
+      hotUnreplied,
+      buckets,
+      generatedAt: new Date().toISOString(),
+    };
+
+
+
     // Best-effort cache write; ignore errors so radar still renders.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (context.supabase as any)
