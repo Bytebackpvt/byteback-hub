@@ -32,6 +32,7 @@ import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/ap
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAppTeamRouteImport } from './routes/_authenticated/app.team'
 import { Route as AuthenticatedAppTasksRouteImport } from './routes/_authenticated/app.tasks'
+import { Route as AuthenticatedAppSyncStatusRouteImport } from './routes/_authenticated/app.sync-status'
 import { Route as AuthenticatedAppSearchRouteImport } from './routes/_authenticated/app.search'
 import { Route as AuthenticatedAppRadarRouteImport } from './routes/_authenticated/app.radar'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/app.pipeline'
@@ -171,6 +172,12 @@ const AuthenticatedAppTasksRoute = AuthenticatedAppTasksRouteImport.update({
   path: '/tasks',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppSyncStatusRoute =
+  AuthenticatedAppSyncStatusRouteImport.update({
+    id: '/sync-status',
+    path: '/sync-status',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppSearchRoute = AuthenticatedAppSearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -338,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/radar': typeof AuthenticatedAppRadarRoute
   '/app/search': typeof AuthenticatedAppSearchRoute
+  '/app/sync-status': typeof AuthenticatedAppSyncStatusRoute
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
   '/app/': typeof AuthenticatedAppIndexRoute
@@ -383,6 +391,7 @@ export interface FileRoutesByTo {
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/radar': typeof AuthenticatedAppRadarRoute
   '/app/search': typeof AuthenticatedAppSearchRoute
+  '/app/sync-status': typeof AuthenticatedAppSyncStatusRoute
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
   '/app': typeof AuthenticatedAppIndexRoute
@@ -433,6 +442,7 @@ export interface FileRoutesById {
   '/_authenticated/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/_authenticated/app/radar': typeof AuthenticatedAppRadarRoute
   '/_authenticated/app/search': typeof AuthenticatedAppSearchRoute
+  '/_authenticated/app/sync-status': typeof AuthenticatedAppSyncStatusRoute
   '/_authenticated/app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/app/team': typeof AuthenticatedAppTeamRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
@@ -483,6 +493,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/radar'
     | '/app/search'
+    | '/app/sync-status'
     | '/app/tasks'
     | '/app/team'
     | '/app/'
@@ -528,6 +539,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/radar'
     | '/app/search'
+    | '/app/sync-status'
     | '/app/tasks'
     | '/app/team'
     | '/app'
@@ -577,6 +589,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/pipeline'
     | '/_authenticated/app/radar'
     | '/_authenticated/app/search'
+    | '/_authenticated/app/sync-status'
     | '/_authenticated/app/tasks'
     | '/_authenticated/app/team'
     | '/_authenticated/app/'
@@ -779,6 +792,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/app/tasks'
       preLoaderRoute: typeof AuthenticatedAppTasksRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/sync-status': {
+      id: '/_authenticated/app/sync-status'
+      path: '/sync-status'
+      fullPath: '/app/sync-status'
+      preLoaderRoute: typeof AuthenticatedAppSyncStatusRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/search': {
@@ -1003,6 +1023,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
   AuthenticatedAppRadarRoute: typeof AuthenticatedAppRadarRoute
   AuthenticatedAppSearchRoute: typeof AuthenticatedAppSearchRoute
+  AuthenticatedAppSyncStatusRoute: typeof AuthenticatedAppSyncStatusRoute
   AuthenticatedAppTasksRoute: typeof AuthenticatedAppTasksRoute
   AuthenticatedAppTeamRoute: typeof AuthenticatedAppTeamRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
@@ -1023,6 +1044,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
   AuthenticatedAppRadarRoute: AuthenticatedAppRadarRoute,
   AuthenticatedAppSearchRoute: AuthenticatedAppSearchRoute,
+  AuthenticatedAppSyncStatusRoute: AuthenticatedAppSyncStatusRoute,
   AuthenticatedAppTasksRoute: AuthenticatedAppTasksRoute,
   AuthenticatedAppTeamRoute: AuthenticatedAppTeamRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,

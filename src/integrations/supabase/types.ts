@@ -602,6 +602,50 @@ export type Database = {
           },
         ]
       }
+      lead_audit_log: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          change_type: string
+          created_at: string
+          id: string
+          lead_key: string
+          new_value: string | null
+          old_value: string | null
+          workspace_id: string
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          change_type: string
+          created_at?: string
+          id?: string
+          lead_key: string
+          new_value?: string | null
+          old_value?: string | null
+          workspace_id: string
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          change_type?: string
+          created_at?: string
+          id?: string
+          lead_key?: string
+          new_value?: string | null
+          old_value?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_audit_log_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_scores: {
         Row: {
           created_at: string

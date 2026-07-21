@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  Activity,
   Bell,
   HelpCircle,
   Inbox,
@@ -9,6 +10,7 @@ import {
   Plug,
   Settings,
 } from "lucide-react";
+
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -38,8 +40,10 @@ const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox"; 
   { to: "/app/inbox", label: "Unibox", icon: Inbox, badgeKey: "inbox", tour: "nav-inbox" },
   { to: "/app/pipeline", label: "Stages", icon: Kanban, tour: "nav-pipeline" },
   { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
+  { to: "/app/sync-status", label: "Sync status", icon: Activity, tour: "nav-sync" },
   { to: "/app/help", label: "Help", icon: HelpCircle, tour: "nav-help" },
 ];
+
 
 export function AppSidebar() {
   const navigate = useNavigate();
