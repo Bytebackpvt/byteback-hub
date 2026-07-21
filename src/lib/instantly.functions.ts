@@ -298,29 +298,48 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
 
     const key = conn.key;
     try {
-      // Paginate both received and sent up to ~500 rows each so the inbox
-      // reflects the full picture across mailboxes, not just a 50-message peek.
+      // Paginate aggressively so the full ~3 months of history (received + sent)
+      // from every connected mailbox lands in the inbox, not just the first page.
+      // Instantly's /emails endpoint caps at 100 per page; loop until it stops
+      // returning a cursor or we hit a safety ceiling (~30 pages = 3k msgs / type).
+      const SINCE = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
       async function loadType(email_type: "received" | "sent"): Promise<RawEmail[]> {
         const out: RawEmail[] = [];
         let starting_after: string | undefined;
-        for (let page = 0; page < 5; page++) {
-          const resp = await instantly<{ items?: RawEmail[]; next_starting_after?: string }>(
-            key,
-            "/emails",
-            { query: { limit: 100, email_type, starting_after } },
-          );
+        for (let page = 0; page < 30; page++) {
+          const resp = await instantly<{
+            items?: RawEmail[];
+            next_starting_after?: string;
+            starting_after?: string;
+          }>(key, "/emails", {
+            query: {
+              limit: 100,
+              email_type,
+              starting_after,
+              // Instantly supports i_date_from for lower bound filtering.
+              i_date_from: SINCE,
+            },
+          });
           const items = resp.items ?? [];
           out.push(...items);
-          if (!resp.next_starting_after || items.length === 0) break;
-          starting_after = resp.next_starting_after;
+          const nextCursor = resp.next_starting_after ?? resp.starting_after;
+          if (!nextCursor || items.length === 0) break;
+          starting_after = nextCursor;
         }
         return out;
       }
 
       const [received, sent] = await Promise.all([
-        loadType("received").catch(() => [] as RawEmail[]),
-        loadType("sent").catch(() => [] as RawEmail[]),
+        loadType("received").catch((e) => {
+          console.error("Instantly received fetch failed:", e);
+          return [] as RawEmail[];
+        }),
+        loadType("sent").catch((e) => {
+          console.error("Instantly sent fetch failed:", e);
+          return [] as RawEmail[];
+        }),
       ]);
+
 
       function mapEmail(e: RawEmail, direction: "in" | "out"): InstantlyThread {
         const fromJson = e.from_address_json?.[0];
