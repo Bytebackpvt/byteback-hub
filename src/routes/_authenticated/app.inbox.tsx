@@ -509,14 +509,19 @@ function InboxPage() {
 
         <ScrollArea className="flex-1">
           <div>
-            {filtered.map((t) => (
-              <ThreadRow
-                key={t.id}
-                thread={t}
-                active={selected?.id === t.id}
-                onClick={() => selectThread(t.id)}
-              />
-            ))}
+            {filtered.map((t) => {
+              const s = scoresQuery.data?.scores.find((x) => x.lead_key === t.from.email);
+              return (
+                <ThreadRow
+                  key={t.id}
+                  thread={t}
+                  active={selected?.id === t.id}
+                  manualStatus={s?.manual_status ?? null}
+                  stage={s?.stage ?? null}
+                  onClick={() => selectThread(t.id)}
+                />
+              );
+            })}
             {filtered.length === 0 && (
               <div className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
                 <InboxIcon className="h-6 w-6 opacity-40" aria-hidden="true" />
