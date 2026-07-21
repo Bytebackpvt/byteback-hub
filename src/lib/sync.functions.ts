@@ -26,6 +26,8 @@ type RawEmail = {
   id: string;
   from_address_email?: string;
   from_address_json?: Array<{ name?: string; address?: string }>;
+  to_address_email_list?: string;
+  to_address_json?: Array<{ name?: string; address?: string }>;
   subject?: string;
   body?: { text?: string; html?: string };
   timestamp_created?: string;
@@ -35,6 +37,8 @@ type RawEmail = {
   eaccount?: string;
   thread_id?: string;
 };
+
+type InstantlyEmailType = "received" | "sent" | "manual";
 
 function stripHtml(html: string) {
   return html
@@ -135,16 +139,46 @@ async function embed(text: string): Promise<number[] | null> {
   }
 }
 
-async function fetchInstantly(key: string, limit: number): Promise<RawEmail[]> {
-  const url = new URL(INSTANTLY_BASE + "/emails");
-  url.searchParams.set("limit", String(limit));
-  url.searchParams.set("email_type", "received");
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
-  });
-  if (!res.ok) throw new Error(`Instantly ${res.status}`);
-  const json = (await res.json()) as { items?: RawEmail[] };
-  return json.items ?? [];
+async function fetchInstantlyType(
+  key: string,
+  emailType: InstantlyEmailType,
+  maxItems: number,
+): Promise<{ items: RawEmail[]; hasMore: boolean }> {
+  const items: RawEmail[] = [];
+  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  let startingAfter: string | undefined;
+  let hasMore = false;
+
+  while (items.length < maxItems) {
+    const url = new URL(INSTANTLY_BASE + "/emails");
+    url.searchParams.set("limit", String(Math.min(100, maxItems - items.length)));
+    url.searchParams.set("email_type", emailType);
+    url.searchParams.set("min_timestamp_created", since);
+    if (startingAfter) url.searchParams.set("starting_after", startingAfter);
+
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+    });
+    if (!res.ok) throw new Error(`Instantly ${emailType} ${res.status}`);
+
+    const json = (await res.json()) as {
+      items?: RawEmail[];
+      next_starting_after?: string;
+      starting_after?: string;
+    };
+    const page = json.items ?? [];
+    items.push(...page);
+
+    const nextCursor = json.next_starting_after ?? json.starting_after;
+    if (!nextCursor || page.length === 0) {
+      hasMore = false;
+      break;
+    }
+    startingAfter = nextCursor;
+    hasMore = true;
+  }
+
+  return { items, hasMore };
 }
 
 async function loadWorkspaceInstantlyKeyAdmin(workspaceId: string): Promise<string | null> {
@@ -182,7 +216,7 @@ type SyncResult = {
  * both cron endpoints and authenticated flows.
  */
 export async function runInstantlySync(workspaceId: string, opts?: { limit?: number }): Promise<SyncResult> {
-  const limit = Math.max(10, Math.min(opts?.limit ?? 50, 200));
+  const limit = Math.max(30, Math.min(opts?.limit ?? 1800, 1800));
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = supabaseAdmin as any;
@@ -197,23 +231,30 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
     skipped: 0,
   };
 
-  // load prior cursor (last seen thread_id set)
-  const { data: state } = await admin
-    .from("sync_state")
-    .select("cursor")
-    .eq("workspace_id", workspaceId)
-    .eq("source", "instantly")
-    .maybeSingle();
-  const seen = new Set<string>(state?.cursor ? String(state.cursor).split(",").filter(Boolean) : []);
-
   const wsKey = await loadWorkspaceInstantlyKeyAdmin(workspaceId);
   if (!wsKey) {
     result.error = "Instantly is not connected for this workspace";
     return result;
   }
-  let items: RawEmail[] = [];
+  let typedItems: Array<{ email: RawEmail; direction: "in" | "out"; type: InstantlyEmailType }> = [];
+  let hasMoreReceived = false;
+  let hasMoreSent = false;
+  let hasMoreManual = false;
   try {
-    items = await fetchInstantly(wsKey, limit);
+    const perType = Math.floor(limit / 3);
+    const [received, sent, manual] = await Promise.all([
+      fetchInstantlyType(wsKey, "received", perType),
+      fetchInstantlyType(wsKey, "sent", perType),
+      fetchInstantlyType(wsKey, "manual", perType),
+    ]);
+    hasMoreReceived = received.hasMore;
+    hasMoreSent = sent.hasMore;
+    hasMoreManual = manual.hasMore;
+    typedItems = [
+      ...received.items.map((email) => ({ email, direction: "in" as const, type: "received" as const })),
+      ...sent.items.map((email) => ({ email, direction: "out" as const, type: "sent" as const })),
+      ...manual.items.map((email) => ({ email, direction: "out" as const, type: "manual" as const })),
+    ];
 
   } catch (err) {
     result.error = err instanceof Error ? err.message : "fetch failed";
@@ -229,23 +270,24 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
     return result;
   }
 
-  const nextCursor = new Set<string>(seen);
-
-  for (const e of items) {
+  for (const item of typedItems) {
+    const e = item.email;
     const emailId = e.thread_id ?? e.id;
     if (!emailId) continue;
-    if (seen.has(emailId)) {
-      result.skipped++;
-      continue;
-    }
     result.processed++;
-    nextCursor.add(emailId);
 
     const fromJson = e.from_address_json?.[0];
+    const toJson = e.to_address_json?.[0];
     const fromEmail = (fromJson?.address ?? e.from_address_email ?? "").toLowerCase().trim();
-    if (!fromEmail) continue;
-    const fromName = fromJson?.name?.trim() || nameFromEmail(fromEmail);
-    const company = companyFromEmail(fromEmail);
+    const recipientEmail =
+      (toJson?.address ?? e.to_address_email_list?.split(",")[0] ?? "").toLowerCase().trim();
+    const contactEmail = item.direction === "out" ? recipientEmail || fromEmail : fromEmail;
+    if (!contactEmail) continue;
+    const contactName =
+      item.direction === "out"
+        ? toJson?.name?.trim() || nameFromEmail(contactEmail)
+        : fromJson?.name?.trim() || nameFromEmail(contactEmail);
+    const company = companyFromEmail(contactEmail);
     const bodyText = e.body?.text ?? (e.body?.html ? stripHtml(e.body.html) : "");
     const subject = e.subject ?? "(no subject)";
     const receivedAt = e.timestamp_email ?? e.timestamp_created ?? new Date().toISOString();
@@ -257,8 +299,8 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
       .upsert(
         {
           workspace_id: workspaceId,
-          email: fromEmail,
-          name: fromName,
+          email: contactEmail,
+          name: contactName,
           company,
           source: "instantly",
           last_seen_at: receivedAt,
@@ -276,7 +318,7 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
         workspace_id: workspaceId,
         thread_id: emailId,
         contact_id: contact?.id ?? null,
-        contact_email: fromEmail,
+        contact_email: contactEmail,
         subject,
         last_body: bodyText.slice(0, 4000),
         mailbox: e.eaccount ?? null,
@@ -285,7 +327,14 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
         priority,
         confidence,
         last_received_at: receivedAt,
-        meta: { campaign_id: e.campaign_id ?? null, ai_interest_value: e.ai_interest_value ?? null },
+        meta: {
+          campaign_id: e.campaign_id ?? null,
+          ai_interest_value: e.ai_interest_value ?? null,
+          direction: item.direction,
+          email_type: item.type,
+          from_email: fromEmail || null,
+          to_email: recipientEmail || null,
+        },
       },
       { onConflict: "workspace_id,thread_id" },
     );
@@ -314,7 +363,7 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
     await admin.from("ai_events").insert({
       workspace_id: workspaceId,
       thread_id: emailId,
-      lead_email: fromEmail,
+      lead_email: contactEmail,
       event_type: "classified",
       title: `Classified as ${category.replace(/_/g, " ")}`,
       detail: subject.slice(0, 200),
@@ -329,7 +378,7 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
     await admin.from("lead_scores").upsert(
       {
         workspace_id: workspaceId,
-        lead_key: fromEmail,
+        lead_key: contactEmail,
         score: scoreFrom(priority, category),
         reason: `${category} • ${priority}`,
       },
@@ -346,8 +395,8 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
             thread_id: emailId,
             subject,
             content: bodyText.slice(0, 6000),
-            contact_name: fromName,
-            contact_email: fromEmail,
+            contact_name: contactName,
+            contact_email: contactEmail,
             company,
             category,
             embedding: vec,
@@ -360,13 +409,10 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
     }
   }
 
-  // trim cursor (keep last 500 ids)
-  const cursorArr = Array.from(nextCursor).slice(-500);
   await admin.from("sync_state").upsert(
     {
       workspace_id: workspaceId,
       source: "instantly",
-      cursor: cursorArr.join(","),
       last_run_at: new Date().toISOString(),
       last_ok_at: new Date().toISOString(),
       last_error: null,
@@ -374,6 +420,10 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
         processed: result.processed,
         embedded: result.embedded,
         skipped: result.skipped,
+        received_backfilled: typedItems.filter((i) => i.direction === "in").length,
+        sent_backfilled: typedItems.filter((i) => i.direction === "out").length,
+        has_more_received: hasMoreReceived ? 1 : 0,
+        has_more_sent: hasMoreSent || hasMoreManual ? 1 : 0,
       },
     },
     { onConflict: "workspace_id,source" },
@@ -402,7 +452,7 @@ async function assertOwnerOrAdmin(
 export const runSyncForMe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) =>
-    z.object({ limit: z.number().int().min(10).max(200).optional() }).parse(raw ?? {}),
+    z.object({ limit: z.number().int().min(30).max(1800).optional() }).parse(raw ?? {}),
   )
   .handler(async ({ data, context }) => {
     const wsId = await getCurrentWorkspaceId(
