@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { listMailboxSyncStatus, listRecentLeadAudit } from "@/lib/sync-status.functions";
-import { syncNow } from "@/lib/sync.functions";
+import { runSyncForMe } from "@/lib/sync.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/app/sync-status")({
@@ -33,7 +33,7 @@ function timeAgo(iso: string | null): string {
 function SyncStatusPage() {
   const callStatus = useServerFn(listMailboxSyncStatus);
   const callAudit = useServerFn(listRecentLeadAudit);
-  const callSync = useServerFn(syncNow);
+  const callSync = useServerFn(runSyncForMe);
   const statusQ = useQuery({ queryKey: ["sync-status"], queryFn: () => callStatus() });
   const auditQ = useQuery({ queryKey: ["audit-recent"], queryFn: () => callAudit() });
 
