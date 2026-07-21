@@ -520,6 +520,7 @@ async function loadDbLeads(supabase: unknown, userId: string): Promise<Instantly
     title: "",
     status: "new" as InstantlyLead["status"],
     lastActivity: timeAgo(c.last_seen_at),
+    activityAt: (c.last_seen_at as string | null) ?? null,
     campaign: undefined,
   }));
 }
