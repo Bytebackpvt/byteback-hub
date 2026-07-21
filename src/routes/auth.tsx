@@ -137,6 +137,30 @@ function AuthPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           <div className="rounded-2xl border border-border/70 bg-card/80 p-6 shadow-xl backdrop-blur sm:p-8">
+            {alreadySignedIn && (
+              <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
+                <div className="font-medium text-emerald-700 dark:text-emerald-400">You're signed in.</div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Go to your workspace, or sign out to switch accounts.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <Button size="sm" onClick={() => navigate({ to: "/app" })}>
+                    Open ByteBack
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      setAlreadySignedIn(false);
+                      toast.success("Signed out");
+                    }}
+                  >
+                    Sign out
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="mb-6 text-center">
               <h1 className="text-2xl font-semibold tracking-tight">
                 {tab === "signup" ? "Create your workspace" : "Welcome back"}
@@ -153,6 +177,7 @@ function AuthPage() {
                 <TabsTrigger value="signup">Sign up</TabsTrigger>
                 <TabsTrigger value="signin">Sign in</TabsTrigger>
               </TabsList>
+
 
               {(["signup", "signin"] as const).map((t) => (
                 <TabsContent key={t} value={t} className="mt-5 space-y-3">
