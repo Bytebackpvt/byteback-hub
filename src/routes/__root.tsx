@@ -211,19 +211,30 @@ function RootComponent() {
   useEffect(() => {
     // Lazy import to keep the browser client out of SSR pathways
     import("@/integrations/supabase/client").then(({ supabase }) => {
-      const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-        if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-        // Any identity transition invalidates protected caches to prevent
-        // stale refetches under a different (or missing) session.
-        queryClient.cancelQueries();
-        queryClient.clear();
-        router.invalidate();
-        if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      import("sonner").then(({ toast }) => {
+        const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+          if (event === "SIGNED_OUT") {
+            // Only surface a "session expired" nudge if we're inside the
+            // protected app; otherwise it feels spammy on landing / /auth.
+            if (typeof window !== "undefined" && window.location.pathname.startsWith("/app")) {
+              toast("Your session expired — please sign in again to continue.", {
+                duration: 6000,
+              });
+            }
+          }
+          if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+          // Any identity transition invalidates protected caches to prevent
+          // stale refetches under a different (or missing) session.
+          queryClient.cancelQueries();
+          queryClient.clear();
+          router.invalidate();
+          if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+        });
+        (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub =
+          sub.subscription;
       });
-      // store cleanup on window to avoid TS complaints about return type
-      (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub =
-        sub.subscription;
     });
+
 
 
 
