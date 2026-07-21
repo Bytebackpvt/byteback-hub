@@ -560,6 +560,7 @@ export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([
         title,
         status: leadStatus(l.status, l.lt_interest_status),
         lastActivity: timeAgo(l.timestamp_last_touch ?? l.timestamp_created),
+        activityAt: l.timestamp_last_touch ?? l.timestamp_created ?? null,
         campaign: l.campaign,
       };
     });
