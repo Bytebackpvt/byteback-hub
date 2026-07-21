@@ -90,6 +90,7 @@ export type InstantlyThread = {
   body: string;
   mailbox: string;
   receivedAt: string;
+  activityAt?: string | null;
   unread: boolean;
   category:
     | "interested"
@@ -116,7 +117,6 @@ type RawEmail = {
   from_address_json?: Array<{ name?: string; address?: string }>;
   to_address_email_list?: string;
   to_address_json?: Array<{ name?: string; address?: string }>;
-  to_address_email_list?: string;
   subject?: string;
   body?: { text?: string; html?: string };
   timestamp_created?: string;
@@ -393,7 +393,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
         return { items: out, hasMore };
       }
 
-      const [received, sent] = await Promise.all([
+      const [received, sent, manual] = await Promise.all([
         loadType("received", receivedPages).catch((e) => {
           console.error("Instantly received fetch failed:", e);
           return { items: [] as RawEmail[], hasMore: false };
