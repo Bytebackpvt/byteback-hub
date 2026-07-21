@@ -42,12 +42,6 @@ const ICONS = {
   x: X,
 } as const;
 
-function inr(n: number): string {
-  if (n >= 1e7) return `₹${(n / 1e7).toFixed(2).replace(/\.00$/, "")} Cr`;
-  if (n >= 1e5) return `₹${(n / 1e5).toFixed(1).replace(/\.0$/, "")} L`;
-  if (n >= 1000) return `₹${Math.round(n / 1000)}K`;
-  return `₹${n}`;
-}
 
 const TONE_CLASS: Record<RadarBucket["tone"], string> = {
   hot: "border-rose-500/40 bg-rose-500/5",
