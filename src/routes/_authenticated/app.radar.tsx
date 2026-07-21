@@ -42,12 +42,6 @@ const ICONS = {
   x: X,
 } as const;
 
-function inr(n: number): string {
-  if (n >= 1e7) return `₹${(n / 1e7).toFixed(2).replace(/\.00$/, "")} Cr`;
-  if (n >= 1e5) return `₹${(n / 1e5).toFixed(1).replace(/\.0$/, "")} L`;
-  if (n >= 1000) return `₹${Math.round(n / 1000)}K`;
-  return `₹${n}`;
-}
 
 const TONE_CLASS: Record<RadarBucket["tone"], string> = {
   hot: "border-rose-500/40 bg-rose-500/5",
@@ -180,10 +174,6 @@ function RadarPage() {
             <p className="mt-1 text-lg font-medium leading-snug">{s?.headline}</p>
             <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
               <span>
-                Total potential:{" "}
-                <span className="font-semibold text-foreground">{inr(s?.totalPotential ?? 0)}</span>
-              </span>
-              <span>
                 Hot unreplied:{" "}
                 <span className="font-semibold text-foreground">{s?.hotUnreplied ?? 0}</span>
               </span>
@@ -222,7 +212,7 @@ function RadarPage() {
                       {b.items.length}
                     </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">{inr(b.totalValue)}</span>
+                  <span className="text-xs text-muted-foreground">{b.items.length} pending</span>
                 </header>
                 <ul className="space-y-2">
                   {b.items.slice(0, 6).map((i) => {
@@ -249,9 +239,6 @@ function RadarPage() {
                             )}
                           </div>
                           <div className="shrink-0 text-right">
-                            <div className="text-[11px] font-semibold text-foreground">
-                              {inr(i.value)}
-                            </div>
                             <div className="text-[10px] text-muted-foreground">waited {i.waited}</div>
                           </div>
                           <ChevronRight className="mt-1 h-3.5 w-3.5 text-muted-foreground" />

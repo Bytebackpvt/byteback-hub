@@ -40,20 +40,26 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [alreadySignedIn, setAlreadySignedIn] = useState(false);
 
-  // Bounce already-signed-in users; prefill email from ?email=
+  // Prefill email; only auto-route away when a ?next= redirect target was set
+  // (i.e. an expired session bumped the user here). Otherwise let them see the
+  // form — clicking "Sign up" should NEVER redirect a stale session into the app.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const prefill = params.get("email");
-    if (prefill) {
-      setEmail(prefill);
-      setTab("signin");
-    }
+    if (prefill) setEmail(prefill);
+    const next = params.get("next");
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) routeAfterAuth();
+      if (!data.user) return;
+      if (next && next.startsWith("/")) {
+        routeAfterAuth();
+      } else {
+        setAlreadySignedIn(true);
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate]);
+  }, []);
 
   const routeAfterAuth = async () => {
     const { data } = await supabase.auth.getUser();
@@ -131,6 +137,30 @@ function AuthPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           <div className="rounded-2xl border border-border/70 bg-card/80 p-6 shadow-xl backdrop-blur sm:p-8">
+            {alreadySignedIn && (
+              <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
+                <div className="font-medium text-emerald-700 dark:text-emerald-400">You're signed in.</div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Go to your workspace, or sign out to switch accounts.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <Button size="sm" onClick={() => navigate({ to: "/app" })}>
+                    Open ByteBack
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      setAlreadySignedIn(false);
+                      toast.success("Signed out");
+                    }}
+                  >
+                    Sign out
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="mb-6 text-center">
               <h1 className="text-2xl font-semibold tracking-tight">
                 {tab === "signup" ? "Create your workspace" : "Welcome back"}
@@ -147,6 +177,7 @@ function AuthPage() {
                 <TabsTrigger value="signup">Sign up</TabsTrigger>
                 <TabsTrigger value="signin">Sign in</TabsTrigger>
               </TabsList>
+
 
               {(["signup", "signin"] as const).map((t) => (
                 <TabsContent key={t} value={t} className="mt-5 space-y-3">

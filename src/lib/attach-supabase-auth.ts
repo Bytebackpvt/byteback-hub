@@ -13,10 +13,14 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
 
     const token = await getFreshAccessToken();
 
-    // No session on the client — don't fire an unauthenticated RPC that would
-    // 401 and blank the current route. Bounce to /auth instead.
+    // No session on the client — only bounce to /auth for calls made from
+    // inside the protected app. On public pages (e.g. /auth itself, landing,
+    // /invite/*) let the unauthenticated call fail so the caller can handle
+    // it without a full-page redirect that would feel like "random logout".
     if (!token) {
-      if (!window.location.pathname.startsWith("/auth")) {
+      const path = window.location.pathname;
+      const insideApp = path.startsWith("/app");
+      if (insideApp && !path.startsWith("/auth")) {
         const next = window.location.pathname + window.location.search;
         window.location.replace(`/auth?next=${encodeURIComponent(next)}`);
       }

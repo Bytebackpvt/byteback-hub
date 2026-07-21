@@ -260,13 +260,16 @@ export const getRadarSummary = createServerFn({ method: "POST" })
     const hotUnreplied = grouped.get("hot_unreplied")?.length ?? 0;
     const totalPotential = buckets.reduce((s, b) => s + b.totalValue, 0);
 
-    // Headline
+    // Headline — plain counts, no fabricated ₹ potential.
     let headline: string;
     if (hotUnreplied > 0) {
-      headline = `You have ${hotUnreplied} hot ${hotUnreplied === 1 ? "lead" : "leads"} waiting for a reply. Estimated potential: ${inrCompact(hotUnreplied * VALUE_BY_BUCKET.hot_unreplied)}.`;
+      headline = `You have ${hotUnreplied} hot ${hotUnreplied === 1 ? "lead" : "leads"} waiting for a reply.`;
     } else if (buckets.length > 0) {
       const top = buckets[0];
-      headline = `${top.items.length} ${top.label.toLowerCase()} pending. Estimated potential: ${inrCompact(totalPotential)}.`;
+      const parts = buckets
+        .slice(0, 3)
+        .map((b) => `${b.items.length} ${b.label.toLowerCase()}`);
+      headline = `${top.items.length} ${top.label.toLowerCase()} pending · ${parts.join(" · ")}`;
     } else {
       headline = "Nothing urgent right now. Radar is quiet.";
     }
@@ -278,6 +281,8 @@ export const getRadarSummary = createServerFn({ method: "POST" })
       buckets,
       generatedAt: new Date().toISOString(),
     };
+
+
 
     // Best-effort cache write; ignore errors so radar still renders.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

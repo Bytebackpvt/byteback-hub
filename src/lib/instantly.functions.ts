@@ -296,40 +296,80 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       };
     }
 
+    const key = conn.key;
     try {
-      const data = await instantly<{ items?: RawEmail[] }>(conn.key, "/emails", {
-        query: { limit: 50, email_type: "received" },
-      });
+      // Paginate both received and sent up to ~500 rows each so the inbox
+      // reflects the full picture across mailboxes, not just a 50-message peek.
+      async function loadType(email_type: "received" | "sent"): Promise<RawEmail[]> {
+        const out: RawEmail[] = [];
+        let starting_after: string | undefined;
+        for (let page = 0; page < 5; page++) {
+          const resp = await instantly<{ items?: RawEmail[]; next_starting_after?: string }>(
+            key,
+            "/emails",
+            { query: { limit: 100, email_type, starting_after } },
+          );
+          const items = resp.items ?? [];
+          out.push(...items);
+          if (!resp.next_starting_after || items.length === 0) break;
+          starting_after = resp.next_starting_after;
+        }
+        return out;
+      }
 
-      const items = data.items ?? [];
-      const threads: InstantlyThread[] = items.map((e) => {
+      const [received, sent] = await Promise.all([
+        loadType("received").catch(() => [] as RawEmail[]),
+        loadType("sent").catch(() => [] as RawEmail[]),
+      ]);
+
+      function mapEmail(e: RawEmail, direction: "in" | "out"): InstantlyThread {
         const fromJson = e.from_address_json?.[0];
-        const fromEmail = fromJson?.address ?? e.from_address_email ?? "unknown@unknown";
-        const fromName =
-          fromJson?.name?.trim() ||
-          fromEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        const fromEmailRaw = fromJson?.address ?? e.from_address_email ?? "unknown@unknown";
+        // For sent mail, the "from" IS the mailbox owner — surface the recipient
+        // as the counterparty so the inbox shows who was contacted.
+        const counterparty =
+          direction === "out"
+            ? (e.to_address_email_list?.split(",")[0]?.trim() || fromEmailRaw)
+            : fromEmailRaw;
+        const displayEmail = counterparty;
+        const displayName =
+          direction === "in"
+            ? fromJson?.name?.trim() ||
+              displayEmail
+                .split("@")[0]
+                .replace(/[._]/g, " ")
+                .replace(/\b\w/g, (c) => c.toUpperCase())
+            : displayEmail
+                .split("@")[0]
+                .replace(/[._]/g, " ")
+                .replace(/\b\w/g, (c) => c.toUpperCase());
         const bodyText = e.body?.text ?? (e.body?.html ? stripHtml(e.body.html) : "");
         const cat = classify(e.subject ?? "", bodyText, e.ai_interest_value);
         return {
           id: e.id,
           from: {
-            name: fromName,
-            email: fromEmail,
-            company: companyFromEmail(fromEmail),
+            name: displayName,
+            email: displayEmail,
+            company: companyFromEmail(displayEmail),
           },
           subject: e.subject ?? "(no subject)",
           preview: bodyText.slice(0, 140),
           body: bodyText,
           mailbox: e.eaccount ?? "unknown",
           receivedAt: timeAgo(e.timestamp_email ?? e.timestamp_created),
-          unread: Boolean(e.is_unread),
+          unread: direction === "in" ? Boolean(e.is_unread) : false,
           category: cat,
           priority: priorityFrom(cat, e.ai_interest_value),
           campaign: e.campaign_id,
           source: "instantly",
-          direction: "in",
+          direction,
         };
-      });
+      }
+
+      const threads: InstantlyThread[] = [
+        ...received.map((e) => mapEmail(e, "in")),
+        ...sent.map((e) => mapEmail(e, "out")),
+      ];
       return { threads: [...threads, ...dbThreads], connected: true };
     } catch (err) {
       return {
@@ -431,6 +471,7 @@ export type InstantlyLead = {
   title: string;
   status: "new" | "interested" | "meeting" | "customer" | "not-interested" | "bounced";
   lastActivity: string;
+  activityAt?: string | null;
   campaign?: string;
 };
 
@@ -479,6 +520,7 @@ async function loadDbLeads(supabase: unknown, userId: string): Promise<Instantly
     title: "",
     status: "new" as InstantlyLead["status"],
     lastActivity: timeAgo(c.last_seen_at),
+    activityAt: (c.last_seen_at as string | null) ?? null,
     campaign: undefined,
   }));
 }
@@ -518,6 +560,7 @@ export const listInstantlyLeads = createServerFn({ method: "GET" }).middleware([
         title,
         status: leadStatus(l.status, l.lt_interest_status),
         lastActivity: timeAgo(l.timestamp_last_touch ?? l.timestamp_created),
+        activityAt: l.timestamp_last_touch ?? l.timestamp_created ?? null,
         campaign: l.campaign,
       };
     });

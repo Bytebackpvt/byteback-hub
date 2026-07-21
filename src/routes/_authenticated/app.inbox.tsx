@@ -509,14 +509,19 @@ function InboxPage() {
 
         <ScrollArea className="flex-1">
           <div>
-            {filtered.map((t) => (
-              <ThreadRow
-                key={t.id}
-                thread={t}
-                active={selected?.id === t.id}
-                onClick={() => selectThread(t.id)}
-              />
-            ))}
+            {filtered.map((t) => {
+              const s = scoresQuery.data?.scores.find((x) => x.lead_key === t.from.email);
+              return (
+                <ThreadRow
+                  key={t.id}
+                  thread={t}
+                  active={selected?.id === t.id}
+                  manualStatus={s?.manual_status ?? null}
+                  stage={s?.stage ?? null}
+                  onClick={() => selectThread(t.id)}
+                />
+              );
+            })}
             {filtered.length === 0 && (
               <div className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
                 <InboxIcon className="h-6 w-6 opacity-40" aria-hidden="true" />
@@ -849,13 +854,32 @@ function InboxPage() {
 function ThreadRow({
   thread,
   active,
+  manualStatus,
+  stage,
   onClick,
 }: {
   thread: Thread;
   active: boolean;
+  manualStatus?: string | null;
+  stage?: string | null;
   onClick: () => void;
 }) {
   const cat = CATEGORY_META[thread.category];
+  const statusPill: Record<string, { label: string; cls: string }> = {
+    hot: { label: "🔥 Hot", cls: "bg-rose-500/15 text-rose-600" },
+    warm: { label: "Warm", cls: "bg-amber-500/15 text-amber-600" },
+    cold: { label: "Cold", cls: "bg-sky-500/15 text-sky-600" },
+    "not-interested": { label: "Not int.", cls: "bg-muted text-muted-foreground" },
+  };
+  const stageLabel: Record<string, string> = {
+    open: "Open",
+    contacted: "Contacted",
+    meeting: "Meeting",
+    won: "Won",
+    lost: "Lost",
+    churned: "Churned",
+  };
+  const sPill = manualStatus ? statusPill[manualStatus] : null;
   return (
     <button
       onClick={onClick}
@@ -877,15 +901,25 @@ function ThreadRow({
         </span>
         <span className="shrink-0 text-[10px] text-muted-foreground">{thread.receivedAt}</span>
       </div>
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {thread.direction === "out" && (
           <span className="rounded bg-sky-500/15 px-1 text-[9px] font-bold uppercase text-sky-600">
             Sent
           </span>
         )}
-        {thread.priority === "hot" && (
+        {sPill && (
+          <span className={cn("rounded px-1 text-[9px] font-bold uppercase", sPill.cls)}>
+            {sPill.label}
+          </span>
+        )}
+        {!sPill && thread.priority === "hot" && (
           <span className="rounded bg-rose-500/15 px-1 text-[9px] font-bold uppercase text-rose-500">
             Hot
+          </span>
+        )}
+        {stage && stageLabel[stage] && (
+          <span className="rounded bg-brand/15 px-1 text-[9px] font-bold uppercase text-brand">
+            {stageLabel[stage]}
           </span>
         )}
         <div className="truncate text-xs font-medium text-foreground/90">{thread.subject}</div>
