@@ -296,6 +296,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       };
     }
 
+    const key = conn.key;
     try {
       // Paginate both received and sent up to ~500 rows each so the inbox
       // reflects the full picture across mailboxes, not just a 50-message peek.
