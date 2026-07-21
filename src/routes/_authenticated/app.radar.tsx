@@ -212,7 +212,7 @@ function RadarPage() {
                       {b.items.length}
                     </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">{inr(b.totalValue)}</span>
+                  <span className="text-xs text-muted-foreground">{b.items.length} pending</span>
                 </header>
                 <ul className="space-y-2">
                   {b.items.slice(0, 6).map((i) => {
