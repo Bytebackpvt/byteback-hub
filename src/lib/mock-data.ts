@@ -18,6 +18,7 @@ export type Thread = {
   body: string;
   mailbox: string;
   receivedAt: string;
+  activityAt?: string | null;
   unread: boolean;
   starred: boolean;
   category: ThreadCategory;

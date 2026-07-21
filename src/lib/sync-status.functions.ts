@@ -179,8 +179,9 @@ export const listMailboxSyncStatus = createServerFn({ method: "GET" })
         : [
             { label: "Endpoint", value: "GET /api/v2/emails" },
             { label: "Page size", value: "100 per page" },
-            { label: "Time window", value: "Last 90 days (i_date_from)" },
-            { label: "Pages loaded", value: "up to 30 per direction (received+sent)" },
+          { label: "Time window", value: "Last 90 days (min_timestamp_created)" },
+          { label: "Types", value: "received + sent + manual" },
+          { label: "Pages loaded", value: "budgeted pages per sync; Load more continues history" },
           ];
 
       return {

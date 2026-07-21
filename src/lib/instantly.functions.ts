@@ -90,6 +90,7 @@ export type InstantlyThread = {
   body: string;
   mailbox: string;
   receivedAt: string;
+  activityAt?: string | null;
   unread: boolean;
   category:
     | "interested"
@@ -115,6 +116,7 @@ type RawEmail = {
   from_address_email?: string;
   from_address_json?: Array<{ name?: string; address?: string }>;
   to_address_email_list?: string;
+  to_address_json?: Array<{ name?: string; address?: string }>;
   subject?: string;
   body?: { text?: string; html?: string };
   timestamp_created?: string;
@@ -196,12 +198,13 @@ async function loadDbThreads(
   supabase: unknown,
   userId: string,
   limit: number,
+  mailbox?: string,
 ): Promise<{ threads: InstantlyThread[]; hasMore: boolean }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = supabase as any;
   const workspaceId = await getCurrentWorkspaceId(sb, userId);
   if (!workspaceId) return { threads: [], hasMore: false };
-  const { data } = await sb
+  let query = sb
     .from("email_threads")
     .select(
       "thread_id, subject, last_body, mailbox, source, category, priority, last_received_at, contact_email, meta",
@@ -209,6 +212,10 @@ async function loadDbThreads(
     .eq("workspace_id", workspaceId)
     .order("last_received_at", { ascending: false })
     .limit(limit + 1); // fetch one extra to detect hasMore
+
+  if (mailbox) query = query.ilike("mailbox", mailbox);
+
+  const { data } = await query;
 
   const rows = (data ?? []) as unknown[];
   const hasMore = rows.length > limit;
@@ -248,6 +255,7 @@ async function loadDbThreads(
       body: String(r.last_body ?? ""),
       mailbox,
       receivedAt: timeAgo(r.last_received_at as string),
+      activityAt: (r.last_received_at as string | null) ?? null,
       unread: true,
       category: cat,
       priority: pri,
@@ -285,6 +293,7 @@ const ListInput = z
     sentPages: z.number().int().min(1).max(200).optional(),
     dbLimit: z.number().int().min(50).max(20_000).optional(),
     sinceDays: z.number().int().min(1).max(365).optional(),
+    mailbox: z.string().max(320).optional(),
   })
   .optional();
 
@@ -292,14 +301,15 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => ListInput.parse(raw) ?? {})
   .handler(async ({ data, context }) => {
-    const receivedPages = data?.receivedPages ?? 30;
-    const sentPages = data?.sentPages ?? 30;
+    const receivedPages = data?.receivedPages ?? 1;
+    const sentPages = data?.sentPages ?? 1;
     const dbLimit = data?.dbLimit ?? 500;
     const sinceDays = data?.sinceDays ?? 90;
+    const focusMailbox = data?.mailbox && data.mailbox !== "all" ? data.mailbox.toLowerCase() : undefined;
 
     // Always load DB-ingested threads (Gmail, webhook, etc.) — these belong to
     // every workspace member.
-    const dbResult = await loadDbThreads(context.supabase, context.userId, dbLimit).catch(() => ({
+    const dbResult = await loadDbThreads(context.supabase, context.userId, dbLimit, focusMailbox).catch(() => ({
       threads: [] as InstantlyThread[],
       hasMore: false,
     }));
@@ -316,8 +326,9 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       sentPages,
       dbLimit,
       sinceDays,
+      focusMailbox: focusMailbox ?? "all",
       pageSize: 100,
-      instantlyEndpoint: "GET /api/v2/emails?email_type={received|sent}&limit=100&i_date_from=…",
+      instantlyEndpoint: "GET /api/v2/emails?email_type={received|sent|manual}&limit=100&min_timestamp_created=…",
       dbSource: "email_threads (Gmail INBOX + SENT, webhook, IMAP) — order by last_received_at DESC",
     };
 
@@ -343,27 +354,55 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
 
     const key = conn.key;
     try {
+      // The inbox should primarily show persisted, synced data. Live API reads
+      // are only a tiny fallback for brand-new connections; otherwise repeated
+      // page reads hit Instantly's 20/minute rate limit and make sent history
+      // disappear intermittently.
+      if (dbThreads.length > 0) {
+        return {
+          threads: dbThreads,
+          connected: true,
+          counts: {
+            received: dbThreads.filter((t) => t.direction !== "out").length,
+            sent: dbThreads.filter((t) => t.direction === "out").length,
+            db: dbThreads.length,
+          },
+          hasMore: { received: false, sent: false, db: dbResult.hasMore },
+          params,
+        };
+      }
+
       const SINCE = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString();
       async function loadType(
-        email_type: "received" | "sent",
+        email_type: "received" | "sent" | "manual",
         maxPages: number,
       ): Promise<{ items: RawEmail[]; hasMore: boolean }> {
         const out: RawEmail[] = [];
         let starting_after: string | undefined;
         let hasMore = false;
         for (let page = 0; page < maxPages; page++) {
-          const resp = await instantly<{
-            items?: RawEmail[];
-            next_starting_after?: string;
-            starting_after?: string;
-          }>(key, "/emails", {
-            query: {
-              limit: 100,
-              email_type,
-              starting_after,
-              i_date_from: SINCE,
-            },
-          });
+          let resp: { items?: RawEmail[]; next_starting_after?: string; starting_after?: string };
+          try {
+            resp = await instantly<{
+              items?: RawEmail[];
+              next_starting_after?: string;
+              starting_after?: string;
+            }>(key, "/emails", {
+              query: {
+                limit: 100,
+                email_type,
+                starting_after,
+                min_timestamp_created: SINCE,
+                eaccount: focusMailbox,
+              },
+            });
+          } catch (e) {
+            // Keep already-fetched pages instead of blanking the whole inbox when
+            // Instantly rate-limits or rejects one later page.
+            console.error(`Instantly ${email_type} page ${page + 1} failed:`, e);
+            hasMore = out.length > 0;
+            break;
+          }
           const items = resp.items ?? [];
           out.push(...items);
           const nextCursor = resp.next_starting_after ?? resp.starting_after;
@@ -377,13 +416,17 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
         return { items: out, hasMore };
       }
 
-      const [received, sent] = await Promise.all([
-        loadType("received", receivedPages).catch((e) => {
+      const [received, sent, manual] = await Promise.all([
+        loadType("received", Math.min(receivedPages, 1)).catch((e) => {
           console.error("Instantly received fetch failed:", e);
           return { items: [] as RawEmail[], hasMore: false };
         }),
-        loadType("sent", sentPages).catch((e) => {
+        loadType("sent", Math.min(sentPages, 1)).catch((e) => {
           console.error("Instantly sent fetch failed:", e);
+          return { items: [] as RawEmail[], hasMore: false };
+        }),
+        loadType("manual", 1).catch((e) => {
+          console.error("Instantly manual fetch failed:", e);
           return { items: [] as RawEmail[], hasMore: false };
         }),
       ]);
@@ -394,9 +437,10 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
         const fromEmailRaw = fromJson?.address ?? e.from_address_email ?? "unknown@unknown";
         // For sent mail, the "from" IS the mailbox owner — surface the recipient
         // as the counterparty so the inbox shows who was contacted.
+        const toJson = e.to_address_json?.[0];
         const counterparty =
           direction === "out"
-            ? (e.to_address_email_list?.split(",")[0]?.trim() || fromEmailRaw)
+            ? (toJson?.address?.trim() || e.to_address_email_list?.split(",")[0]?.trim() || fromEmailRaw)
             : fromEmailRaw;
         const displayEmail = counterparty;
         const displayName =
@@ -406,12 +450,14 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
                 .split("@")[0]
                 .replace(/[._]/g, " ")
                 .replace(/\b\w/g, (c) => c.toUpperCase())
-            : displayEmail
+            : toJson?.name?.trim() ||
+              displayEmail
                 .split("@")[0]
                 .replace(/[._]/g, " ")
                 .replace(/\b\w/g, (c) => c.toUpperCase());
         const bodyText = e.body?.text ?? (e.body?.html ? stripHtml(e.body.html) : "");
         const cat = classify(e.subject ?? "", bodyText, e.ai_interest_value);
+        const activityAt = e.timestamp_email ?? e.timestamp_created ?? null;
         return {
           id: e.id,
           from: {
@@ -423,7 +469,8 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
           preview: bodyText.slice(0, 140),
           body: bodyText,
           mailbox: String(e.eaccount ?? "unknown").toLowerCase(),
-          receivedAt: timeAgo(e.timestamp_email ?? e.timestamp_created),
+          receivedAt: timeAgo(activityAt ?? undefined),
+          activityAt,
           unread: direction === "in" ? Boolean(e.is_unread) : false,
           category: cat,
           priority: priorityFrom(cat, e.ai_interest_value),
@@ -436,18 +483,29 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       const threads: InstantlyThread[] = [
         ...received.items.map((e) => mapEmail(e, "in")),
         ...sent.items.map((e) => mapEmail(e, "out")),
+        ...manual.items.map((e) => mapEmail(e, "out")),
       ];
+      const merged = new Map<string, InstantlyThread>();
+      for (const t of [...threads, ...dbThreads]) {
+        const key = `${t.source ?? "unknown"}:${t.id}`;
+        if (!merged.has(key)) merged.set(key, t);
+      }
+      const sortedThreads = Array.from(merged.values()).sort((a, b) => {
+        const at = a.activityAt ? new Date(a.activityAt).getTime() : 0;
+        const bt = b.activityAt ? new Date(b.activityAt).getTime() : 0;
+        return bt - at;
+      });
       return {
-        threads: [...threads, ...dbThreads],
+        threads: sortedThreads,
         connected: true,
         counts: {
-          received: received.items.length + dbThreads.filter((t) => t.direction !== "out").length,
-          sent: sent.items.length + dbThreads.filter((t) => t.direction === "out").length,
+          received: sortedThreads.filter((t) => t.direction !== "out").length,
+          sent: sortedThreads.filter((t) => t.direction === "out").length,
           db: dbThreads.length,
         },
         hasMore: {
           received: received.hasMore,
-          sent: sent.hasMore,
+          sent: sent.hasMore || manual.hasMore,
           db: dbResult.hasMore,
         },
         params,
