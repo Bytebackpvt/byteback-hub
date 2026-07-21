@@ -86,6 +86,12 @@ function InboxPage() {
   const [flags, setFlags] = useState<Record<string, ThreadFlags>>({});
   const [filter, setFilter] = useState<"all" | "unread" | "starred">("all");
   const [folder, setFolder] = useState<"all" | "in" | "out">("all");
+  // Pagination window: bump these to load more history without a full re-mount.
+  const [pageWindow, setPageWindow] = useState({
+    receivedPages: 30,
+    sentPages: 30,
+    dbLimit: 500,
+  });
 
 
   const callGenerateReply = useServerFn(generateReply);
@@ -101,8 +107,8 @@ function InboxPage() {
   const callSetStage = useServerFn(setLeadStage);
 
   const threadsQuery = useQuery({
-    queryKey: ["instantly", "threads"],
-    queryFn: () => callListThreads(),
+    queryKey: ["instantly", "threads", pageWindow],
+    queryFn: () => callListThreads({ data: pageWindow }),
     staleTime: 30_000,
   });
   const mailboxesQuery = useQuery({
@@ -115,6 +121,7 @@ function InboxPage() {
     queryFn: () => callListScores(),
     staleTime: 60_000,
   });
+
 
   const liveThreads: Thread[] = useMemo(() => {
     const items = threadsQuery.data?.threads ?? [];
@@ -248,11 +255,12 @@ function InboxPage() {
 
   const filtered = useMemo(() => {
     const now = Date.now();
+    const mailboxKey = mailbox.toLowerCase();
     return activeThreads.filter((t) => {
       const f = flags[t.id] ?? {};
       if (f.archived) return false;
       if (f.snoozedUntil && f.snoozedUntil > now) return false;
-      if (mailbox !== "all" && t.mailbox !== mailbox) return false;
+      if (mailbox !== "all" && (t.mailbox ?? "").toLowerCase() !== mailboxKey) return false;
       if (folder !== "all" && (t.direction ?? "in") !== folder) return false;
       if (search && !`${t.from.name} ${t.subject} ${t.preview}`.toLowerCase().includes(search.toLowerCase()))
         return false;
@@ -261,6 +269,7 @@ function InboxPage() {
       return true;
     });
   }, [activeThreads, mailbox, search, flags, filter, folder]);
+
 
   const selected = activeThreads.find((t) => t.id === selectedId) ?? filtered[0];
   const selFlags = selected ? (flags[selected.id] ?? {}) : {};
@@ -409,10 +418,12 @@ function InboxPage() {
           <div className="space-y-0.5 p-2">
             {mailboxes.map((mb) => {
               const active = mailbox === mb.id;
+              const mbLower = mb.id.toLowerCase();
               const count =
                 mb.id === "all"
                   ? activeThreads.length
-                  : activeThreads.filter((t) => t.mailbox === mb.id).length;
+                  : activeThreads.filter((t) => (t.mailbox ?? "").toLowerCase() === mbLower).length;
+
               return (
                 <button
                   key={mb.id}
@@ -551,6 +562,45 @@ function InboxPage() {
                 )}
               </div>
             )}
+            {filtered.length > 0 && (() => {
+              const hm = threadsQuery.data?.hasMore;
+              const canLoadMore = hm && (hm.received || hm.sent || hm.db);
+              const counts = threadsQuery.data?.counts;
+              return (
+                <div className="flex flex-col items-center gap-1.5 border-t border-border/40 p-3">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Showing {filtered.length}
+                    {counts ? ` of ${counts.received + counts.sent} fetched` : ""}
+                  </div>
+                  {canLoadMore ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={threadsQuery.isFetching}
+                      onClick={() =>
+                        setPageWindow((w) => ({
+                          receivedPages: hm?.received ? w.receivedPages + 30 : w.receivedPages,
+                          sentPages: hm?.sent ? w.sentPages + 30 : w.sentPages,
+                          dbLimit: hm?.db ? w.dbLimit + 500 : w.dbLimit,
+                        }))
+                      }
+                    >
+                      {threadsQuery.isFetching ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : null}
+                      Load more history
+                    </Button>
+                  ) : (
+                    <div className="text-[10px] text-muted-foreground">
+                      All history loaded
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+
 
           </div>
         </ScrollArea>

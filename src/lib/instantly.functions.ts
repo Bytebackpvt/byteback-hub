@@ -127,6 +127,7 @@ type RawEmail = {
   thread_id?: string;
 };
 
+
 function stripHtml(html: string) {
   return html
     .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -194,11 +195,12 @@ function priorityFrom(cat: InstantlyThread["category"], interest?: number): Inst
 async function loadDbThreads(
   supabase: unknown,
   userId: string,
-): Promise<InstantlyThread[]> {
+  limit: number,
+): Promise<{ threads: InstantlyThread[]; hasMore: boolean }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = supabase as any;
   const workspaceId = await getCurrentWorkspaceId(sb, userId);
-  if (!workspaceId) return [];
+  if (!workspaceId) return { threads: [], hasMore: false };
   const { data } = await sb
     .from("email_threads")
     .select(
@@ -206,7 +208,11 @@ async function loadDbThreads(
     )
     .eq("workspace_id", workspaceId)
     .order("last_received_at", { ascending: false })
-    .limit(500);
+    .limit(limit + 1); // fetch one extra to detect hasMore
+
+  const rows = (data ?? []) as unknown[];
+  const hasMore = rows.length > limit;
+  const trimmed = rows.slice(0, limit);
 
   const catMap: Record<string, InstantlyThread["category"]> = {
     meeting_request: "meeting",
@@ -221,7 +227,7 @@ async function loadDbThreads(
     spam: "spam",
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data ?? []).map((r: any) => {
+  const threads = trimmed.map((r: any) => {
     const dir: "in" | "out" =
       (r.meta && typeof r.meta === "object" && (r.meta as { direction?: string }).direction) === "out"
         ? "out"
@@ -233,22 +239,25 @@ async function loadDbThreads(
     const cat: InstantlyThread["category"] = catMap[r.category as string] ?? "interested";
     const pri: InstantlyThread["priority"] =
       r.priority === "hot" ? "hot" : r.priority === "warm" ? "warm" : "low";
+    const mailbox = String(r.mailbox ?? r.source ?? "inbox").toLowerCase();
     return {
       id: String(r.thread_id),
       from: { name, email, company: companyFromEmail(email) },
       subject: (r.subject as string) ?? "(no subject)",
       preview: String(r.last_body ?? "").slice(0, 140),
       body: String(r.last_body ?? ""),
-      mailbox: (r.mailbox as string) ?? (r.source as string) ?? "inbox",
+      mailbox,
       receivedAt: timeAgo(r.last_received_at as string),
       unread: true,
       category: cat,
       priority: pri,
       source: (r.source as string) ?? "gmail",
       direction: dir,
-    };
+    } as InstantlyThread;
   });
+  return { threads, hasMore };
 }
+
 
 async function getWorkspaceMailStatus(supabase: unknown, userId: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -270,18 +279,47 @@ async function getWorkspaceMailStatus(supabase: unknown, userId: string) {
   };
 }
 
+const ListInput = z
+  .object({
+    receivedPages: z.number().int().min(1).max(200).optional(),
+    sentPages: z.number().int().min(1).max(200).optional(),
+    dbLimit: z.number().int().min(50).max(20_000).optional(),
+    sinceDays: z.number().int().min(1).max(365).optional(),
+  })
+  .optional();
+
 export const listInstantlyThreads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((raw: unknown) => ListInput.parse(raw) ?? {})
+  .handler(async ({ data, context }) => {
+    const receivedPages = data?.receivedPages ?? 30;
+    const sentPages = data?.sentPages ?? 30;
+    const dbLimit = data?.dbLimit ?? 500;
+    const sinceDays = data?.sinceDays ?? 90;
+
     // Always load DB-ingested threads (Gmail, webhook, etc.) — these belong to
     // every workspace member.
-    const dbThreads = await loadDbThreads(context.supabase, context.userId).catch(() => []);
+    const dbResult = await loadDbThreads(context.supabase, context.userId, dbLimit).catch(() => ({
+      threads: [] as InstantlyThread[],
+      hasMore: false,
+    }));
+    const dbThreads = dbResult.threads;
     const mailStatus = await getWorkspaceMailStatus(context.supabase, context.userId).catch(() => ({
       workspaceId: null,
       hasActiveMailbox: false,
       mailError: null,
     }));
     const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
+
+    const params = {
+      receivedPages,
+      sentPages,
+      dbLimit,
+      sinceDays,
+      pageSize: 100,
+      instantlyEndpoint: "GET /api/v2/emails?email_type={received|sent}&limit=100&i_date_from=…",
+      dbSource: "email_threads (Gmail INBOX + SENT, webhook, IMAP) — order by last_received_at DESC",
+    };
 
     if (!conn) {
       return {
@@ -293,20 +331,27 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
             : mailStatus.mailError
               ? `Reconnect Gmail: ${mailStatus.mailError}`
               : "Not connected",
+        counts: {
+          received: dbThreads.filter((t) => t.direction !== "out").length,
+          sent: dbThreads.filter((t) => t.direction === "out").length,
+          db: dbThreads.length,
+        },
+        hasMore: { received: false, sent: false, db: dbResult.hasMore },
+        params,
       };
     }
 
     const key = conn.key;
     try {
-      // Paginate aggressively so the full ~3 months of history (received + sent)
-      // from every connected mailbox lands in the inbox, not just the first page.
-      // Instantly's /emails endpoint caps at 100 per page; loop until it stops
-      // returning a cursor or we hit a safety ceiling (~30 pages = 3k msgs / type).
-      const SINCE = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-      async function loadType(email_type: "received" | "sent"): Promise<RawEmail[]> {
+      const SINCE = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString();
+      async function loadType(
+        email_type: "received" | "sent",
+        maxPages: number,
+      ): Promise<{ items: RawEmail[]; hasMore: boolean }> {
         const out: RawEmail[] = [];
         let starting_after: string | undefined;
-        for (let page = 0; page < 30; page++) {
+        let hasMore = false;
+        for (let page = 0; page < maxPages; page++) {
           const resp = await instantly<{
             items?: RawEmail[];
             next_starting_after?: string;
@@ -316,27 +361,30 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
               limit: 100,
               email_type,
               starting_after,
-              // Instantly supports i_date_from for lower bound filtering.
               i_date_from: SINCE,
             },
           });
           const items = resp.items ?? [];
           out.push(...items);
           const nextCursor = resp.next_starting_after ?? resp.starting_after;
-          if (!nextCursor || items.length === 0) break;
+          if (!nextCursor || items.length === 0) {
+            hasMore = false;
+            break;
+          }
           starting_after = nextCursor;
+          if (page === maxPages - 1) hasMore = true;
         }
-        return out;
+        return { items: out, hasMore };
       }
 
       const [received, sent] = await Promise.all([
-        loadType("received").catch((e) => {
+        loadType("received", receivedPages).catch((e) => {
           console.error("Instantly received fetch failed:", e);
-          return [] as RawEmail[];
+          return { items: [] as RawEmail[], hasMore: false };
         }),
-        loadType("sent").catch((e) => {
+        loadType("sent", sentPages).catch((e) => {
           console.error("Instantly sent fetch failed:", e);
-          return [] as RawEmail[];
+          return { items: [] as RawEmail[], hasMore: false };
         }),
       ]);
 
@@ -368,13 +416,13 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
           id: e.id,
           from: {
             name: displayName,
-            email: displayEmail,
+            email: displayEmail.toLowerCase(),
             company: companyFromEmail(displayEmail),
           },
           subject: e.subject ?? "(no subject)",
           preview: bodyText.slice(0, 140),
           body: bodyText,
-          mailbox: e.eaccount ?? "unknown",
+          mailbox: String(e.eaccount ?? "unknown").toLowerCase(),
           receivedAt: timeAgo(e.timestamp_email ?? e.timestamp_created),
           unread: direction === "in" ? Boolean(e.is_unread) : false,
           category: cat,
@@ -386,18 +434,40 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       }
 
       const threads: InstantlyThread[] = [
-        ...received.map((e) => mapEmail(e, "in")),
-        ...sent.map((e) => mapEmail(e, "out")),
+        ...received.items.map((e) => mapEmail(e, "in")),
+        ...sent.items.map((e) => mapEmail(e, "out")),
       ];
-      return { threads: [...threads, ...dbThreads], connected: true };
+      return {
+        threads: [...threads, ...dbThreads],
+        connected: true,
+        counts: {
+          received: received.items.length + dbThreads.filter((t) => t.direction !== "out").length,
+          sent: sent.items.length + dbThreads.filter((t) => t.direction === "out").length,
+          db: dbThreads.length,
+        },
+        hasMore: {
+          received: received.hasMore,
+          sent: sent.hasMore,
+          db: dbResult.hasMore,
+        },
+        params,
+      };
     } catch (err) {
       return {
         threads: dbThreads,
         connected: dbThreads.length > 0,
         error: dbThreads.length ? undefined : err instanceof Error ? err.message : "Unknown error",
+        counts: {
+          received: dbThreads.filter((t) => t.direction !== "out").length,
+          sent: dbThreads.filter((t) => t.direction === "out").length,
+          db: dbThreads.length,
+        },
+        hasMore: { received: false, sent: false, db: dbResult.hasMore },
+        params,
       };
     }
   });
+
 
 export const listInstantlyMailboxes = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   // Always include connected mailboxes stored in oauth_connections (Gmail etc.)
