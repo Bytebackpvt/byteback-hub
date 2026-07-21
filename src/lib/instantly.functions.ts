@@ -115,6 +115,8 @@ type RawEmail = {
   from_address_email?: string;
   from_address_json?: Array<{ name?: string; address?: string }>;
   to_address_email_list?: string;
+  to_address_json?: Array<{ name?: string; address?: string }>;
+  to_address_email_list?: string;
   subject?: string;
   body?: { text?: string; html?: string };
   timestamp_created?: string;
@@ -248,6 +250,7 @@ async function loadDbThreads(
       body: String(r.last_body ?? ""),
       mailbox,
       receivedAt: timeAgo(r.last_received_at as string),
+      activityAt: (r.last_received_at as string | null) ?? null,
       unread: true,
       category: cat,
       priority: pri,
@@ -285,6 +288,7 @@ const ListInput = z
     sentPages: z.number().int().min(1).max(200).optional(),
     dbLimit: z.number().int().min(50).max(20_000).optional(),
     sinceDays: z.number().int().min(1).max(365).optional(),
+    mailbox: z.string().max(320).optional(),
   })
   .optional();
 
@@ -296,6 +300,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
     const sentPages = data?.sentPages ?? 30;
     const dbLimit = data?.dbLimit ?? 500;
     const sinceDays = data?.sinceDays ?? 90;
+    const focusMailbox = data?.mailbox && data.mailbox !== "all" ? data.mailbox.toLowerCase() : undefined;
 
     // Always load DB-ingested threads (Gmail, webhook, etc.) — these belong to
     // every workspace member.
@@ -316,8 +321,9 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       sentPages,
       dbLimit,
       sinceDays,
+      focusMailbox: focusMailbox ?? "all",
       pageSize: 100,
-      instantlyEndpoint: "GET /api/v2/emails?email_type={received|sent}&limit=100&i_date_from=…",
+      instantlyEndpoint: "GET /api/v2/emails?email_type={received|sent|manual}&limit=100&min_timestamp_created=…",
       dbSource: "email_threads (Gmail INBOX + SENT, webhook, IMAP) — order by last_received_at DESC",
     };
 
@@ -345,25 +351,35 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
     try {
       const SINCE = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString();
       async function loadType(
-        email_type: "received" | "sent",
+        email_type: "received" | "sent" | "manual",
         maxPages: number,
       ): Promise<{ items: RawEmail[]; hasMore: boolean }> {
         const out: RawEmail[] = [];
         let starting_after: string | undefined;
         let hasMore = false;
         for (let page = 0; page < maxPages; page++) {
-          const resp = await instantly<{
-            items?: RawEmail[];
-            next_starting_after?: string;
-            starting_after?: string;
-          }>(key, "/emails", {
-            query: {
-              limit: 100,
-              email_type,
-              starting_after,
-              i_date_from: SINCE,
-            },
-          });
+          let resp: { items?: RawEmail[]; next_starting_after?: string; starting_after?: string };
+          try {
+            resp = await instantly<{
+              items?: RawEmail[];
+              next_starting_after?: string;
+              starting_after?: string;
+            }>(key, "/emails", {
+              query: {
+                limit: 100,
+                email_type,
+                starting_after,
+                min_timestamp_created: SINCE,
+                eaccount: focusMailbox,
+              },
+            });
+          } catch (e) {
+            // Keep already-fetched pages instead of blanking the whole inbox when
+            // Instantly rate-limits or rejects one later page.
+            console.error(`Instantly ${email_type} page ${page + 1} failed:`, e);
+            hasMore = out.length > 0;
+            break;
+          }
           const items = resp.items ?? [];
           out.push(...items);
           const nextCursor = resp.next_starting_after ?? resp.starting_after;
@@ -386,6 +402,10 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
           console.error("Instantly sent fetch failed:", e);
           return { items: [] as RawEmail[], hasMore: false };
         }),
+        loadType("manual", sentPages).catch((e) => {
+          console.error("Instantly manual fetch failed:", e);
+          return { items: [] as RawEmail[], hasMore: false };
+        }),
       ]);
 
 
@@ -394,9 +414,10 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
         const fromEmailRaw = fromJson?.address ?? e.from_address_email ?? "unknown@unknown";
         // For sent mail, the "from" IS the mailbox owner — surface the recipient
         // as the counterparty so the inbox shows who was contacted.
+        const toJson = e.to_address_json?.[0];
         const counterparty =
           direction === "out"
-            ? (e.to_address_email_list?.split(",")[0]?.trim() || fromEmailRaw)
+            ? (toJson?.address?.trim() || e.to_address_email_list?.split(",")[0]?.trim() || fromEmailRaw)
             : fromEmailRaw;
         const displayEmail = counterparty;
         const displayName =
@@ -406,12 +427,14 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
                 .split("@")[0]
                 .replace(/[._]/g, " ")
                 .replace(/\b\w/g, (c) => c.toUpperCase())
-            : displayEmail
+            : toJson?.name?.trim() ||
+              displayEmail
                 .split("@")[0]
                 .replace(/[._]/g, " ")
                 .replace(/\b\w/g, (c) => c.toUpperCase());
         const bodyText = e.body?.text ?? (e.body?.html ? stripHtml(e.body.html) : "");
         const cat = classify(e.subject ?? "", bodyText, e.ai_interest_value);
+        const activityAt = e.timestamp_email ?? e.timestamp_created ?? null;
         return {
           id: e.id,
           from: {
@@ -423,7 +446,8 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
           preview: bodyText.slice(0, 140),
           body: bodyText,
           mailbox: String(e.eaccount ?? "unknown").toLowerCase(),
-          receivedAt: timeAgo(e.timestamp_email ?? e.timestamp_created),
+          receivedAt: timeAgo(activityAt ?? undefined),
+          activityAt,
           unread: direction === "in" ? Boolean(e.is_unread) : false,
           category: cat,
           priority: priorityFrom(cat, e.ai_interest_value),
@@ -436,18 +460,29 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       const threads: InstantlyThread[] = [
         ...received.items.map((e) => mapEmail(e, "in")),
         ...sent.items.map((e) => mapEmail(e, "out")),
+        ...manual.items.map((e) => mapEmail(e, "out")),
       ];
+      const merged = new Map<string, InstantlyThread>();
+      for (const t of [...threads, ...dbThreads]) {
+        const key = `${t.source ?? "unknown"}:${t.id}`;
+        if (!merged.has(key)) merged.set(key, t);
+      }
+      const sortedThreads = Array.from(merged.values()).sort((a, b) => {
+        const at = a.activityAt ? new Date(a.activityAt).getTime() : 0;
+        const bt = b.activityAt ? new Date(b.activityAt).getTime() : 0;
+        return bt - at;
+      });
       return {
-        threads: [...threads, ...dbThreads],
+        threads: sortedThreads,
         connected: true,
         counts: {
-          received: received.items.length + dbThreads.filter((t) => t.direction !== "out").length,
-          sent: sent.items.length + dbThreads.filter((t) => t.direction === "out").length,
+          received: sortedThreads.filter((t) => t.direction !== "out").length,
+          sent: sortedThreads.filter((t) => t.direction === "out").length,
           db: dbThreads.length,
         },
         hasMore: {
           received: received.hasMore,
-          sent: sent.hasMore,
+          sent: sent.hasMore || manual.hasMore,
           db: dbResult.hasMore,
         },
         params,

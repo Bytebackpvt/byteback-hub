@@ -43,6 +43,7 @@ import { syncWorkspaceGmailNow } from "@/lib/gmail.functions";
 import { scanForNotifications } from "@/lib/notifications.functions";
 import { autoScheduleFollowUps } from "@/lib/followups.functions";
 import { listLeadScores, setLeadManualStatus, setLeadStage } from "@/lib/leads.functions";
+import { runSyncForMe } from "@/lib/sync.functions";
 import {
   Select,
   SelectContent,
@@ -88,9 +89,9 @@ function InboxPage() {
   const [folder, setFolder] = useState<"all" | "in" | "out">("all");
   // Pagination window: bump these to load more history without a full re-mount.
   const [pageWindow, setPageWindow] = useState({
-    receivedPages: 30,
-    sentPages: 30,
-    dbLimit: 500,
+    receivedPages: 8,
+    sentPages: 8,
+    dbLimit: 5000,
   });
 
 
@@ -100,6 +101,7 @@ function InboxPage() {
   const callListMailboxes = useServerFn(listInstantlyMailboxes);
   const callSendReply = useServerFn(sendInstantlyReply);
   const callSyncGmail = useServerFn(syncWorkspaceGmailNow);
+  const callSyncInstantly = useServerFn(runSyncForMe);
   const callScan = useServerFn(scanForNotifications);
   const callAutoSchedule = useServerFn(autoScheduleFollowUps);
   const callListScores = useServerFn(listLeadScores);
@@ -107,8 +109,8 @@ function InboxPage() {
   const callSetStage = useServerFn(setLeadStage);
 
   const threadsQuery = useQuery({
-    queryKey: ["instantly", "threads", pageWindow],
-    queryFn: () => callListThreads({ data: pageWindow }),
+    queryKey: ["instantly", "threads", pageWindow, mailbox],
+    queryFn: () => callListThreads({ data: { ...pageWindow, mailbox: mailbox === "all" ? undefined : mailbox } }),
     staleTime: 30_000,
   });
   const mailboxesQuery = useQuery({
@@ -358,26 +360,28 @@ function InboxPage() {
     }
   }
 
-  async function handleSyncGmail() {
+  async function handleSyncAllSources() {
     setSyncingGmail(true);
     try {
-      const result = await callSyncGmail();
+      const [gmailResult, instantlyResult] = await Promise.allSettled([
+        callSyncGmail(),
+        callSyncInstantly({ data: { limit: 1800 } }),
+      ]);
       await Promise.all([threadsQuery.refetch(), mailboxesQuery.refetch()]);
-      if (result.connections === 0) {
-        toast.error("No active Gmail mailbox. Reconnect Gmail from Email Sources.");
-      } else if (result.errors?.length) {
+      const result = gmailResult.status === "fulfilled" ? gmailResult.value : null;
+      const instantly = instantlyResult.status === "fulfilled" ? instantlyResult.value : null;
+      if (gmailResult.status === "rejected" && instantlyResult.status === "rejected") {
+        toast.error("Sync failed", { description: "Both Gmail and Instantly could not sync." });
+      } else if (result?.errors?.length) {
         toast.error("Gmail needs reconnecting", {
           description: result.errors[0]?.account ?? "Open Email Sources and reconnect Gmail.",
         });
       } else {
-        toast.success(
-          result.processed > 0
-            ? `Synced ${result.processed} new emails`
-            : "Mailbox checked — no new emails found",
-        );
+        const total = (result?.processed ?? 0) + (instantly?.processed ?? 0);
+        toast.success(total > 0 ? `Synced ${total} emails` : "Mailboxes checked — no new emails found");
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Gmail sync failed");
+      toast.error(e instanceof Error ? e.message : "Sync failed");
     } finally {
       setSyncingGmail(false);
     }
@@ -407,11 +411,11 @@ function InboxPage() {
             variant="outline"
             size="sm"
             className="mt-2 h-7 w-full text-xs"
-            onClick={handleSyncGmail}
+            onClick={handleSyncAllSources}
             disabled={syncingGmail}
           >
             {syncingGmail ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            Sync Gmail
+            Sync all sources
           </Button>
         </div>
         <ScrollArea className="flex-1">
@@ -551,9 +555,9 @@ function InboxPage() {
                 )}
                 {!search && filter === "all" && (
                   <div className="mt-2 flex flex-wrap justify-center gap-2">
-                    <Button size="sm" variant="outline" onClick={handleSyncGmail} disabled={syncingGmail}>
+                    <Button size="sm" variant="outline" onClick={handleSyncAllSources} disabled={syncingGmail}>
                       {syncingGmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                      Sync Gmail
+                      Sync all sources
                     </Button>
                     <Button size="sm" onClick={() => navigate({ to: "/app/email-sources" })}>
                       Connect Gmail
@@ -581,8 +585,8 @@ function InboxPage() {
                       onClick={() =>
                         setPageWindow((w) => ({
                           receivedPages: hm?.received ? w.receivedPages + 30 : w.receivedPages,
-                          sentPages: hm?.sent ? w.sentPages + 30 : w.sentPages,
-                          dbLimit: hm?.db ? w.dbLimit + 500 : w.dbLimit,
+                          sentPages: hm?.sent ? w.sentPages + 8 : w.sentPages,
+                          dbLimit: hm?.db ? w.dbLimit + 5000 : w.dbLimit,
                         }))
                       }
                     >
