@@ -562,6 +562,45 @@ function InboxPage() {
                 )}
               </div>
             )}
+            {filtered.length > 0 && (() => {
+              const hm = threadsQuery.data?.hasMore;
+              const canLoadMore = hm && (hm.received || hm.sent || hm.db);
+              const counts = threadsQuery.data?.counts;
+              return (
+                <div className="flex flex-col items-center gap-1.5 border-t border-border/40 p-3">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Showing {filtered.length}
+                    {counts ? ` of ${counts.received + counts.sent} fetched` : ""}
+                  </div>
+                  {canLoadMore ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={threadsQuery.isFetching}
+                      onClick={() =>
+                        setPageWindow((w) => ({
+                          receivedPages: hm?.received ? w.receivedPages + 30 : w.receivedPages,
+                          sentPages: hm?.sent ? w.sentPages + 30 : w.sentPages,
+                          dbLimit: hm?.db ? w.dbLimit + 500 : w.dbLimit,
+                        }))
+                      }
+                    >
+                      {threadsQuery.isFetching ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : null}
+                      Load more history
+                    </Button>
+                  ) : (
+                    <div className="text-[10px] text-muted-foreground">
+                      All history loaded
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+
 
           </div>
         </ScrollArea>
