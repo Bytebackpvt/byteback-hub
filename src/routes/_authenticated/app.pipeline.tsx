@@ -281,7 +281,6 @@ function PipelinePage() {
           ) : (
             stages.map((stage, idx) => {
               const leads = byStage.get(stage.slug) ?? [];
-              const next = stages[idx + 1];
               return (
                 <div
                   key={stage.id}
@@ -347,21 +346,34 @@ function PipelinePage() {
                         <div className="mt-2 truncate text-[10px] text-muted-foreground">
                           {l.email}
                         </div>
-                        <div className="mt-3 flex items-center justify-between">
+                        <div className="mt-3 flex items-center justify-between gap-2">
                           <span className="text-[10px] text-muted-foreground">
                             {l.lastActivity}
                           </span>
-                          {next && connected && (
-                            <button
-                              data-tour={idx === 0 && cardIdx === 0 ? "kanban-advance" : undefined}
-                              onClick={() =>
-                                mutate.mutate({ leadId: l.id, status: next.slug })
-                              }
-                              className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-brand opacity-0 transition group-hover:opacity-100 hover:bg-brand/10"
+                          {connected && (
+                            <Select
+                              value={stage.slug}
+                              onValueChange={(v) => {
+                                if (v && v !== stage.slug) {
+                                  mutate.mutate({ leadId: l.id, status: v });
+                                }
+                              }}
                             >
-                              → {next.label}
-                              <ArrowRight className="h-2.5 w-2.5" />
-                            </button>
+                              <SelectTrigger
+                                data-tour={idx === 0 && cardIdx === 0 ? "kanban-advance" : undefined}
+                                className="h-6 w-[110px] rounded-md border-brand/30 bg-brand/5 px-2 text-[10px] font-medium text-brand"
+                                aria-label="Move to stage"
+                              >
+                                <SelectValue placeholder="Move…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {stages.map((s) => (
+                                  <SelectItem key={s.id} value={s.slug} className="text-xs">
+                                    {s.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           )}
                         </div>
                       </div>
