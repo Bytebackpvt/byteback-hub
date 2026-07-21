@@ -471,6 +471,7 @@ export type InstantlyLead = {
   title: string;
   status: "new" | "interested" | "meeting" | "customer" | "not-interested" | "bounced";
   lastActivity: string;
+  activityAt?: string | null;
   campaign?: string;
 };
 
