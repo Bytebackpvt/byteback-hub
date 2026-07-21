@@ -305,7 +305,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
         let starting_after: string | undefined;
         for (let page = 0; page < 5; page++) {
           const resp = await instantly<{ items?: RawEmail[]; next_starting_after?: string }>(
-            conn.key,
+            key,
             "/emails",
             { query: { limit: 100, email_type, starting_after } },
           );
