@@ -239,9 +239,6 @@ function RadarPage() {
                             )}
                           </div>
                           <div className="shrink-0 text-right">
-                            <div className="text-[11px] font-semibold text-foreground">
-                              {inr(i.value)}
-                            </div>
                             <div className="text-[10px] text-muted-foreground">waited {i.waited}</div>
                           </div>
                           <ChevronRight className="mt-1 h-3.5 w-3.5 text-muted-foreground" />
