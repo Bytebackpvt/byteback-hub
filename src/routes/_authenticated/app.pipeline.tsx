@@ -213,6 +213,15 @@ function PipelinePage() {
       const bucket = map.get(l.status);
       if (bucket) bucket.push(l);
     }
+    // Sort each column newest first based on last activity timestamp.
+    for (const [slug, arr] of map) {
+      arr.sort((a, b) => {
+        const at = a.activityAt ? new Date(a.activityAt).getTime() : 0;
+        const bt = b.activityAt ? new Date(b.activityAt).getTime() : 0;
+        return bt - at;
+      });
+      map.set(slug, arr);
+    }
     return map;
   }, [stages, liveLeads]);
 
