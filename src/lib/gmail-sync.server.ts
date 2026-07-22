@@ -126,15 +126,6 @@ export async function syncGmailConnection(connectionId: string): Promise<{
   }
   if (!accessToken) return { processed: 0, skipped: 0, error: "no access token" };
 
-  const cursorKey = `gmail:${connectionId}`;
-  const { data: state } = await admin
-    .from("sync_state")
-    .select("cursor")
-    .eq("workspace_id", conn.workspace_id)
-    .eq("source", cursorKey)
-    .maybeSingle();
-  const seen = new Set<string>(state?.cursor ? String(state.cursor).split(",").filter(Boolean) : []);
-
   const items: Array<GmailListItem & { _label: "INBOX" | "SENT" }> = [];
   // Full backfill: paginate INBOX and SENT with no time window and no cap.
   // Gmail returns newest first; loop until nextPageToken is exhausted.
@@ -168,14 +159,8 @@ export async function syncGmailConnection(connectionId: string): Promise<{
 
   let processed = 0;
   let skipped = 0;
-  const nextCursor = new Set<string>(seen);
 
   for (const item of items) {
-    if (seen.has(item.id)) {
-      skipped++;
-      continue;
-    }
-    nextCursor.add(item.id);
     const msgRes = await fetch(
       `https://gmail.googleapis.com/gmail/v1/users/me/messages/${item.id}?format=full`,
       { headers: { authorization: `Bearer ${accessToken}` } },
@@ -215,16 +200,15 @@ export async function syncGmailConnection(connectionId: string): Promise<{
   }
 
 
-  const cursorArr = Array.from(nextCursor).slice(-500);
   await admin.from("sync_state").upsert(
     {
       workspace_id: conn.workspace_id,
-      source: cursorKey,
-      cursor: cursorArr.join(","),
+      source: `gmail:${connectionId}`,
+      cursor: null,
       last_run_at: new Date().toISOString(),
       last_ok_at: new Date().toISOString(),
       last_error: null,
-      stats: { processed, skipped },
+      stats: { processed, skipped, inbox_backfilled: items.filter((i) => i._label === "INBOX").length, sent_backfilled: items.filter((i) => i._label === "SENT").length },
     },
     { onConflict: "workspace_id,source" },
   );
