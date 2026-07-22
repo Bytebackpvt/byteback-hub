@@ -365,7 +365,7 @@ function InboxPage() {
     try {
       const [gmailResult, instantlyResult] = await Promise.allSettled([
         callSyncGmail(),
-        callSyncInstantly({ data: { limit: 1800 } }),
+        callSyncInstantly({ data: { limit: 9000, mode: "backfill" } }),
       ]);
       await Promise.all([threadsQuery.refetch(), mailboxesQuery.refetch()]);
       const result = gmailResult.status === "fulfilled" ? gmailResult.value : null;
@@ -568,7 +568,8 @@ function InboxPage() {
             )}
             {filtered.length > 0 && (() => {
               const hm = threadsQuery.data?.hasMore;
-              const canLoadMore = hm && (hm.received || hm.sent || hm.db);
+              const hasInstantlyMore = !!threadsQuery.data?.params?.instantlyHasMore;
+              const canLoadMore = !!(hm && (hm.received || hm.sent || hm.db)) || hasInstantlyMore;
               const counts = threadsQuery.data?.counts;
               return (
                 <div className="flex flex-col items-center gap-1.5 border-t border-border/40 p-3">
@@ -585,8 +586,8 @@ function InboxPage() {
                       onClick={async () => {
                         await handleSyncAllSources();
                         setPageWindow((w) => ({
-                          receivedPages: hm?.received ? w.receivedPages + 1 : w.receivedPages,
-                          sentPages: hm?.sent ? w.sentPages + 1 : w.sentPages,
+                           receivedPages: hm?.received || hasInstantlyMore ? w.receivedPages + 1 : w.receivedPages,
+                           sentPages: hm?.sent || hasInstantlyMore ? w.sentPages + 1 : w.sentPages,
                           dbLimit: hm?.db ? w.dbLimit + 5000 : w.dbLimit,
                         }));
                       }}
