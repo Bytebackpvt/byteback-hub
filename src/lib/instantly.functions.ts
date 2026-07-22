@@ -320,6 +320,25 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       mailError: null,
     }));
     const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
+    const { data: instantlyState } = mailStatus.workspaceId
+      ? await (context.supabase as any)
+          .from("sync_state")
+          .select("stats")
+          .eq("workspace_id", mailStatus.workspaceId)
+          .eq("source", "instantly")
+          .maybeSingle()
+      : { data: null };
+    const instantlyStats = (instantlyState?.stats ?? {}) as {
+      has_more_received?: number | string | boolean;
+      has_more_sent?: number | string | boolean;
+    };
+    const instantlyHasMore =
+      instantlyStats.has_more_received === 1 ||
+      instantlyStats.has_more_received === "1" ||
+      instantlyStats.has_more_received === true ||
+      instantlyStats.has_more_sent === 1 ||
+      instantlyStats.has_more_sent === "1" ||
+      instantlyStats.has_more_sent === true;
 
     const params = {
       receivedPages,
@@ -328,6 +347,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       sinceDays,
       focusMailbox: focusMailbox ?? "all",
       pageSize: 100,
+      instantlyHasMore,
       instantlyEndpoint: "GET /api/v2/emails?email_type={received|sent|manual}&limit=100&min_timestamp_created=…",
       dbSource: "email_threads (Gmail INBOX + SENT, webhook, IMAP) — order by last_received_at DESC",
     };
