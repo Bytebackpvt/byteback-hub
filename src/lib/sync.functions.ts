@@ -516,7 +516,12 @@ async function assertOwnerOrAdmin(
 export const runSyncForMe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) =>
-    z.object({ limit: z.number().int().min(30).max(1800).optional() }).parse(raw ?? {}),
+    z
+      .object({
+        limit: z.number().int().min(30).max(9000).optional(),
+        mode: z.enum(["recent", "backfill"]).optional(),
+      })
+      .parse(raw ?? {}),
   )
   .handler(async ({ data, context }) => {
     const wsId = await getCurrentWorkspaceId(
@@ -546,7 +551,7 @@ export const runSyncForMe = createServerFn({ method: "POST" })
         error: "Instantly is not connected for this workspace",
       };
     }
-    return await runInstantlySync(wsId, { limit: data.limit });
+    return await runInstantlySync(wsId, { limit: data.limit, mode: data.mode });
   });
 
 export type SyncStatusRow = {
