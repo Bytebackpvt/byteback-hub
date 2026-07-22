@@ -21,6 +21,9 @@ import { getCurrentWorkspaceId } from "@/lib/workspace.functions";
 const INSTANTLY_BASE = "https://api.instantly.ai/api/v2";
 const EMBED_URL = "https://ai.gateway.lovable.dev/v1/embeddings";
 const EMBED_MODEL = "google/gemini-embedding-001";
+const INSTANTLY_PAGE_SIZE = 100;
+const INSTANTLY_BACKFILL_DAYS = 90;
+const INSTANTLY_REQUEST_GAP_MS = 3200;
 
 type RawEmail = {
   id: string;
@@ -39,6 +42,29 @@ type RawEmail = {
 };
 
 type InstantlyEmailType = "received" | "sent" | "manual";
+type InstantlySyncMode = "recent" | "backfill";
+type InstantlyCursorState = {
+  backfill?: Partial<Record<InstantlyEmailType, string | null>>;
+};
+
+function parseInstantlyCursor(raw: unknown): InstantlyCursorState {
+  if (!raw || typeof raw !== "string") return {};
+  try {
+    const parsed = JSON.parse(raw) as InstantlyCursorState;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function emailTime(e: RawEmail): number {
+  const t = new Date(e.timestamp_email ?? e.timestamp_created ?? 0).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
 
 function stripHtml(html: string) {
   return html
@@ -143,19 +169,22 @@ async function fetchInstantlyType(
   key: string,
   emailType: InstantlyEmailType,
   maxItems: number,
-): Promise<{ items: RawEmail[]; hasMore: boolean }> {
+  startingAfter?: string | null,
+): Promise<{ items: RawEmail[]; hasMore: boolean; nextCursor: string | null; requests: number }> {
   const items: RawEmail[] = [];
-  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-  let startingAfter: string | undefined;
+  const since = new Date(Date.now() - INSTANTLY_BACKFILL_DAYS * 24 * 60 * 60 * 1000).toISOString();
   let hasMore = false;
+  let nextCursor: string | null = null;
+  let requests = 0;
 
   while (items.length < maxItems) {
     const url = new URL(INSTANTLY_BASE + "/emails");
-    url.searchParams.set("limit", String(Math.min(100, maxItems - items.length)));
+    url.searchParams.set("limit", String(Math.min(INSTANTLY_PAGE_SIZE, maxItems - items.length)));
     url.searchParams.set("email_type", emailType);
     url.searchParams.set("min_timestamp_created", since);
     if (startingAfter) url.searchParams.set("starting_after", startingAfter);
 
+    requests++;
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
     });
@@ -169,16 +198,18 @@ async function fetchInstantlyType(
     const page = json.items ?? [];
     items.push(...page);
 
-    const nextCursor = json.next_starting_after ?? json.starting_after;
+    nextCursor = json.next_starting_after ?? json.starting_after ?? null;
     if (!nextCursor || page.length === 0) {
       hasMore = false;
+      nextCursor = null;
       break;
     }
     startingAfter = nextCursor;
     hasMore = true;
+    if (items.length < maxItems) await wait(INSTANTLY_REQUEST_GAP_MS);
   }
 
-  return { items, hasMore };
+  return { items, hasMore, nextCursor, requests };
 }
 
 async function loadWorkspaceInstantlyKeyAdmin(workspaceId: string): Promise<string | null> {
@@ -215,8 +246,9 @@ type SyncResult = {
  * Core sync worker. Uses supabaseAdmin (service role) so it works from
  * both cron endpoints and authenticated flows.
  */
-export async function runInstantlySync(workspaceId: string, opts?: { limit?: number }): Promise<SyncResult> {
-  const limit = Math.max(30, Math.min(opts?.limit ?? 1800, 1800));
+export async function runInstantlySync(workspaceId: string, opts?: { limit?: number; mode?: InstantlySyncMode }): Promise<SyncResult> {
+  const limit = Math.max(30, Math.min(opts?.limit ?? 1800, 9000));
+  const mode = opts?.mode ?? "recent";
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = supabaseAdmin as any;
@@ -240,27 +272,49 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
   let hasMoreReceived = false;
   let hasMoreSent = false;
   let hasMoreManual = false;
+  let cursorState: InstantlyCursorState = {};
+  let partialErrors: string[] = [];
   try {
     const perType = Math.floor(limit / 3);
-    const [receivedResult, sentResult, manualResult] = await Promise.allSettled([
-      fetchInstantlyType(wsKey, "received", perType),
-      fetchInstantlyType(wsKey, "sent", perType),
-      fetchInstantlyType(wsKey, "manual", perType),
-    ]);
-    const received = receivedResult.status === "fulfilled" ? receivedResult.value : { items: [], hasMore: false };
-    const sent = sentResult.status === "fulfilled" ? sentResult.value : { items: [], hasMore: false };
-    const manual = manualResult.status === "fulfilled" ? manualResult.value : { items: [], hasMore: false };
+    const { data: stateRow } = await admin
+      .from("sync_state")
+      .select("cursor")
+      .eq("workspace_id", workspaceId)
+      .eq("source", "instantly")
+      .maybeSingle();
+    cursorState = parseInstantlyCursor(stateRow?.cursor);
+    const start = mode === "backfill" ? (cursorState.backfill ?? {}) : {};
+    const empty = { items: [] as RawEmail[], hasMore: false, nextCursor: null as string | null, requests: 0 };
+    const load = async (type: InstantlyEmailType) => {
+      try {
+        return await fetchInstantlyType(wsKey, type, perType, start[type]);
+      } catch (e) {
+        partialErrors.push(`${type}: ${e instanceof Error ? e.message : "fetch failed"}`);
+        return empty;
+      }
+    };
+    const received = await load("received");
+    if (received.requests > 0) await wait(INSTANTLY_REQUEST_GAP_MS);
+    const sent = await load("sent");
+    if (sent.requests > 0) await wait(INSTANTLY_REQUEST_GAP_MS);
+    const manual = await load("manual");
     hasMoreReceived = received.hasMore;
     hasMoreSent = sent.hasMore;
     hasMoreManual = manual.hasMore;
-    if (receivedResult.status === "rejected" && sentResult.status === "rejected" && manualResult.status === "rejected") {
-      throw receivedResult.reason;
+    if (!received.items.length && !sent.items.length && !manual.items.length && partialErrors.length) {
+      throw new Error(partialErrors.join("; "));
     }
     typedItems = [
       ...received.items.map((email) => ({ email, direction: "in" as const, type: "received" as const })),
       ...sent.items.map((email) => ({ email, direction: "out" as const, type: "sent" as const })),
       ...manual.items.map((email) => ({ email, direction: "out" as const, type: "manual" as const })),
-    ];
+    ].sort((a, b) => emailTime(a.email) - emailTime(b.email));
+
+    const nextBackfill = { ...(cursorState.backfill ?? {}) };
+    if (mode === "backfill" || !nextBackfill.received) nextBackfill.received = received.nextCursor;
+    if (mode === "backfill" || !nextBackfill.sent) nextBackfill.sent = sent.nextCursor;
+    if (mode === "backfill" || !nextBackfill.manual) nextBackfill.manual = manual.nextCursor;
+    cursorState = { backfill: nextBackfill };
 
   } catch (err) {
     result.error = err instanceof Error ? err.message : "fetch failed";
@@ -278,7 +332,7 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
 
   for (const item of typedItems) {
     const e = item.email;
-    const emailId = e.thread_id ?? e.id;
+    const emailId = e.id ?? e.thread_id;
     if (!emailId) continue;
     result.processed++;
 
@@ -338,6 +392,7 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
           ai_interest_value: e.ai_interest_value ?? null,
           direction: item.direction,
           email_type: item.type,
+          instantly_thread_id: e.thread_id ?? null,
           from_email: fromEmail || null,
           to_email: recipientEmail || null,
         },
@@ -392,7 +447,8 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
     );
 
     // 6) embedding (best-effort)
-    if (bodyText.length > 30) {
+    const embedLimit = mode === "backfill" ? 0 : 25;
+    if (bodyText.length > 30 && result.embedded < embedLimit) {
       const vec = await embed(`${subject}\n\n${bodyText}`);
       if (vec) {
         await admin.from("email_embeddings").upsert(
@@ -421,8 +477,10 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
       source: "instantly",
       last_run_at: new Date().toISOString(),
       last_ok_at: new Date().toISOString(),
-      last_error: null,
+      last_error: partialErrors.length ? partialErrors.join("; ") : null,
+      cursor: JSON.stringify(cursorState),
       stats: {
+        mode,
         processed: result.processed,
         embedded: result.embedded,
         skipped: result.skipped,
