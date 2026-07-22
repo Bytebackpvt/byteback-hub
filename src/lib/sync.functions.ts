@@ -559,7 +559,7 @@ export type SyncStatusRow = {
   last_run_at: string | null;
   last_ok_at: string | null;
   last_error: string | null;
-  stats: Record<string, number>;
+  stats: Record<string, unknown>;
 };
 
 export const getSyncStatus = createServerFn({ method: "GET" })
