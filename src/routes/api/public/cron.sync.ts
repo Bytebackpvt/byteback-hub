@@ -64,7 +64,7 @@ export const Route = createFileRoute("/api/public/cron/sync")({
             continue;
           }
           try {
-            const r = await runInstantlySync(w.id, { limit: 50 });
+            const r = await runInstantlySync(w.id, { limit: 900, mode: "backfill" });
             results.push({
               workspaceId: w.id,
               processed: r.processed,
