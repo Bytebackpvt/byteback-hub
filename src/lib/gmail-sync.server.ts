@@ -182,7 +182,7 @@ export async function syncGmailConnection(connectionId: string): Promise<{
 
     await ingestEmail({
       workspaceId: conn.workspace_id,
-      emailId: msg.threadId ?? msg.id,
+      emailId: msg.id,
       fromEmail: counterparty.email,
       fromName: counterparty.name,
       subject,
@@ -192,6 +192,7 @@ export async function syncGmailConnection(connectionId: string): Promise<{
       mailbox: conn.account_email,
       meta: {
         gmail_message_id: msg.id,
+        gmail_thread_id: msg.threadId ?? null,
         connection_id: connectionId,
         direction: isSent ? "out" : "in",
       },
