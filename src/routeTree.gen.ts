@@ -39,6 +39,7 @@ import { Route as AuthenticatedAppRadarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/app.pipeline'
 import { Route as AuthenticatedAppNotificationsRouteImport } from './routes/_authenticated/app.notifications'
 import { Route as AuthenticatedAppMemoryRouteImport } from './routes/_authenticated/app.memory'
+import { Route as AuthenticatedAppLeadsRouteImport } from './routes/_authenticated/app.leads'
 import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_authenticated/app.integrations'
 import { Route as AuthenticatedAppInboxRouteImport } from './routes/_authenticated/app.inbox'
 import { Route as AuthenticatedAppHelpRouteImport } from './routes/_authenticated/app.help'
@@ -50,6 +51,7 @@ import { Route as AuthenticatedAppActivityRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAppIntegrationsIndexRouteImport } from './routes/_authenticated/app.integrations.index'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicInboundEmailRouteImport } from './routes/api/public/inbound.email'
+import { Route as ApiPublicHooksLeadsFollowupRouteImport } from './routes/api/public/hooks/leads-followup'
 import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/public/email.unsubscribe'
 import { Route as ApiPublicCronSyncRouteImport } from './routes/api/public/cron.sync'
 import { Route as ApiPublicCronEscalateRouteImport } from './routes/api/public/cron.escalate'
@@ -216,6 +218,11 @@ const AuthenticatedAppMemoryRoute = AuthenticatedAppMemoryRouteImport.update({
   path: '/memory',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppLeadsRoute = AuthenticatedAppLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppIntegrationsRoute =
   AuthenticatedAppIntegrationsRouteImport.update({
     id: '/integrations',
@@ -278,6 +285,12 @@ const ApiPublicInboundEmailRoute = ApiPublicInboundEmailRouteImport.update({
   path: '/api/public/inbound/email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksLeadsFollowupRoute =
+  ApiPublicHooksLeadsFollowupRouteImport.update({
+    id: '/api/public/hooks/leads-followup',
+    path: '/api/public/hooks/leads-followup',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicEmailUnsubscribeRoute =
   ApiPublicEmailUnsubscribeRouteImport.update({
     id: '/api/public/email/unsubscribe',
@@ -377,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
+  '/app/leads': typeof AuthenticatedAppLeadsRoute
   '/app/memory': typeof AuthenticatedAppMemoryRoute
   '/app/notifications': typeof AuthenticatedAppNotificationsRouteWithChildren
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
@@ -398,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
   '/api/public/email/unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/hooks/leads-followup': typeof ApiPublicHooksLeadsFollowupRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
@@ -428,6 +443,7 @@ export interface FileRoutesByTo {
   '/app/email-sources': typeof AuthenticatedAppEmailSourcesRoute
   '/app/help': typeof AuthenticatedAppHelpRoute
   '/app/inbox': typeof AuthenticatedAppInboxRoute
+  '/app/leads': typeof AuthenticatedAppLeadsRoute
   '/app/memory': typeof AuthenticatedAppMemoryRoute
   '/app/notifications': typeof AuthenticatedAppNotificationsRouteWithChildren
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
@@ -449,6 +465,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
   '/api/public/email/unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/hooks/leads-followup': typeof ApiPublicHooksLeadsFollowupRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsIndexRoute
@@ -484,6 +501,7 @@ export interface FileRoutesById {
   '/_authenticated/app/help': typeof AuthenticatedAppHelpRoute
   '/_authenticated/app/inbox': typeof AuthenticatedAppInboxRoute
   '/_authenticated/app/integrations': typeof AuthenticatedAppIntegrationsRouteWithChildren
+  '/_authenticated/app/leads': typeof AuthenticatedAppLeadsRoute
   '/_authenticated/app/memory': typeof AuthenticatedAppMemoryRoute
   '/_authenticated/app/notifications': typeof AuthenticatedAppNotificationsRouteWithChildren
   '/_authenticated/app/pipeline': typeof AuthenticatedAppPipelineRoute
@@ -505,6 +523,7 @@ export interface FileRoutesById {
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
   '/api/public/email/unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/hooks/leads-followup': typeof ApiPublicHooksLeadsFollowupRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/_authenticated/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
@@ -540,6 +559,7 @@ export interface FileRouteTypes {
     | '/app/help'
     | '/app/inbox'
     | '/app/integrations'
+    | '/app/leads'
     | '/app/memory'
     | '/app/notifications'
     | '/app/pipeline'
@@ -561,6 +581,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
     | '/api/public/email/unsubscribe'
+    | '/api/public/hooks/leads-followup'
     | '/api/public/inbound/email'
     | '/lovable/email/queue/process'
     | '/app/integrations/'
@@ -591,6 +612,7 @@ export interface FileRouteTypes {
     | '/app/email-sources'
     | '/app/help'
     | '/app/inbox'
+    | '/app/leads'
     | '/app/memory'
     | '/app/notifications'
     | '/app/pipeline'
@@ -612,6 +634,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
     | '/api/public/email/unsubscribe'
+    | '/api/public/hooks/leads-followup'
     | '/api/public/inbound/email'
     | '/lovable/email/queue/process'
     | '/app/integrations'
@@ -646,6 +669,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/help'
     | '/_authenticated/app/inbox'
     | '/_authenticated/app/integrations'
+    | '/_authenticated/app/leads'
     | '/_authenticated/app/memory'
     | '/_authenticated/app/notifications'
     | '/_authenticated/app/pipeline'
@@ -667,6 +691,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
     | '/api/public/email/unsubscribe'
+    | '/api/public/hooks/leads-followup'
     | '/api/public/inbound/email'
     | '/lovable/email/queue/process'
     | '/_authenticated/app/integrations/'
@@ -691,6 +716,7 @@ export interface RootRouteChildren {
   ApiPublicCronEscalateRoute: typeof ApiPublicCronEscalateRoute
   ApiPublicCronSyncRoute: typeof ApiPublicCronSyncRoute
   ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
+  ApiPublicHooksLeadsFollowupRoute: typeof ApiPublicHooksLeadsFollowupRoute
   ApiPublicInboundEmailRoute: typeof ApiPublicInboundEmailRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicOauthGmailCallbackRoute: typeof ApiPublicOauthGmailCallbackRoute
@@ -908,6 +934,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppMemoryRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/leads': {
+      id: '/_authenticated/app/leads'
+      path: '/leads'
+      fullPath: '/app/leads'
+      preLoaderRoute: typeof AuthenticatedAppLeadsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/integrations': {
       id: '/_authenticated/app/integrations'
       path: '/integrations'
@@ -983,6 +1016,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/inbound/email'
       fullPath: '/api/public/inbound/email'
       preLoaderRoute: typeof ApiPublicInboundEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/leads-followup': {
+      id: '/api/public/hooks/leads-followup'
+      path: '/api/public/hooks/leads-followup'
+      fullPath: '/api/public/hooks/leads-followup'
+      preLoaderRoute: typeof ApiPublicHooksLeadsFollowupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/email/unsubscribe': {
@@ -1140,6 +1180,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppHelpRoute: typeof AuthenticatedAppHelpRoute
   AuthenticatedAppInboxRoute: typeof AuthenticatedAppInboxRoute
   AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRouteWithChildren
+  AuthenticatedAppLeadsRoute: typeof AuthenticatedAppLeadsRoute
   AuthenticatedAppMemoryRoute: typeof AuthenticatedAppMemoryRoute
   AuthenticatedAppNotificationsRoute: typeof AuthenticatedAppNotificationsRouteWithChildren
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
@@ -1162,6 +1203,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppInboxRoute: AuthenticatedAppInboxRoute,
   AuthenticatedAppIntegrationsRoute:
     AuthenticatedAppIntegrationsRouteWithChildren,
+  AuthenticatedAppLeadsRoute: AuthenticatedAppLeadsRoute,
   AuthenticatedAppMemoryRoute: AuthenticatedAppMemoryRoute,
   AuthenticatedAppNotificationsRoute:
     AuthenticatedAppNotificationsRouteWithChildren,
@@ -1229,6 +1271,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronEscalateRoute: ApiPublicCronEscalateRoute,
   ApiPublicCronSyncRoute: ApiPublicCronSyncRoute,
   ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
+  ApiPublicHooksLeadsFollowupRoute: ApiPublicHooksLeadsFollowupRoute,
   ApiPublicInboundEmailRoute: ApiPublicInboundEmailRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicOauthGmailCallbackRoute: ApiPublicOauthGmailCallbackRoute,

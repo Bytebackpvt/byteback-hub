@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Inbox, Kanban, LayoutDashboard, LogOut, Plug, Settings } from "lucide-react";
+import { Inbox, Kanban, LayoutDashboard, LogOut, Plug, Settings, Users } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ import { useServerFn } from "@tanstack/react-start";
 const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox"; tour: string }[] = [
   { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
   { to: "/app/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox", tour: "nav-inbox" },
+  { to: "/app/leads", label: "Leads", icon: Users, tour: "nav-leads" },
   { to: "/app/pipeline", label: "Stages", icon: Kanban, tour: "nav-pipeline" },
   { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
   { to: "/app/settings", label: "Settings", icon: Settings, tour: "nav-settings" },

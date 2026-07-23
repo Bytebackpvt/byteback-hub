@@ -431,6 +431,7 @@ export type Database = {
           contact_email: string | null
           contact_id: string | null
           created_at: string
+          customer_email_norm: string | null
           followup_notified_at: string | null
           followup_step: string | null
           id: string
@@ -438,6 +439,7 @@ export type Database = {
           last_inbound_at: string | null
           last_outbound_at: string | null
           last_received_at: string | null
+          lead_id: string | null
           mailbox: string | null
           meta: Json
           priority: string | null
@@ -459,6 +461,7 @@ export type Database = {
           contact_email?: string | null
           contact_id?: string | null
           created_at?: string
+          customer_email_norm?: string | null
           followup_notified_at?: string | null
           followup_step?: string | null
           id?: string
@@ -466,6 +469,7 @@ export type Database = {
           last_inbound_at?: string | null
           last_outbound_at?: string | null
           last_received_at?: string | null
+          lead_id?: string | null
           mailbox?: string | null
           meta?: Json
           priority?: string | null
@@ -487,6 +491,7 @@ export type Database = {
           contact_email?: string | null
           contact_id?: string | null
           created_at?: string
+          customer_email_norm?: string | null
           followup_notified_at?: string | null
           followup_step?: string | null
           id?: string
@@ -494,6 +499,7 @@ export type Database = {
           last_inbound_at?: string | null
           last_outbound_at?: string | null
           last_received_at?: string | null
+          lead_id?: string | null
           mailbox?: string | null
           meta?: Json
           priority?: string | null
@@ -513,6 +519,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_threads_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
           {
@@ -720,9 +733,85 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          created_at: string
+          customer_domain: string | null
+          customer_email: string
+          customer_name: string | null
+          first_contact_at: string | null
+          id: string
+          last_activity_at: string
+          last_inbound_at: string | null
+          last_outbound_at: string | null
+          meta: Json
+          next_followup_at: string | null
+          owner_mailbox: string | null
+          snoozed_until: string | null
+          stage: string | null
+          status: string
+          temperature: string | null
+          thread_count: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_domain?: string | null
+          customer_email: string
+          customer_name?: string | null
+          first_contact_at?: string | null
+          id?: string
+          last_activity_at?: string
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
+          meta?: Json
+          next_followup_at?: string | null
+          owner_mailbox?: string | null
+          snoozed_until?: string | null
+          stage?: string | null
+          status?: string
+          temperature?: string | null
+          thread_count?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_domain?: string | null
+          customer_email?: string
+          customer_name?: string | null
+          first_contact_at?: string | null
+          id?: string
+          last_activity_at?: string
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
+          meta?: Json
+          next_followup_at?: string | null
+          owner_mailbox?: string | null
+          snoozed_until?: string | null
+          stage?: string | null
+          status?: string
+          temperature?: string | null
+          thread_count?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
+          email_digest_enabled: boolean
+          email_digest_frequency: string
           id: string
           prefs: Json
           quiet_hours_enabled: boolean
@@ -735,6 +824,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email_digest_enabled?: boolean
+          email_digest_frequency?: string
           id?: string
           prefs?: Json
           quiet_hours_enabled?: boolean
@@ -747,6 +838,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email_digest_enabled?: boolean
+          email_digest_frequency?: string
           id?: string
           prefs?: Json
           quiet_hours_enabled?: boolean
@@ -1162,6 +1255,7 @@ export type Database = {
       }
       workspace_followup_config: {
         Row: {
+          auto_close_days: number
           channels: Json
           created_at: string
           enabled: boolean
@@ -1170,6 +1264,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          auto_close_days?: number
           channels?: Json
           created_at?: string
           enabled?: boolean
@@ -1178,6 +1273,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          auto_close_days?: number
           channels?: Json
           created_at?: string
           enabled?: boolean
