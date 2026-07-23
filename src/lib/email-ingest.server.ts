@@ -41,8 +41,14 @@ export function classify(subject: string, body: string, interest?: number) {
   let category = "unknown";
   let priority: "hot" | "warm" | "cold" = "cold";
   let confidence = 0.4;
+
+  const isAutoReply =
+    /^(auto(matic)?[- ]?reply|out of office|on leave|auto:|re: automatic reply)/i.test(subject) ||
+    /this is an auto(matic)?[- ]?reply|automatic reply|auto[- ]?generated|do[- ]?not[- ]?reply/.test(t) ||
+    /out of (the )?office|on vacation|on (annual|sick|medical|maternity|paternity) leave|on leave|\booo\b|away from (my |the )?(office|desk)|will be (back|out|away)|currently (out|away|unavailable)|no longer (with|works)/.test(t);
+
   if (/unsubscribe|remove me|opt.?out/.test(t)) category = "spam";
-  else if (/out of (the )?office|on vacation|on leave|\booo\b/.test(t)) category = "out_of_office";
+  else if (isAutoReply) category = "out_of_office";
   else if (/pricing|price|cost|rate|quote/.test(t)) category = "pricing_request";
   else if (/demo|walkthrough/.test(t)) category = "demo_request";
   else if (/(book|schedule|meeting|call).{0,40}(time|slot|when)/.test(t) || /calendly/.test(t))
@@ -55,10 +61,12 @@ export function classify(subject: string, body: string, interest?: number) {
 
   if (category === "spam" || category === "out_of_office") {
     priority = "cold";
-    confidence = 0.9;
-  } else if (interest === 1 || /\burgent\b|\basap\b|budget approved/.test(t)) {
-    // Only upgrade to hot when the message isn't an auto-reply / OOO.
-    // OOO messages often say "if anything urgent, call…" — don't be fooled.
+    confidence = 0.95;
+  } else if (
+    (interest === 1 || /\burgent\b|\basap\b|budget approved/.test(t)) &&
+    !/for (any )?urgent|in case of urgent|urgent (matters|assistance|help|queries|please contact|please call)/.test(t)
+  ) {
+    // Real buying urgency — not the "for urgent matters call X" OOO boilerplate.
     priority = "hot";
     confidence = 0.85;
   } else if (category === "pricing_request" || category === "demo_request" || category === "meeting_request") {

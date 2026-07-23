@@ -90,12 +90,21 @@ function nameFromEmail(email: string) {
 }
 
 function classify(subject: string, body: string, interest?: number) {
-  const t = `${subject} ${body}`.toLowerCase();
+  const subj = subject.toLowerCase();
+  const bod = body.toLowerCase();
+  const t = `${subj} ${bod}`;
   let category = "unknown";
   let priority: "hot" | "warm" | "cold" = "cold";
   let confidence = 0.4;
+
+  // Detect auto-replies / OOO FIRST so nothing below can upgrade them.
+  const isAutoReply =
+    /^(auto(matic)?[- ]?reply|out of office|on leave|auto:|re: automatic reply)/i.test(subject) ||
+    /this is an auto(matic)?[- ]?reply|automatic reply|auto[- ]?generated|do[- ]?not[- ]?reply/.test(t) ||
+    /out of (the )?office|on vacation|on (annual|sick|medical|maternity|paternity) leave|on leave|\booo\b|away from (my |the )?(office|desk)|will be (back|out|away)|currently (out|away|unavailable)|no longer (with|works)/.test(t);
+
   if (/unsubscribe|remove me|opt.?out/.test(t)) category = "spam";
-  else if (/out of (the )?office|on vacation|on leave|\booo\b/.test(t)) category = "out_of_office";
+  else if (isAutoReply) category = "out_of_office";
   else if (/pricing|price|cost|rate|quote/.test(t)) category = "pricing_request";
   else if (/demo|walkthrough/.test(t)) category = "demo_request";
   else if (/(book|schedule|meeting|call).{0,40}(time|slot|when)/.test(t) || /calendly/.test(t))
@@ -108,8 +117,12 @@ function classify(subject: string, body: string, interest?: number) {
 
   if (category === "spam" || category === "out_of_office") {
     priority = "cold";
-    confidence = 0.9;
-  } else if (interest === 1 || /\burgent\b|\basap\b|budget approved/.test(t)) {
+    confidence = 0.95;
+  } else if (
+    (interest === 1 || /\burgent\b|\basap\b|budget approved/.test(t)) &&
+    // "for urgent matters contact X" is an OOO tell — not a hot signal.
+    !/for (any )?urgent|in case of urgent|urgent (matters|assistance|help|queries|please contact|please call)/.test(t)
+  ) {
     priority = "hot";
     confidence = 0.85;
   } else if (interest === 2 || category === "meeting_request" || category === "demo_request" || category === "pricing_request") {
