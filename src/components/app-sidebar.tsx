@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Inbox, Kanban, LogOut, Plug, Settings } from "lucide-react";
+import { Inbox, Kanban, LayoutDashboard, LogOut, Plug, Settings } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -24,10 +24,9 @@ import { getCurrentWorkspace } from "@/lib/workspace.functions";
 import { listInstantlyThreads } from "@/lib/instantly.functions";
 import { useServerFn } from "@tanstack/react-start";
 
-// Inbox-first product: only four destinations in the primary nav.
-// Everything else (analytics, tasks, radar, memory, sync-status, help,
-// notification prefs) is reachable via ⌘K or Settings.
+// Dashboard = the action cockpit. Everything else stays one click away.
 const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox"; tour: string }[] = [
+  { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
   { to: "/app/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox", tour: "nav-inbox" },
   { to: "/app/pipeline", label: "Stages", icon: Kanban, tour: "nav-pipeline" },
   { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
