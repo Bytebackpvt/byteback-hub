@@ -171,8 +171,8 @@ function TasksCard({ tasks, loading }: { tasks: DashTask[]; loading: boolean }) 
         )}
         {tasks.slice(0, 10).map((t) => {
           const overdue = t.due && new Date(t.due) < new Date();
-          return (
-            <li key={t.id} className="flex items-center gap-2 px-3 py-2 text-sm">
+          const inner = (
+            <>
               <span
                 className={cn(
                   "h-1.5 w-1.5 shrink-0 rounded-full",
@@ -196,6 +196,26 @@ function TasksCard({ tasks, loading }: { tasks: DashTask[]; loading: boolean }) 
                     day: "numeric",
                   })}
                 </span>
+              )}
+            </>
+          );
+          return (
+            <li key={t.id}>
+              {t.thread_id ? (
+                <Link
+                  to="/app/inbox"
+                  search={{ thread: t.thread_id } as never}
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50"
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <Link
+                  to="/app/tasks"
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50"
+                >
+                  {inner}
+                </Link>
               )}
             </li>
           );
