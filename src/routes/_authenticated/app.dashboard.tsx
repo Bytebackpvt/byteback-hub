@@ -171,8 +171,8 @@ function TasksCard({ tasks, loading }: { tasks: DashTask[]; loading: boolean }) 
         )}
         {tasks.slice(0, 10).map((t) => {
           const overdue = t.due && new Date(t.due) < new Date();
-          return (
-            <li key={t.id} className="flex items-center gap-2 px-3 py-2 text-sm">
+          const inner = (
+            <>
               <span
                 className={cn(
                   "h-1.5 w-1.5 shrink-0 rounded-full",
@@ -196,6 +196,26 @@ function TasksCard({ tasks, loading }: { tasks: DashTask[]; loading: boolean }) 
                     day: "numeric",
                   })}
                 </span>
+              )}
+            </>
+          );
+          return (
+            <li key={t.id}>
+              {t.thread_id ? (
+                <Link
+                  to="/app/inbox"
+                  search={{ thread: t.thread_id } as never}
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50"
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <Link
+                  to="/app/tasks"
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50"
+                >
+                  {inner}
+                </Link>
               )}
             </li>
           );
@@ -222,30 +242,47 @@ function ActivityCard({ activity, loading }: { activity: ActivityRow[]; loading:
         {!loading && activity.length === 0 && (
           <li className="p-3 text-xs text-muted-foreground">No recent activity yet.</li>
         )}
-        {activity.slice(0, 12).map((a) => (
-          <li key={a.id} className="flex gap-2 px-3 py-2 text-xs">
-            {a.kind === "ai" ? (
-              <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-brand" />
-            ) : (
-              <User className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="truncate font-medium">{a.title}</span>
-                <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-                  {new Date(a.at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-              {a.detail && (
-                <div className="truncate text-muted-foreground">{a.detail}</div>
+        {activity.slice(0, 12).map((a) => {
+          const inner = (
+            <>
+              {a.kind === "ai" ? (
+                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-brand" />
+              ) : (
+                <User className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
               )}
-              <div className="text-[10px] text-muted-foreground/70">by {a.actor}</div>
-            </div>
-          </li>
-        ))}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="truncate font-medium">{a.title}</span>
+                  <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+                    {new Date(a.at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                {a.detail && (
+                  <div className="truncate text-muted-foreground">{a.detail}</div>
+                )}
+                <div className="text-[10px] text-muted-foreground/70">by {a.actor}</div>
+              </div>
+            </>
+          );
+          return (
+            <li key={a.id}>
+              {a.threadId ? (
+                <Link
+                  to="/app/inbox"
+                  search={{ thread: a.threadId } as never}
+                  className="flex gap-2 px-3 py-2 text-xs hover:bg-muted/50"
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <div className="flex gap-2 px-3 py-2 text-xs">{inner}</div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
