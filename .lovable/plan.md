@@ -1,103 +1,98 @@
-# Redesign: Inbox-First, Never Miss an Email
+# Bring back the Dashboard + smarter AI summaries
 
-Shift the product from a multi-section CRM into a single Unified Inbox where AI does the classification, reply tracking, and follow-up nudging automatically. Model: Superhuman / Missive / Spark, not HubSpot.
+Aapki baat sahi hai — Inbox alone se pata nahi chalta ki *abhi kispe kaam karna hai*. Dashboard wapas la rahi hoon, but ek "action cockpit" ke roop mein — CRM jaisa nahi. Sath hi AI summary ko multi-mailbox aware bana rahi hoon.
 
-## 1. Navigation & Shell (simplify)
-Collapse the sidebar to just four destinations:
-- **Inbox** (home — the product)
-- **Stages** (kanban of conversations by stage)
-- **Integrations** (mailboxes + notification channels)
-- **Settings** (workspace, custom stages/temperatures, notification prefs, team)
+## 1. Dashboard wapas — as the landing page
 
-Remove/hide from primary nav: Dashboard-as-index, CRM, Pipeline (folds into Stages), Radar, Tasks (folds into follow-ups), Analytics, Memory, Search (keep ⌘K palette), Sync Status (moved into Integrations detail), Notifications page (bell only), Help.
+Route: `/app` → redirect ab `/app/dashboard` pe jaayega (Inbox ek tab rahega, hataya nahi).
 
-`/app` route redirects to `/app/inbox`. Header keeps ⌘K, bell, tour.
+Sidebar: **Dashboard · Inbox · Stages · Integrations · Settings**
 
-## 2. Unified Inbox (the homepage)
-Single dense list combining every connected source. Each row shows in one line:
-Sender · Company · Subject · Preview · Mailbox pill · Time · Temperature dot · Stage pill · Reply-status pill · Assignee avatar · Follow-up chip.
+Dashboard layout (single scroll, dense cards):
 
-Row expansion shows: full AI summary (intent, urgency, next action, risks, suggested reply), thread history, quick actions (Reply, Snooze, Change stage/temp, Assign, Mark done).
+```text
+┌─────────────────────────────────────────────────────┐
+│  Good morning, Anjali · 3 things need you now       │
+├──────────────┬──────────────┬───────────────────────┤
+│ 🔥 Hot leads │ ⏰ Follow-up │ 📭 Unreplied         │
+│ (waiting)    │  due now     │  > 4h                │
+│  [list 5]    │  [list 5]    │  [list 5]            │
+├──────────────┴──────────────┴───────────────────────┤
+│  ✅ Priority tasks (today + overdue)  [list 10]     │
+├─────────────────────────────────────────────────────┤
+│  🧠 Recent AI & manual changes (audit feed)         │
+│  • AI marked "Acme quote" as Hot · 2m ago           │
+│  • You moved "XYZ" to Demo Requested · 10m ago      │
+│  • AI suggested reply to "PQR" · 15m ago            │
+└─────────────────────────────────────────────────────┘
+```
 
-Filters (chips, not menus): All · Waiting reply · Hot · Follow-up due · Unassigned · Mailbox:*
-Sort: latest activity first (already implemented — keep).
+Har row click → uska Inbox thread khulta hai.
 
-## 3. AI Auto-Detection
-Extend `classify.functions.ts` to output on every ingested message:
-- **Temperature**: hot / warm / cold / lost / spam
-- **Stage** (default taxonomy): new_lead, interested, need_pricing, demo_requested, inspection_requested, pickup_requested, rental_inquiry, amc_inquiry, itad_inquiry, refurb_laptop_inquiry, waiting_customer, followup_required, won, lost, closed
-- **Priority**: p0/p1/p2
-- **Suggested reply** (short)
+## 2. "Recent changes" feed — naya section
 
-Store on `email_threads` (extend columns). Manual override always wins (audit-logged — already exists).
+Ek dedicated card + full page (`/app/activity`) jo dikhaye:
+- AI ne kya classify/suggest kiya (temperature, stage, next action)
+- User ne kya manually badla (stage/temperature override)
+- Kis thread pe, kab, kisne
 
-**Custom stages/temperatures**: new tables `workspace_stages`, `workspace_temperatures` (name, color, order, is_default). Settings UI to CRUD. Classifier receives the workspace's active taxonomy in its prompt.
+Data source: existing `lead_audit_log` + `ai_events` tables — dono ko merge karke chronological feed. Yehi feed follow-up decisions ka base banega.
 
-## 4. Reply Detection Engine
-For every inbound thread, compute reply-status by joining inbound + sent rows on `gmail_thread_id` / `in_reply_to` / normalized subject+participants:
-- `waiting_reply` — inbound newer than last outbound
-- `replied` — outbound newer than last inbound
-- `customer_replied_again` — inbound newer than outbound, and prior outbound exists
-- `pending_followup` — replied, but customer hasn't answered within threshold
-- `closed` — stage in (won/lost/closed)
+## 3. AI summary — multi-mailbox & reply-aware
 
-Compute in a SQL view or in `sync.functions.ts` after ingest; persist on `email_threads.reply_status` + `last_outbound_at` / `last_inbound_at`. UI shows chips: "Replied 3m ago", "No reply yet", "Customer replied again".
+Abhi `assistant.functions.ts` sirf latest message dekhta hai. Upgrade:
 
-## 5. Follow-up Engine
-Per-workspace config: reminder ladder (15m, 30m, 1h, 4h, 24h, 48h — toggleable).
-Cron (`cron.escalate.ts` — extend) scans threads where `reply_status='waiting_reply'` and `last_inbound_at` older than next ladder step → emits notification (in-app + push + email + Slack webhook if configured) and stamps `followup_notified_at`.
+**Input to AI:** poora thread + mailbox context
+- Original inbound: `asset.purchase@... ← customer@...`
+- Outbound: `procurement@greenspark → customer@...`
+- All follow-ups in order
 
-Fold existing Tasks system into this — no separate Tasks page.
+**Output (structured):**
+```json
+{
+  "intent": "asset purchase inquiry",
+  "conversation_state": "customer replied to our quote",
+  "who_replied_last": "customer" | "us" | "auto-responder",
+  "our_reply_quality": "good | needs_followup | missed_question",
+  "next_action": "Send pricing breakdown for 50 laptops",
+  "next_action_owner": "procurement@greenspark",
+  "risks": ["customer asked for warranty terms — not answered"],
+  "suggested_reply": "..."
+}
+```
 
-## 6. Notifications (push mandatory)
-Web Push already scaffolded (`push.ts`, `sw.js`). Add server-side dispatch in the escalate/scan flow for: new_lead, hot_lead, warm_lead, customer_reply, no_reply_sent, followup_due, mailbox_disconnected, sync_failed, oauth_expiring. Reuse `notifications` table + `deliverToWebhooks` for Slack. Bell shows in-app feed.
+Key additions:
+- **Cross-mailbox awareness**: AI ko batayenge ki inbound `asset.purchase` pe aaya, reply `procurement` se gaya — same conversation hai, alag persona nahi.
+- **Reply quality check**: AI khud analyse karega ki humara last reply customer ke sawaal ka jawab de raha hai ya nahi. Agar miss hua → flag "needs_followup" + reason.
+- **Reply direction detection**: last message customer ka hai ya humara — isse "waiting for us" vs "waiting for customer" clear hoga.
 
-## 7. Sent Tracking (already partly done)
-Keep the Gmail SENT backfill. Add same for Instantly (already sent-aware). For IMAP/Outlook (future providers), require SENT folder selection at connect time. Surface "Last reply by <user> · 3m ago" on every row.
+Cache in `ai_insights_cache` keyed on `thread_id + message_count` (recompute jab naya message aaye).
 
-## 8. Better AI Summary
-Rewrite `assistant.functions.ts` / `ai.functions.ts` summarizer to take the **full thread** (all messages, chronological), not just latest. Output structured JSON: `{ intent, service_requested, urgency, next_action, risks, suggested_reply }`. Cache in `ai_insights_cache` keyed by thread + message count.
+## 4. Inbox row — surface the new insight
 
-## 9. Stages View
-Kanban replacement for `/app/pipeline` and `/app/crm` — one board, columns = workspace stages, cards = threads. Drag to change stage (writes audit). This is the only "CRM-ish" surface and it's optional.
+Har row pe ek chhota badge: **"AI: needs follow-up"** ya **"AI: customer waiting"** — dashboard ki Unreplied/Follow-up lists yahi signal use karengi.
 
-## 10. Cleanup
-Delete or hide routes: `app.crm`, `app.pipeline` (replaced by `app.stages`), `app.radar`, `app.tasks`, `app.memory`, `app.analytics` (move a mini KPI strip into Inbox header), `app.notifications` (bell only), `app.help`, `app.search` (⌘K only), `app.sync-status` (into Integrations).
+## Technical details
 
-## Technical Details
+**Files to add/change:**
+- `src/routes/_authenticated/app.dashboard.tsx` — new landing
+- `src/routes/_authenticated/app.index.tsx` — redirect `/app/dashboard`
+- `src/routes/_authenticated/app.activity.tsx` — full audit + AI feed
+- `src/components/app-sidebar.tsx` — add Dashboard link
+- `src/lib/dashboard.functions.ts` — server fn returning `{ hotLeads, followupsDue, unreplied, tasks, recentActivity }`
+- `src/lib/assistant.functions.ts` — new prompt + structured output with reply-quality
+- `src/lib/ai-insights-cache` reuse existing table
+- `src/components/ai-insight-panel.tsx` — render new fields (`our_reply_quality`, `risks`, `next_action_owner`)
 
-**Schema migration:**
-- `email_threads`: add `temperature`, `stage`, `priority`, `reply_status`, `last_inbound_at`, `last_outbound_at`, `followup_notified_at`, `assigned_user_id`, `suggested_reply`.
-- New `workspace_stages` (id, workspace_id, key, label, color, sort, is_system).
-- New `workspace_temperatures` (same shape).
-- New `workspace_followup_config` (ladder JSONB, channels JSONB).
-- Backfill defaults on migration; RLS + GRANTs per project rules.
+**No schema migration needed** — `lead_audit_log`, `ai_events`, `ai_insights_cache`, `tasks`, `email_threads` sab already hain.
 
-**Server functions to add/extend:**
-- `computeReplyStatus(threadId)` — invoked post-ingest.
-- `dispatchFollowups()` — cron.
-- `dispatchPush(userId, payload)` — Web Push over VAPID (extend `push.ts`).
-- `stages.functions.ts` / `temperatures.functions.ts` — CRUD.
-- `classify.functions.ts` — richer output.
-- `assistant.functions.ts` — full-thread summarizer.
+**Model:** `google/gemini-3-flash` for summaries (cheap, fast, structured-output capable).
 
-**Routes:**
-- `/app` → redirect `/app/inbox`.
-- New: `/app/stages`, `/app/settings/stages`, `/app/settings/followups`.
-- Removed from nav (files kept behind ⌘K until confirmed).
+## Order
 
-**Order of shipping (I'll do these in sequence, one turn each unless small):**
-1. Schema migration (stages, temperatures, thread columns, followup config).
-2. Extend classifier + summarizer; backfill on new syncs.
-3. Reply-status computation + UI chips.
-4. Inbox row redesign with all pills + expansion panel.
-5. Follow-up cron + web push dispatch.
-6. Stages kanban replacing pipeline/crm.
-7. Sidebar slim-down + route cleanup + settings pages.
+1. Dashboard page + server fn (30 min)
+2. Sidebar + redirect
+3. Activity feed page
+4. AI summary rewrite + new panel fields
 
-## Out of scope for this pass
-- Microsoft 365 / Outlook / generic IMAP connectors (registry exists, adapters are separate work — call out at the end).
-- Native Android/iOS push (web push covers PWA install on both; native shell is Capacitor and already wired).
-- Slack/Teams native apps (webhook delivery already covers Slack; Teams later).
-
-Approve and I'll start with step 1 (schema).
+Approve karo, main step 1 se shuru karti hoon.
