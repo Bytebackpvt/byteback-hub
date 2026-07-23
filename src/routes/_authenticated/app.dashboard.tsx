@@ -242,30 +242,47 @@ function ActivityCard({ activity, loading }: { activity: ActivityRow[]; loading:
         {!loading && activity.length === 0 && (
           <li className="p-3 text-xs text-muted-foreground">No recent activity yet.</li>
         )}
-        {activity.slice(0, 12).map((a) => (
-          <li key={a.id} className="flex gap-2 px-3 py-2 text-xs">
-            {a.kind === "ai" ? (
-              <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-brand" />
-            ) : (
-              <User className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="truncate font-medium">{a.title}</span>
-                <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-                  {new Date(a.at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-              {a.detail && (
-                <div className="truncate text-muted-foreground">{a.detail}</div>
+        {activity.slice(0, 12).map((a) => {
+          const inner = (
+            <>
+              {a.kind === "ai" ? (
+                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-brand" />
+              ) : (
+                <User className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
               )}
-              <div className="text-[10px] text-muted-foreground/70">by {a.actor}</div>
-            </div>
-          </li>
-        ))}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="truncate font-medium">{a.title}</span>
+                  <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+                    {new Date(a.at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                {a.detail && (
+                  <div className="truncate text-muted-foreground">{a.detail}</div>
+                )}
+                <div className="text-[10px] text-muted-foreground/70">by {a.actor}</div>
+              </div>
+            </>
+          );
+          return (
+            <li key={a.id}>
+              {a.threadId ? (
+                <Link
+                  to="/app/inbox"
+                  search={{ thread: a.threadId } as never}
+                  className="flex gap-2 px-3 py-2 text-xs hover:bg-muted/50"
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <div className="flex gap-2 px-3 py-2 text-xs">{inner}</div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
