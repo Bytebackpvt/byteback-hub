@@ -33,6 +33,7 @@ import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppTeamRouteImport } from './routes/_authenticated/app.team'
 import { Route as AuthenticatedAppTasksRouteImport } from './routes/_authenticated/app.tasks'
 import { Route as AuthenticatedAppSyncStatusRouteImport } from './routes/_authenticated/app.sync-status'
+import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app.settings'
 import { Route as AuthenticatedAppSearchRouteImport } from './routes/_authenticated/app.search'
 import { Route as AuthenticatedAppRadarRouteImport } from './routes/_authenticated/app.radar'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/app.pipeline'
@@ -51,6 +52,8 @@ import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/publ
 import { Route as ApiPublicCronSyncRouteImport } from './routes/api/public/cron.sync'
 import { Route as ApiPublicCronEscalateRouteImport } from './routes/api/public/cron.escalate'
 import { Route as ApiPublicCronDailyDigestRouteImport } from './routes/api/public/cron.daily-digest'
+import { Route as AuthenticatedAppSettingsTemperaturesRouteImport } from './routes/_authenticated/app.settings.temperatures'
+import { Route as AuthenticatedAppSettingsFollowupsRouteImport } from './routes/_authenticated/app.settings.followups'
 import { Route as AuthenticatedAppSettingsAccountRouteImport } from './routes/_authenticated/app.settings.account'
 import { Route as AuthenticatedAppNotificationsSettingsRouteImport } from './routes/_authenticated/app.notifications.settings'
 import { Route as AuthenticatedAppIntegrationsWebhooksRouteImport } from './routes/_authenticated/app.integrations.webhooks'
@@ -178,6 +181,12 @@ const AuthenticatedAppSyncStatusRoute =
     path: '/sync-status',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppSettingsRoute =
+  AuthenticatedAppSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppSearchRoute = AuthenticatedAppSearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -277,11 +286,23 @@ const ApiPublicCronDailyDigestRoute =
     path: '/api/public/cron/daily-digest',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAppSettingsTemperaturesRoute =
+  AuthenticatedAppSettingsTemperaturesRouteImport.update({
+    id: '/temperatures',
+    path: '/temperatures',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsFollowupsRoute =
+  AuthenticatedAppSettingsFollowupsRouteImport.update({
+    id: '/followups',
+    path: '/followups',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
 const AuthenticatedAppSettingsAccountRoute =
   AuthenticatedAppSettingsAccountRouteImport.update({
-    id: '/settings/account',
-    path: '/settings/account',
-    getParentRoute: () => AuthenticatedAppRoute,
+    id: '/account',
+    path: '/account',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
   } as any)
 const AuthenticatedAppNotificationsSettingsRoute =
   AuthenticatedAppNotificationsSettingsRouteImport.update({
@@ -345,6 +366,7 @@ export interface FileRoutesByFullPath {
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/radar': typeof AuthenticatedAppRadarRoute
   '/app/search': typeof AuthenticatedAppSearchRoute
+  '/app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
   '/app/sync-status': typeof AuthenticatedAppSyncStatusRoute
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
@@ -354,6 +376,8 @@ export interface FileRoutesByFullPath {
   '/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
   '/app/notifications/settings': typeof AuthenticatedAppNotificationsSettingsRoute
   '/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
+  '/app/settings/followups': typeof AuthenticatedAppSettingsFollowupsRoute
+  '/app/settings/temperatures': typeof AuthenticatedAppSettingsTemperaturesRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
@@ -391,6 +415,7 @@ export interface FileRoutesByTo {
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/radar': typeof AuthenticatedAppRadarRoute
   '/app/search': typeof AuthenticatedAppSearchRoute
+  '/app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
   '/app/sync-status': typeof AuthenticatedAppSyncStatusRoute
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
@@ -400,6 +425,8 @@ export interface FileRoutesByTo {
   '/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
   '/app/notifications/settings': typeof AuthenticatedAppNotificationsSettingsRoute
   '/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
+  '/app/settings/followups': typeof AuthenticatedAppSettingsFollowupsRoute
+  '/app/settings/temperatures': typeof AuthenticatedAppSettingsTemperaturesRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
@@ -442,6 +469,7 @@ export interface FileRoutesById {
   '/_authenticated/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/_authenticated/app/radar': typeof AuthenticatedAppRadarRoute
   '/_authenticated/app/search': typeof AuthenticatedAppSearchRoute
+  '/_authenticated/app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
   '/_authenticated/app/sync-status': typeof AuthenticatedAppSyncStatusRoute
   '/_authenticated/app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/app/team': typeof AuthenticatedAppTeamRoute
@@ -451,6 +479,8 @@ export interface FileRoutesById {
   '/_authenticated/app/integrations/webhooks': typeof AuthenticatedAppIntegrationsWebhooksRoute
   '/_authenticated/app/notifications/settings': typeof AuthenticatedAppNotificationsSettingsRoute
   '/_authenticated/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
+  '/_authenticated/app/settings/followups': typeof AuthenticatedAppSettingsFollowupsRoute
+  '/_authenticated/app/settings/temperatures': typeof AuthenticatedAppSettingsTemperaturesRoute
   '/api/public/cron/daily-digest': typeof ApiPublicCronDailyDigestRoute
   '/api/public/cron/escalate': typeof ApiPublicCronEscalateRoute
   '/api/public/cron/sync': typeof ApiPublicCronSyncRoute
@@ -493,6 +523,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/radar'
     | '/app/search'
+    | '/app/settings'
     | '/app/sync-status'
     | '/app/tasks'
     | '/app/team'
@@ -502,6 +533,8 @@ export interface FileRouteTypes {
     | '/app/integrations/webhooks'
     | '/app/notifications/settings'
     | '/app/settings/account'
+    | '/app/settings/followups'
+    | '/app/settings/temperatures'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
@@ -539,6 +572,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/radar'
     | '/app/search'
+    | '/app/settings'
     | '/app/sync-status'
     | '/app/tasks'
     | '/app/team'
@@ -548,6 +582,8 @@ export interface FileRouteTypes {
     | '/app/integrations/webhooks'
     | '/app/notifications/settings'
     | '/app/settings/account'
+    | '/app/settings/followups'
+    | '/app/settings/temperatures'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
@@ -589,6 +625,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/pipeline'
     | '/_authenticated/app/radar'
     | '/_authenticated/app/search'
+    | '/_authenticated/app/settings'
     | '/_authenticated/app/sync-status'
     | '/_authenticated/app/tasks'
     | '/_authenticated/app/team'
@@ -598,6 +635,8 @@ export interface FileRouteTypes {
     | '/_authenticated/app/integrations/webhooks'
     | '/_authenticated/app/notifications/settings'
     | '/_authenticated/app/settings/account'
+    | '/_authenticated/app/settings/followups'
+    | '/_authenticated/app/settings/temperatures'
     | '/api/public/cron/daily-digest'
     | '/api/public/cron/escalate'
     | '/api/public/cron/sync'
@@ -801,6 +840,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppSyncStatusRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/settings': {
+      id: '/_authenticated/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AuthenticatedAppSettingsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/search': {
       id: '/_authenticated/app/search'
       path: '/search'
@@ -927,12 +973,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronDailyDigestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app/settings/temperatures': {
+      id: '/_authenticated/app/settings/temperatures'
+      path: '/temperatures'
+      fullPath: '/app/settings/temperatures'
+      preLoaderRoute: typeof AuthenticatedAppSettingsTemperaturesRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/followups': {
+      id: '/_authenticated/app/settings/followups'
+      path: '/followups'
+      fullPath: '/app/settings/followups'
+      preLoaderRoute: typeof AuthenticatedAppSettingsFollowupsRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
     '/_authenticated/app/settings/account': {
       id: '/_authenticated/app/settings/account'
-      path: '/settings/account'
+      path: '/account'
       fullPath: '/app/settings/account'
       preLoaderRoute: typeof AuthenticatedAppSettingsAccountRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
+      parentRoute: typeof AuthenticatedAppSettingsRoute
     }
     '/_authenticated/app/notifications/settings': {
       id: '/_authenticated/app/notifications/settings'
@@ -1011,6 +1071,26 @@ const AuthenticatedAppNotificationsRouteWithChildren =
     AuthenticatedAppNotificationsRouteChildren,
   )
 
+interface AuthenticatedAppSettingsRouteChildren {
+  AuthenticatedAppSettingsAccountRoute: typeof AuthenticatedAppSettingsAccountRoute
+  AuthenticatedAppSettingsFollowupsRoute: typeof AuthenticatedAppSettingsFollowupsRoute
+  AuthenticatedAppSettingsTemperaturesRoute: typeof AuthenticatedAppSettingsTemperaturesRoute
+}
+
+const AuthenticatedAppSettingsRouteChildren: AuthenticatedAppSettingsRouteChildren =
+  {
+    AuthenticatedAppSettingsAccountRoute: AuthenticatedAppSettingsAccountRoute,
+    AuthenticatedAppSettingsFollowupsRoute:
+      AuthenticatedAppSettingsFollowupsRoute,
+    AuthenticatedAppSettingsTemperaturesRoute:
+      AuthenticatedAppSettingsTemperaturesRoute,
+  }
+
+const AuthenticatedAppSettingsRouteWithChildren =
+  AuthenticatedAppSettingsRoute._addFileChildren(
+    AuthenticatedAppSettingsRouteChildren,
+  )
+
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAnalyticsRoute: typeof AuthenticatedAppAnalyticsRoute
   AuthenticatedAppCrmRoute: typeof AuthenticatedAppCrmRoute
@@ -1023,11 +1103,11 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
   AuthenticatedAppRadarRoute: typeof AuthenticatedAppRadarRoute
   AuthenticatedAppSearchRoute: typeof AuthenticatedAppSearchRoute
+  AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRouteWithChildren
   AuthenticatedAppSyncStatusRoute: typeof AuthenticatedAppSyncStatusRoute
   AuthenticatedAppTasksRoute: typeof AuthenticatedAppTasksRoute
   AuthenticatedAppTeamRoute: typeof AuthenticatedAppTeamRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
-  AuthenticatedAppSettingsAccountRoute: typeof AuthenticatedAppSettingsAccountRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
@@ -1044,11 +1124,11 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
   AuthenticatedAppRadarRoute: AuthenticatedAppRadarRoute,
   AuthenticatedAppSearchRoute: AuthenticatedAppSearchRoute,
+  AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRouteWithChildren,
   AuthenticatedAppSyncStatusRoute: AuthenticatedAppSyncStatusRoute,
   AuthenticatedAppTasksRoute: AuthenticatedAppTasksRoute,
   AuthenticatedAppTeamRoute: AuthenticatedAppTeamRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
-  AuthenticatedAppSettingsAccountRoute: AuthenticatedAppSettingsAccountRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =
