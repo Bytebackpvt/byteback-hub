@@ -424,55 +424,85 @@ export type Database = {
       }
       email_threads: {
         Row: {
+          ai_summary: Json | null
+          assigned_user_id: string | null
           category: string | null
           confidence: number | null
           contact_email: string | null
           contact_id: string | null
           created_at: string
+          followup_notified_at: string | null
+          followup_step: string | null
           id: string
           last_body: string | null
+          last_inbound_at: string | null
+          last_outbound_at: string | null
           last_received_at: string | null
           mailbox: string | null
           meta: Json
           priority: string | null
+          reply_status: string | null
           source: string
+          stage: string | null
           subject: string | null
+          suggested_reply: string | null
+          temperature: string | null
           thread_id: string
           updated_at: string
           workspace_id: string
         }
         Insert: {
+          ai_summary?: Json | null
+          assigned_user_id?: string | null
           category?: string | null
           confidence?: number | null
           contact_email?: string | null
           contact_id?: string | null
           created_at?: string
+          followup_notified_at?: string | null
+          followup_step?: string | null
           id?: string
           last_body?: string | null
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
           last_received_at?: string | null
           mailbox?: string | null
           meta?: Json
           priority?: string | null
+          reply_status?: string | null
           source?: string
+          stage?: string | null
           subject?: string | null
+          suggested_reply?: string | null
+          temperature?: string | null
           thread_id: string
           updated_at?: string
           workspace_id: string
         }
         Update: {
+          ai_summary?: Json | null
+          assigned_user_id?: string | null
           category?: string | null
           confidence?: number | null
           contact_email?: string | null
           contact_id?: string | null
           created_at?: string
+          followup_notified_at?: string | null
+          followup_step?: string | null
           id?: string
           last_body?: string | null
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
           last_received_at?: string | null
           mailbox?: string | null
           meta?: Json
           priority?: string | null
+          reply_status?: string | null
           source?: string
+          stage?: string | null
           subject?: string | null
+          suggested_reply?: string | null
+          temperature?: string | null
           thread_id?: string
           updated_at?: string
           workspace_id?: string
@@ -1130,6 +1160,41 @@ export type Database = {
         }
         Relationships: []
       }
+      workspace_followup_config: {
+        Row: {
+          channels: Json
+          created_at: string
+          enabled: boolean
+          ladder_minutes: number[]
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          channels?: Json
+          created_at?: string
+          enabled?: boolean
+          ladder_minutes?: number[]
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          channels?: Json
+          created_at?: string
+          enabled?: boolean
+          ladder_minutes?: number[]
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_followup_config_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_integrations: {
         Row: {
           config: Json
@@ -1261,6 +1326,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_temperatures: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_system: boolean
+          label: string
+          slug: string
+          sort_order: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          label: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          label?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_temperatures_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

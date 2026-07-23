@@ -1,15 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  Activity,
-  Bell,
-  HelpCircle,
-  Inbox,
-  Kanban,
-  LayoutDashboard,
-  LogOut,
-  Plug,
-  Settings,
-} from "lucide-react";
+import { Inbox, Kanban, LogOut, Plug, Settings } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -23,7 +13,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -35,13 +24,14 @@ import { getCurrentWorkspace } from "@/lib/workspace.functions";
 import { listInstantlyThreads } from "@/lib/instantly.functions";
 import { useServerFn } from "@tanstack/react-start";
 
+// Inbox-first product: only four destinations in the primary nav.
+// Everything else (analytics, tasks, radar, memory, sync-status, help,
+// notification prefs) is reachable via ⌘K or Settings.
 const NAV: { to: string; label: string; icon: typeof Inbox; badgeKey?: "inbox"; tour: string }[] = [
-  { to: "/app", label: "Dashboard", icon: LayoutDashboard, tour: "nav-dashboard" },
-  { to: "/app/inbox", label: "Unibox", icon: Inbox, badgeKey: "inbox", tour: "nav-inbox" },
+  { to: "/app/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox", tour: "nav-inbox" },
   { to: "/app/pipeline", label: "Stages", icon: Kanban, tour: "nav-pipeline" },
   { to: "/app/integrations", label: "Integrations", icon: Plug, tour: "nav-integrations" },
-  { to: "/app/sync-status", label: "Sync status", icon: Activity, tour: "nav-sync" },
-  { to: "/app/help", label: "Help", icon: HelpCircle, tour: "nav-help" },
+  { to: "/app/settings", label: "Settings", icon: Settings, tour: "nav-settings" },
 ];
 
 
@@ -87,11 +77,10 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {NAV.map((item) => {
-                const active = item.to === "/app" ? pathname === "/app" : pathname.startsWith(item.to);
+                const active = pathname.startsWith(item.to);
                 return (
                   <SidebarMenuItem key={item.to} data-tour={item.tour}>
                     <SidebarMenuButton asChild isActive={active}>
@@ -122,20 +111,9 @@ export function AppSidebar() {
           <ThemeToggle />
         </div>
         <div className="flex gap-1">
-          <Button asChild variant="ghost" size="sm" className="flex-1 justify-start text-xs">
-            <Link to="/app/settings/account">
-              <Settings className="h-3.5 w-3.5" /> Settings
-            </Link>
+          <Button variant="ghost" size="sm" onClick={signOut} className="flex-1 justify-start text-xs">
+            <LogOut className="h-3.5 w-3.5" /> Sign out
           </Button>
-          <Button asChild variant="ghost" size="sm" className="text-xs" title="Notifications">
-            <Link to="/app/notifications/settings">
-              <Bell className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-          <Button variant="ghost" size="sm" onClick={signOut} className="text-xs">
-            <LogOut className="h-3.5 w-3.5" />
-          </Button>
-
         </div>
       </SidebarFooter>
     </Sidebar>
