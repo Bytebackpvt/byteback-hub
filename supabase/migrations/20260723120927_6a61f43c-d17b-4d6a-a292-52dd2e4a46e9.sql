@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.upsert_lead_for_thread() FROM PUBLIC, anon, authenticated;
