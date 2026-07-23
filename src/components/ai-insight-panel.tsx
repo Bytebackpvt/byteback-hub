@@ -230,6 +230,46 @@ export function AiInsightPanel({ threadId, from, fromEmail, company, subject, bo
             </div>
           </div>
 
+          {(result.who_replied_last || result.our_reply_quality) && (
+            <div className="rounded-md border bg-muted/30 p-2 text-xs">
+              <div className="mb-1 font-medium text-muted-foreground">Conversation state</div>
+              <div className="flex flex-wrap gap-1.5">
+                {result.who_replied_last && result.who_replied_last !== "unknown" && (
+                  <Badge variant="outline" className="text-[10px]">
+                    Last reply: {result.who_replied_last === "us" ? "us" : result.who_replied_last === "customer" ? "customer" : "auto-responder"}
+                  </Badge>
+                )}
+                {result.our_reply_quality && result.our_reply_quality !== "n/a" && (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[10px]",
+                      result.our_reply_quality === "good" && "border-emerald-500/40 text-emerald-600",
+                      result.our_reply_quality === "needs_followup" && "border-amber-500/40 text-amber-600",
+                      result.our_reply_quality === "missed_question" && "border-red-500/40 text-red-600",
+                    )}
+                  >
+                    Our reply: {result.our_reply_quality.replace("_", " ")}
+                  </Badge>
+                )}
+              </div>
+              {result.risks && result.risks.length > 0 && (
+                <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-muted-foreground">
+                  {result.risks.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {result.suggested_reply && (
+            <div className="rounded-md border border-brand/30 bg-brand/5 p-2 text-xs">
+              <div className="mb-1 font-medium text-brand">Suggested reply</div>
+              <p className="whitespace-pre-wrap text-foreground">{result.suggested_reply}</p>
+            </div>
+          )}
+
           {result.priority === "hot" && (
             <div className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 p-2 text-xs">
               <AlertTriangle className="mt-0.5 h-3 w-3 text-red-500" />
