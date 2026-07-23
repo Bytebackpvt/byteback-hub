@@ -84,6 +84,16 @@ export function AiInsightPanel({ threadId, from, fromEmail, company, subject, bo
     });
   }, [alreadyClassified, result, loading]);
 
+  // Auto-run AI analysis when opening a thread that has no prior classification.
+  useEffect(() => {
+    if (result || loading) return;
+    if (alreadyClassified) return;
+    if (eventsQuery.isLoading) return;
+    if (!body && !subject) return;
+    analyze();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadId, alreadyClassified, eventsQuery.isLoading]);
+
   const analyze = async () => {
     setLoading(true);
     try {
