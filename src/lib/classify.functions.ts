@@ -84,11 +84,23 @@ export const NEXT_ACTION_LABELS: Record<AiNextAction, string> = {
   mark_spam: "Mark Spam",
 };
 
+const ThreadMsgInput = z.object({
+  direction: z.enum(["in", "out"]),
+  from: z.string().optional().default(""),
+  to: z.string().optional().default(""),
+  at: z.string().optional().default(""),
+  body: z.string().max(2000).optional().default(""),
+});
+
 const ClassifyInput = z.object({
   from: z.string(),
   company: z.string().optional().default(""),
   subject: z.string(),
   body: z.string().max(6000),
+  // Optional thread context — when provided, the model reasons across the
+  // whole conversation and knows which mailboxes on our side have replied.
+  ourMailboxes: z.array(z.string()).optional(),
+  thread: z.array(ThreadMsgInput).max(20).optional(),
 });
 
 export type ClassifyResult = {
@@ -99,6 +111,10 @@ export type ClassifyResult = {
   next_action_reason: string;
   priority: "hot" | "warm" | "cold";
   signals: string[];
+  who_replied_last?: "customer" | "us" | "auto" | "unknown";
+  our_reply_quality?: "good" | "needs_followup" | "missed_question" | "n/a";
+  risks?: string[];
+  suggested_reply?: string;
 };
 
 const FALLBACK: ClassifyResult = {
@@ -109,6 +125,10 @@ const FALLBACK: ClassifyResult = {
   next_action_reason: "Review manually.",
   priority: "cold",
   signals: [],
+  who_replied_last: "unknown",
+  our_reply_quality: "n/a",
+  risks: [],
+  suggested_reply: "",
 };
 
 export const classifyEmail = createServerFn({ method: "POST" })
@@ -118,25 +138,31 @@ export const classifyEmail = createServerFn({ method: "POST" })
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("Missing LOVABLE_API_KEY");
 
-    const system = `You are an expert B2B email intent classifier for an IT-services / device-lifecycle company (rentals, AMC, ITAD, ITAM, refurbished laptops, pickups, inspections, demos, sales).
-Read the incoming email and classify INTENT based on CONTEXT, not keywords. Distinguish, for example:
-- pricing_request (asking cost/rates) vs quotation (asking for a formal quote doc)
+    const system = `You are an expert B2B email intent classifier and conversation analyst for an IT-services / device-lifecycle company (rentals, AMC, ITAD, ITAM, refurbished laptops, pickups, inspections, demos, sales).
+
+You will be given (1) the latest inbound email and, when available, (2) the full thread history with each message tagged as "in" (customer → us) or "out" (us → customer). "Us" may reply from ANY of our mailboxes (e.g. asset.purchase@, procurement@greenspark, sales@) — treat every "out" message as our team, one conversation, even if the From changes. Do NOT flag mailbox switches as new persons.
+
+Classify INTENT based on CONTEXT, not keywords. Distinguish, for example:
+- pricing_request (asking cost/rates) vs quotation (formal quote doc)
 - demo_request vs meeting_request
-- interested (mild signal) vs very_interested (strong buying signal, dates/budget/urgency)
-- pickup_request vs inspection_request (physical asset handling)
-- out_of_office / auto_reply / wrong_person / spam are non-actionable
+- interested (mild) vs very_interested (strong buying signal: dates, budget, urgency)
+- pickup_request vs inspection_request
+- out_of_office / auto_reply / wrong_person / spam → non-actionable
 
-PRIORITY RUBRIC (be strict — do not inflate to hot):
-- HOT — explicit buying signal: asks for a demo, quote, pricing, meeting, PO, contract, dates, budget, "when can we start", "send proposal", "book a call".
-- WARM — engaged and curious but NO buying signal yet: asks clarifying questions, wants more info, "tell me more", "how does it work", replies but non-committal.
-- COLD — auto-reply, out-of-office, unsubscribe, "not interested", "remove me", bounce, wrong person, spam, or generic acknowledgement with no follow-up needed.
+PRIORITY RUBRIC (strict — do not inflate to hot):
+- HOT — explicit buying signal: demo, quote, pricing, meeting, PO, contract, dates, budget, "when can we start", "send proposal", "book a call".
+- WARM — engaged but no buying signal yet: clarifying questions, "tell me more", non-committal replies.
+- COLD — auto-reply, OOO, unsubscribe, "not interested", bounce, wrong person, spam.
 
-Few-shot examples:
-- "Can you send pricing for 50 laptops? Need by Friday." → very_interested, HOT
-- "Interesting, tell me more about your ITAD process." → interested, WARM
-- "Out of office until Monday." → out_of_office, COLD
-- "Please remove me from your list." → wrong_person, COLD
-- "Thanks, will review internally." → interested, WARM (not hot — no commitment)
+REPLY QUALITY (only when thread has ≥1 "out" message):
+- who_replied_last = "customer" | "us" | "auto" | "unknown".
+- our_reply_quality:
+  * "good" — our last "out" message directly answered the customer's questions.
+  * "needs_followup" — we replied but a follow-up is expected (waiting on customer decision).
+  * "missed_question" — customer asked something concrete and our reply skipped it. List it in risks.
+  * "n/a" — no "out" messages yet or not applicable.
+- risks: short strings like "warranty terms not answered", "timeline not confirmed".
+- suggested_reply: one short paragraph the user can send now, tuned to the CURRENT conversation state. Skip if next_action is wait/archive/mark_spam.
 
 Return STRICT JSON only, no prose, no markdown fences. Schema:
 {
@@ -146,13 +172,30 @@ Return STRICT JSON only, no prose, no markdown fences. Schema:
   "next_action": one of [${AI_NEXT_ACTIONS.join(", ")}],
   "next_action_reason": string (max 20 words),
   "priority": one of [hot, warm, cold],
-  "signals": array of up to 4 short evidence tags (max 4 words each)
+  "signals": array of up to 4 short evidence tags (max 4 words each),
+  "who_replied_last": "customer" | "us" | "auto" | "unknown",
+  "our_reply_quality": "good" | "needs_followup" | "missed_question" | "n/a",
+  "risks": array of up to 3 short strings,
+  "suggested_reply": string (max 80 words, plain text)
 }`;
 
-    const user = `From: ${data.from}${data.company ? ` (${data.company})` : ""}
+    const ourMailboxes = (data.ourMailboxes ?? []).filter(Boolean).join(", ");
+    const threadBlock =
+      data.thread && data.thread.length
+        ? "\n\nThread history (oldest → newest):\n" +
+          data.thread
+            .map(
+              (m, i) =>
+                `#${i + 1} [${m.direction === "in" ? "CUSTOMER" : "US"}] ${m.at ? m.at + " " : ""}${m.from ? `from ${m.from} ` : ""}${m.to ? `to ${m.to}` : ""}\n${(m.body ?? "").slice(0, 1200)}`,
+            )
+            .join("\n---\n")
+        : "";
+
+    const user = `${ourMailboxes ? `Our mailboxes: ${ourMailboxes}\n` : ""}Latest inbound:
+From: ${data.from}${data.company ? ` (${data.company})` : ""}
 Subject: ${data.subject}
 Body:
-${data.body.slice(0, 5000)}`;
+${data.body.slice(0, 5000)}${threadBlock}`;
 
     const res = await fetch(GATEWAY_URL, {
       method: "POST",
@@ -186,6 +229,18 @@ ${data.body.slice(0, 5000)}`;
       const priorityRaw = String(parsed.priority ?? "cold").toLowerCase();
       const priority: ClassifyResult["priority"] =
         priorityRaw === "hot" ? "hot" : priorityRaw === "warm" ? "warm" : "cold";
+      const whoRaw = String(parsed.who_replied_last ?? "unknown").toLowerCase();
+      const who_replied_last = (["customer", "us", "auto", "unknown"] as const).includes(
+        whoRaw as never,
+      )
+        ? (whoRaw as ClassifyResult["who_replied_last"])
+        : "unknown";
+      const qualRaw = String(parsed.our_reply_quality ?? "n/a").toLowerCase();
+      const our_reply_quality = (
+        ["good", "needs_followup", "missed_question", "n/a"] as const
+      ).includes(qualRaw as never)
+        ? (qualRaw as ClassifyResult["our_reply_quality"])
+        : "n/a";
       return {
         category,
         confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0)),
@@ -196,6 +251,12 @@ ${data.body.slice(0, 5000)}`;
         signals: Array.isArray(parsed.signals)
           ? parsed.signals.slice(0, 4).map((s) => String(s).slice(0, 40))
           : [],
+        who_replied_last,
+        our_reply_quality,
+        risks: Array.isArray(parsed.risks)
+          ? parsed.risks.slice(0, 3).map((s) => String(s).slice(0, 120))
+          : [],
+        suggested_reply: String(parsed.suggested_reply ?? "").slice(0, 600),
       };
     } catch {
       return FALLBACK;
