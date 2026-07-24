@@ -50,11 +50,11 @@ async function upsertFromSubscription(sub: any, env: StripeEnv) {
     return;
   }
 
-  await getSupabase().from("workspace_subscriptions").upsert(
-    [{
+  await (getSupabase() as any).from("workspace_subscriptions").upsert(
+    {
       workspace_id: workspaceId,
       plan_key: sub.status === "canceled" && periodEnd
-        ? nextPlan // still active until period_end
+        ? nextPlan
         : isActive
           ? nextPlan
           : "free",
@@ -66,7 +66,7 @@ async function upsertFromSubscription(sub: any, env: StripeEnv) {
       cancel_at_period_end: Boolean(sub.cancel_at_period_end),
       environment: env,
       updated_at: new Date().toISOString(),
-    }],
+    },
     { onConflict: "workspace_id" },
   );
 }
