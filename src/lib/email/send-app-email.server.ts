@@ -77,13 +77,31 @@ export async function sendAppEmail(input: SendAppEmailInput): Promise<SendAppEma
 </div>`;
 
   const messageId = randomUUID();
+  // Lovable Email API requires a non-empty `text` field. Derive a plain-text
+  // fallback from the HTML when the caller didn't provide one, otherwise sends
+  // fail with 400 missing_parameter: text and dead-letter after 5 retries.
+  const textFallback = (input.text && input.text.trim())
+    || html
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|div|h[1-6]|li)>/gi, "\n")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+    || input.subject;
   const payload = {
     to: toEmail,
     from: FROM,
     sender_domain: SENDER_DOMAIN,
     subject: input.subject,
     html,
-    text: input.text ?? undefined,
+    text: textFallback,
     purpose: "transactional",
     label: input.label,
     message_id: messageId,
