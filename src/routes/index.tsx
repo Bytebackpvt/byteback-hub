@@ -362,16 +362,17 @@ function Hero() {
                 <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </Link>
-            <Button
-              size="lg"
-              variant="outline"
-              className="rounded-xl border-border/70 bg-background/60 px-5 backdrop-blur"
-            >
-              Book a demo
-            </Button>
-            <button className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-muted-foreground transition hover:text-foreground">
-              <Play className="h-4 w-4" /> Watch demo
-            </button>
+            <BookDemoDialog
+              trigger={
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="rounded-xl border-border/70 bg-background/60 px-5 backdrop-blur"
+                >
+                  Book a demo
+                </Button>
+              }
+            />
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
             Free forever plan · No card required · 5-minute setup
@@ -752,14 +753,24 @@ function Pricing() {
                 <span className="text-3xl font-semibold tracking-tight">{tier.price}</span>
                 <span className="text-sm text-muted-foreground">/ {tier.period}</span>
               </div>
-              <Link to="/auth" className="mt-5">
-                <Button
-                  className="w-full rounded-lg"
-                  variant={tier.highlight ? "default" : "outline"}
-                >
-                  {tier.cta}
-                </Button>
-              </Link>
+              {tier.cta === "Talk to sales" ? (
+                <BookDemoDialog
+                  trigger={
+                    <Button className="mt-5 w-full rounded-lg" variant={tier.highlight ? "default" : "outline"}>
+                      {tier.cta}
+                    </Button>
+                  }
+                />
+              ) : (
+                <Link to="/auth" className="mt-5">
+                  <Button
+                    className="w-full rounded-lg"
+                    variant={tier.highlight ? "default" : "outline"}
+                  >
+                    {tier.cta}
+                  </Button>
+                </Link>
+              )}
               <ul className="mt-6 space-y-2.5 text-sm">
                 {tier.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">
@@ -854,9 +865,13 @@ function FinalCTA() {
                 Start free <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="rounded-xl px-5">
-              Book a demo
-            </Button>
+            <BookDemoDialog
+              trigger={
+                <Button size="lg" variant="outline" className="rounded-xl px-5">
+                  Book a demo
+                </Button>
+              }
+            />
           </div>
         </div>
       </div>
