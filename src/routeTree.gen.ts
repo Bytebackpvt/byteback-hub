@@ -30,6 +30,7 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email.unsubscribe'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
+import { Route as ApiPublicBookDemoRouteImport } from './routes/api/public/book-demo'
 import { Route as AuthenticatedAppTeamRouteImport } from './routes/_authenticated/app.team'
 import { Route as AuthenticatedAppTasksRouteImport } from './routes/_authenticated/app.tasks'
 import { Route as AuthenticatedAppSyncStatusRouteImport } from './routes/_authenticated/app.sync-status'
@@ -168,6 +169,11 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const ApiPublicBookDemoRoute = ApiPublicBookDemoRouteImport.update({
+  id: '/api/public/book-demo',
+  path: '/api/public/book-demo',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppTeamRoute = AuthenticatedAppTeamRouteImport.update({
   id: '/team',
@@ -400,6 +406,7 @@ export interface FileRoutesByFullPath {
   '/app/sync-status': typeof AuthenticatedAppSyncStatusRoute
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
+  '/api/public/book-demo': typeof ApiPublicBookDemoRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/integrations/$providerId': typeof AuthenticatedAppIntegrationsProviderIdRoute
   '/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
@@ -453,6 +460,7 @@ export interface FileRoutesByTo {
   '/app/sync-status': typeof AuthenticatedAppSyncStatusRoute
   '/app/tasks': typeof AuthenticatedAppTasksRoute
   '/app/team': typeof AuthenticatedAppTeamRoute
+  '/api/public/book-demo': typeof ApiPublicBookDemoRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/integrations/$providerId': typeof AuthenticatedAppIntegrationsProviderIdRoute
   '/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
@@ -511,6 +519,7 @@ export interface FileRoutesById {
   '/_authenticated/app/sync-status': typeof AuthenticatedAppSyncStatusRoute
   '/_authenticated/app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/app/team': typeof AuthenticatedAppTeamRoute
+  '/api/public/book-demo': typeof ApiPublicBookDemoRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/integrations/$providerId': typeof AuthenticatedAppIntegrationsProviderIdRoute
   '/_authenticated/app/integrations/connected': typeof AuthenticatedAppIntegrationsConnectedRoute
@@ -569,6 +578,7 @@ export interface FileRouteTypes {
     | '/app/sync-status'
     | '/app/tasks'
     | '/app/team'
+    | '/api/public/book-demo'
     | '/app/'
     | '/app/integrations/$providerId'
     | '/app/integrations/connected'
@@ -622,6 +632,7 @@ export interface FileRouteTypes {
     | '/app/sync-status'
     | '/app/tasks'
     | '/app/team'
+    | '/api/public/book-demo'
     | '/app'
     | '/app/integrations/$providerId'
     | '/app/integrations/connected'
@@ -679,6 +690,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/sync-status'
     | '/_authenticated/app/tasks'
     | '/_authenticated/app/team'
+    | '/api/public/book-demo'
     | '/_authenticated/app/'
     | '/_authenticated/app/integrations/$providerId'
     | '/_authenticated/app/integrations/connected'
@@ -712,6 +724,7 @@ export interface RootRouteChildren {
   VerificationRoute: typeof VerificationRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  ApiPublicBookDemoRoute: typeof ApiPublicBookDemoRoute
   ApiPublicCronDailyDigestRoute: typeof ApiPublicCronDailyDigestRoute
   ApiPublicCronEscalateRoute: typeof ApiPublicCronEscalateRoute
   ApiPublicCronSyncRoute: typeof ApiPublicCronSyncRoute
@@ -870,6 +883,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/api/public/book-demo': {
+      id: '/api/public/book-demo'
+      path: '/api/public/book-demo'
+      fullPath: '/api/public/book-demo'
+      preLoaderRoute: typeof ApiPublicBookDemoRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/app/team': {
       id: '/_authenticated/app/team'
@@ -1267,6 +1287,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerificationRoute: VerificationRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   InviteTokenRoute: InviteTokenRoute,
+  ApiPublicBookDemoRoute: ApiPublicBookDemoRoute,
   ApiPublicCronDailyDigestRoute: ApiPublicCronDailyDigestRoute,
   ApiPublicCronEscalateRoute: ApiPublicCronEscalateRoute,
   ApiPublicCronSyncRoute: ApiPublicCronSyncRoute,
