@@ -41,7 +41,7 @@ function InvitePage() {
   }, []);
 
   const invite = inviteQ.data;
-  const loading = inviteQ.isLoading || sessionEmail === undefined;
+  const loading = inviteQ.isLoading;
 
   async function handleAccept() {
     setAccepting(true);
@@ -73,11 +73,17 @@ function InvitePage() {
             </p>
             <Link to="/" className="text-sm underline">Back to home</Link>
           </div>
-        ) : invite.acceptedAt ? (
+        ) : invite.status === "accepted" || invite.status === "already_member" ? (
           <div className="text-center space-y-3">
             <CheckCircle2 className="h-10 w-10 mx-auto text-emerald-500" />
-            <h1 className="text-xl font-semibold">Already accepted</h1>
-            <p className="text-sm text-muted-foreground">This invite has already been used.</p>
+            <h1 className="text-xl font-semibold">
+              {invite.status === "already_member" ? "Already in workspace" : "Already accepted"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {invite.status === "already_member"
+                ? `You're already a member of ${invite.workspaceName}.`
+                : "This invite has already been used."}
+            </p>
             <Link to="/app" className="text-sm underline">Go to app</Link>
           </div>
         ) : (
@@ -94,18 +100,23 @@ function InvitePage() {
               </p>
             </div>
 
-            {sessionEmail === null ? (
+            {sessionEmail === undefined || sessionEmail === null ? (
               <div className="space-y-3">
                 <p className="text-sm text-center text-muted-foreground">
                   Sign in as <b>{invite.email}</b> to accept this invite.
                 </p>
                 <Button
                   className="w-full"
+                  disabled={sessionEmail === undefined}
                   onClick={() => {
                     window.location.href = `/auth?next=${encodeURIComponent(`/invite/${token}`)}&email=${encodeURIComponent(invite.email)}`;
                   }}
                 >
-                  Sign in / Sign up
+                  {sessionEmail === undefined ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Sign in / Sign up"
+                  )}
                 </Button>
               </div>
             ) : sessionEmail.toLowerCase() !== invite.email.toLowerCase() ? (
