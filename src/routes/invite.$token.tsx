@@ -73,11 +73,17 @@ function InvitePage() {
             </p>
             <Link to="/" className="text-sm underline">Back to home</Link>
           </div>
-        ) : invite.acceptedAt ? (
+        ) : invite.status === "accepted" || invite.status === "already_member" ? (
           <div className="text-center space-y-3">
             <CheckCircle2 className="h-10 w-10 mx-auto text-emerald-500" />
-            <h1 className="text-xl font-semibold">Already accepted</h1>
-            <p className="text-sm text-muted-foreground">This invite has already been used.</p>
+            <h1 className="text-xl font-semibold">
+              {invite.status === "already_member" ? "Already in workspace" : "Already accepted"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {invite.status === "already_member"
+                ? `You're already a member of ${invite.workspaceName}.`
+                : "This invite has already been used."}
+            </p>
             <Link to="/app" className="text-sm underline">Go to app</Link>
           </div>
         ) : (

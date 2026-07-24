@@ -15,16 +15,17 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
 
     // No session on the client — only bounce to /auth for calls made from
     // inside the protected app. On public pages (e.g. /auth itself, landing,
-    // /invite/*) let the unauthenticated call fail so the caller can handle
-    // it without a full-page redirect that would feel like "random logout".
+    // /invite/*), let public server functions run without a bearer token;
+    // protected server functions will still reject on the server.
     if (!token) {
       const path = window.location.pathname;
       const insideApp = path.startsWith("/app");
       if (insideApp && !path.startsWith("/auth")) {
         const next = window.location.pathname + window.location.search;
         window.location.replace(`/auth?next=${encodeURIComponent(next)}`);
+        throw new Error("Not signed in");
       }
-      throw new Error("Not signed in");
+      return await next();
     }
 
     try {

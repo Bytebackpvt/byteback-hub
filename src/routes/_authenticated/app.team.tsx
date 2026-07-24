@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Loader2, Mail, Shield, Trash2, UserPlus, Users } from "lucide-react";
+import { Copy, Loader2, Mail, Shield, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -60,11 +60,13 @@ function TeamPage() {
   const [inviteRole, setInviteRole] = useState<Role>("member");
 
   const inviteMut = useMutation({
-    mutationFn: () => callInvite({ data: { email: inviteEmail.trim(), role: inviteRole } }),
+    mutationFn: () => callInvite({ data: { email: inviteEmail.trim(), role: inviteRole, origin: window.location.origin } }),
     onSuccess: (res) => {
       toast.success(
         res.added
-          ? "Teammate added to workspace."
+          ? res.emailed
+            ? "Teammate added and notified."
+            : "Teammate added to workspace."
           : res.emailed
           ? "Invitation email sent."
           : "Invite saved — email couldn't be delivered, share the signup link manually.",
@@ -202,6 +204,19 @@ function TeamPage() {
                   <div className="truncate text-sm">{i.email}</div>
                   <div className="text-xs capitalize text-muted-foreground">{i.role} · pending sign-up</div>
                 </div>
+                {i.token && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const link = `${window.location.origin}/invite/${i.token}`;
+                      await navigator.clipboard.writeText(link);
+                      toast.success("Invite link copied");
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Copy link
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
