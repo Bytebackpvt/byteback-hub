@@ -981,6 +981,59 @@ export type Database = {
           },
         ]
       }
+      payu_payments: {
+        Row: {
+          amount: number
+          billing_cycle: string
+          created_at: string
+          id: string
+          mihpayid: string | null
+          mode: string | null
+          plan_key: string
+          raw: Json | null
+          status: string
+          txnid: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          amount: number
+          billing_cycle: string
+          created_at?: string
+          id?: string
+          mihpayid?: string | null
+          mode?: string | null
+          plan_key: string
+          raw?: Json | null
+          status: string
+          txnid: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          amount?: number
+          billing_cycle?: string
+          created_at?: string
+          id?: string
+          mihpayid?: string | null
+          mode?: string | null
+          plan_key?: string
+          raw?: Json | null
+          status?: string
+          txnid?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payu_payments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_stages: {
         Row: {
           automation: Json
@@ -1431,13 +1484,19 @@ export type Database = {
       }
       workspace_subscriptions: {
         Row: {
+          billing_cycle: string | null
           cancel_at_period_end: boolean
           created_at: string
           current_period_end: string | null
           environment: string
           id: string
+          last_payment_amount: number | null
+          last_payment_at: string | null
+          payu_mihpayid: string | null
+          payu_txn_id: string | null
           plan_key: string
           price_id: string | null
+          provider: string
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -1445,13 +1504,19 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          billing_cycle?: string | null
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
           environment?: string
           id?: string
+          last_payment_amount?: number | null
+          last_payment_at?: string | null
+          payu_mihpayid?: string | null
+          payu_txn_id?: string | null
           plan_key?: string
           price_id?: string | null
+          provider?: string
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -1459,13 +1524,19 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          billing_cycle?: string | null
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
           environment?: string
           id?: string
+          last_payment_amount?: number | null
+          last_payment_at?: string | null
+          payu_mihpayid?: string | null
+          payu_txn_id?: string | null
           plan_key?: string
           price_id?: string | null
+          provider?: string
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
