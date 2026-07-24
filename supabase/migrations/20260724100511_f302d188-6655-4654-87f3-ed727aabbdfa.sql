@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.seed_workspace_subscription() FROM PUBLIC, anon, authenticated;

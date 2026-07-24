@@ -762,7 +762,7 @@ function Pricing() {
                   }
                 />
               ) : (
-                <Link to="/auth" className="mt-5">
+                <Link to={tier.cta === "Upgrade" ? "/app/billing" : "/auth"} className="mt-5">
                   <Button
                     className="w-full rounded-lg"
                     variant={tier.highlight ? "default" : "outline"}
