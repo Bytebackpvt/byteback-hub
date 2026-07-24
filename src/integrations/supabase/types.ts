@@ -1520,6 +1520,10 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      find_email_owner_workspace: {
+        Args: { _email: string; _provider: string }
+        Returns: string
+      }
       match_email_embeddings: {
         Args: { _limit?: number; _query: string; _workspace_id: string }
         Returns: {

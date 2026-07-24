@@ -13,7 +13,6 @@ import {
   KanbanSquare,
   Layers,
   ListChecks,
-  Play,
   Search,
   Shield,
   Sparkles,
@@ -26,6 +25,7 @@ import {
 import { useState } from "react";
 
 import { BrandLink, BrandMark } from "@/components/brand";
+import { BookDemoDialog } from "@/components/book-demo-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -139,65 +139,63 @@ const CUSTOMERS = [
 
 const PRICING = [
   {
-    name: "Starter",
-    price: "$0",
+    name: "Free",
+    price: "₹0",
     period: "forever",
-    tagline: "For solo founders trying it out.",
+    tagline: "Try ByteBack solo. No card required.",
     features: [
-      "Up to 5 email accounts",
-      "2 users",
-      "500 contacts",
-      "Unified inbox",
-      "Basic notifications",
-      "AI classification (limited)",
+      "1 mailbox",
+      "500 emails / month sync",
+      "Basic AI classification",
+      "7-day history",
+      "1 user",
     ],
     cta: "Start free",
   },
   {
-    name: "Growth",
-    price: "$49",
-    period: "per user / mo",
-    tagline: "For small sales teams shipping outbound.",
+    name: "Starter",
+    price: "₹999",
+    period: "per month",
+    tagline: "For founders running outbound alone.",
+    features: [
+      "3 mailboxes",
+      "5,000 emails / month",
+      "Full AI summary + follow-up engine",
+      "30-day history",
+      "Up to 2 users",
+    ],
+    cta: "Upgrade",
+  },
+  {
+    name: "Pro",
+    price: "₹2,499",
+    period: "per month",
+    tagline: "For small teams that live in the inbox.",
     highlight: true,
     features: [
-      "Up to 15 email accounts",
-      "5 users",
-      "Unlimited contacts",
-      "AI daily & weekly summaries",
-      "Team collaboration",
-      "CRM + Analytics",
+      "10 mailboxes",
+      "Unlimited emails",
+      "All integrations (Instantly, Sheets, CRM…)",
+      "Full audit log + analytics",
+      "Priority AI models",
+      "Up to 5 users",
     ],
-    cta: "Start free trial",
+    cta: "Upgrade",
   },
   {
     name: "Business",
-    price: "$99",
-    period: "per user / mo",
-    tagline: "For scaling agencies and RevOps teams.",
+    price: "₹6,999",
+    period: "per month",
+    tagline: "For agencies and scaling sales orgs.",
     features: [
-      "Up to 50 email accounts",
-      "20 users",
-      "Advanced automations",
+      "Unlimited mailboxes",
+      "Unlimited team seats",
+      "Custom domain emails",
       "API access",
-      "Slack & Teams integrations",
-      "Custom dashboards",
+      "Priority support",
+      "SSO on request",
     ],
-    cta: "Start free trial",
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    period: "annual",
-    tagline: "Security, scale, and white-label.",
-    features: [
-      "Unlimited email accounts",
-      "Unlimited users",
-      "White label & SSO",
-      "Dedicated support",
-      "Custom AI models",
-      "On-prem deployment",
-    ],
-    cta: "Book a demo",
+    cta: "Talk to sales",
   },
 ];
 
@@ -364,16 +362,17 @@ function Hero() {
                 <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </Link>
-            <Button
-              size="lg"
-              variant="outline"
-              className="rounded-xl border-border/70 bg-background/60 px-5 backdrop-blur"
-            >
-              Book a demo
-            </Button>
-            <button className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-muted-foreground transition hover:text-foreground">
-              <Play className="h-4 w-4" /> Watch demo
-            </button>
+            <BookDemoDialog
+              trigger={
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="rounded-xl border-border/70 bg-background/60 px-5 backdrop-blur"
+                >
+                  Book a demo
+                </Button>
+              }
+            />
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
             Free forever plan · No card required · 5-minute setup
@@ -754,14 +753,24 @@ function Pricing() {
                 <span className="text-3xl font-semibold tracking-tight">{tier.price}</span>
                 <span className="text-sm text-muted-foreground">/ {tier.period}</span>
               </div>
-              <Link to="/auth" className="mt-5">
-                <Button
-                  className="w-full rounded-lg"
-                  variant={tier.highlight ? "default" : "outline"}
-                >
-                  {tier.cta}
-                </Button>
-              </Link>
+              {tier.cta === "Talk to sales" ? (
+                <BookDemoDialog
+                  trigger={
+                    <Button className="mt-5 w-full rounded-lg" variant={tier.highlight ? "default" : "outline"}>
+                      {tier.cta}
+                    </Button>
+                  }
+                />
+              ) : (
+                <Link to="/auth" className="mt-5">
+                  <Button
+                    className="w-full rounded-lg"
+                    variant={tier.highlight ? "default" : "outline"}
+                  >
+                    {tier.cta}
+                  </Button>
+                </Link>
+              )}
               <ul className="mt-6 space-y-2.5 text-sm">
                 {tier.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">
@@ -856,9 +865,13 @@ function FinalCTA() {
                 Start free <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="rounded-xl px-5">
-              Book a demo
-            </Button>
+            <BookDemoDialog
+              trigger={
+                <Button size="lg" variant="outline" className="rounded-xl px-5">
+                  Book a demo
+                </Button>
+              }
+            />
           </div>
         </div>
       </div>
