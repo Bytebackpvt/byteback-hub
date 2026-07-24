@@ -143,3 +143,32 @@ export const createWorkspacePortalSession = createServerFn({ method: "POST" })
       return { error: getStripeErrorMessage(error) };
     }
   });
+
+import { getCurrentWorkspaceId } from "@/lib/workspace.functions";
+
+export const getBillingSummary = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const wsId = await getCurrentWorkspaceId(context.supabase, context.userId);
+    if (!wsId) return null;
+    const { data: sub } = await (context.supabase as any)
+      .from("workspace_subscriptions")
+      .select("plan_key, status, current_period_end, cancel_at_period_end, stripe_customer_id")
+      .eq("workspace_id", wsId)
+      .maybeSingle();
+    const { data: mem } = await context.supabase
+      .from("workspace_members")
+      .select("role")
+      .eq("workspace_id", wsId)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    return {
+      workspaceId: wsId,
+      planKey: (sub?.plan_key as string) ?? "free",
+      status: (sub?.status as string) ?? "active",
+      currentPeriodEnd: (sub?.current_period_end as string) ?? null,
+      cancelAtPeriodEnd: Boolean(sub?.cancel_at_period_end),
+      hasBillingAccount: Boolean(sub?.stripe_customer_id),
+      role: (mem?.role as string) ?? null,
+    };
+  });
