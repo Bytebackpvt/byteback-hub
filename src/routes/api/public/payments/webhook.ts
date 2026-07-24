@@ -66,7 +66,7 @@ async function upsertFromSubscription(sub: any, env: StripeEnv) {
       cancel_at_period_end: Boolean(sub.cancel_at_period_end),
       environment: env,
       updated_at: new Date().toISOString(),
-    },
+    }],
     { onConflict: "workspace_id" },
   );
 }
