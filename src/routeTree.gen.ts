@@ -53,7 +53,8 @@ import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAppActivityRouteImport } from './routes/_authenticated/app.activity'
 import { Route as AuthenticatedAppIntegrationsIndexRouteImport } from './routes/_authenticated/app.integrations.index'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
-import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicPayuWebhookRouteImport } from './routes/api/public/payu/webhook'
+import { Route as ApiPublicPayuReturnRouteImport } from './routes/api/public/payu/return'
 import { Route as ApiPublicInboundEmailRouteImport } from './routes/api/public/inbound.email'
 import { Route as ApiPublicHooksLeadsFollowupRouteImport } from './routes/api/public/hooks/leads-followup'
 import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/public/email.unsubscribe'
@@ -299,12 +300,16 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicPaymentsWebhookRoute =
-  ApiPublicPaymentsWebhookRouteImport.update({
-    id: '/api/public/payments/webhook',
-    path: '/api/public/payments/webhook',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const ApiPublicPayuWebhookRoute = ApiPublicPayuWebhookRouteImport.update({
+  id: '/api/public/payu/webhook',
+  path: '/api/public/payu/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPayuReturnRoute = ApiPublicPayuReturnRouteImport.update({
+  id: '/api/public/payu/return',
+  path: '/api/public/payu/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicInboundEmailRoute = ApiPublicInboundEmailRouteImport.update({
   id: '/api/public/inbound/email',
   path: '/api/public/inbound/email',
@@ -442,7 +447,8 @@ export interface FileRoutesByFullPath {
   '/api/public/email/unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/api/public/hooks/leads-followup': typeof ApiPublicHooksLeadsFollowupRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/payu/return': typeof ApiPublicPayuReturnRoute
+  '/api/public/payu/webhook': typeof ApiPublicPayuWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
@@ -499,7 +505,8 @@ export interface FileRoutesByTo {
   '/api/public/email/unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/api/public/hooks/leads-followup': typeof ApiPublicHooksLeadsFollowupRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/payu/return': typeof ApiPublicPayuReturnRoute
+  '/api/public/payu/webhook': typeof ApiPublicPayuWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
@@ -561,7 +568,8 @@ export interface FileRoutesById {
   '/api/public/email/unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/api/public/hooks/leads-followup': typeof ApiPublicHooksLeadsFollowupRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/payu/return': typeof ApiPublicPayuReturnRoute
+  '/api/public/payu/webhook': typeof ApiPublicPayuWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/_authenticated/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
@@ -623,7 +631,8 @@ export interface FileRouteTypes {
     | '/api/public/email/unsubscribe'
     | '/api/public/hooks/leads-followup'
     | '/api/public/inbound/email'
-    | '/api/public/payments/webhook'
+    | '/api/public/payu/return'
+    | '/api/public/payu/webhook'
     | '/lovable/email/queue/process'
     | '/app/integrations/'
     | '/api/public/oauth/gmail/callback'
@@ -680,7 +689,8 @@ export interface FileRouteTypes {
     | '/api/public/email/unsubscribe'
     | '/api/public/hooks/leads-followup'
     | '/api/public/inbound/email'
-    | '/api/public/payments/webhook'
+    | '/api/public/payu/return'
+    | '/api/public/payu/webhook'
     | '/lovable/email/queue/process'
     | '/app/integrations'
     | '/api/public/oauth/gmail/callback'
@@ -741,7 +751,8 @@ export interface FileRouteTypes {
     | '/api/public/email/unsubscribe'
     | '/api/public/hooks/leads-followup'
     | '/api/public/inbound/email'
-    | '/api/public/payments/webhook'
+    | '/api/public/payu/return'
+    | '/api/public/payu/webhook'
     | '/lovable/email/queue/process'
     | '/_authenticated/app/integrations/'
     | '/api/public/oauth/gmail/callback'
@@ -769,7 +780,8 @@ export interface RootRouteChildren {
   ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
   ApiPublicHooksLeadsFollowupRoute: typeof ApiPublicHooksLeadsFollowupRoute
   ApiPublicInboundEmailRoute: typeof ApiPublicInboundEmailRoute
-  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
+  ApiPublicPayuReturnRoute: typeof ApiPublicPayuReturnRoute
+  ApiPublicPayuWebhookRoute: typeof ApiPublicPayuWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicOauthGmailCallbackRoute: typeof ApiPublicOauthGmailCallbackRoute
 }
@@ -1084,11 +1096,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/payments/webhook': {
-      id: '/api/public/payments/webhook'
-      path: '/api/public/payments/webhook'
-      fullPath: '/api/public/payments/webhook'
-      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+    '/api/public/payu/webhook': {
+      id: '/api/public/payu/webhook'
+      path: '/api/public/payu/webhook'
+      fullPath: '/api/public/payu/webhook'
+      preLoaderRoute: typeof ApiPublicPayuWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payu/return': {
+      id: '/api/public/payu/return'
+      path: '/api/public/payu/return'
+      fullPath: '/api/public/payu/return'
+      preLoaderRoute: typeof ApiPublicPayuReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/inbound/email': {
@@ -1357,7 +1376,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
   ApiPublicHooksLeadsFollowupRoute: ApiPublicHooksLeadsFollowupRoute,
   ApiPublicInboundEmailRoute: ApiPublicInboundEmailRoute,
-  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
+  ApiPublicPayuReturnRoute: ApiPublicPayuReturnRoute,
+  ApiPublicPayuWebhookRoute: ApiPublicPayuWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicOauthGmailCallbackRoute: ApiPublicOauthGmailCallbackRoute,
 }
