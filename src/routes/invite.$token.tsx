@@ -41,7 +41,7 @@ function InvitePage() {
   }, []);
 
   const invite = inviteQ.data;
-  const loading = inviteQ.isLoading || sessionEmail === undefined;
+  const loading = inviteQ.isLoading;
 
   async function handleAccept() {
     setAccepting(true);
@@ -100,18 +100,23 @@ function InvitePage() {
               </p>
             </div>
 
-            {sessionEmail === null ? (
+            {sessionEmail === undefined || sessionEmail === null ? (
               <div className="space-y-3">
                 <p className="text-sm text-center text-muted-foreground">
                   Sign in as <b>{invite.email}</b> to accept this invite.
                 </p>
                 <Button
                   className="w-full"
+                  disabled={sessionEmail === undefined}
                   onClick={() => {
                     window.location.href = `/auth?next=${encodeURIComponent(`/invite/${token}`)}&email=${encodeURIComponent(invite.email)}`;
                   }}
                 >
-                  Sign in / Sign up
+                  {sessionEmail === undefined ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Sign in / Sign up"
+                  )}
                 </Button>
               </div>
             ) : sessionEmail.toLowerCase() !== invite.email.toLowerCase() ? (
