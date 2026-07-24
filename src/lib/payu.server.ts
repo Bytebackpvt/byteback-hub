@@ -75,7 +75,7 @@ export async function buildRequestHash(input: {
     input.udf3 ?? "",
     input.udf4 ?? "",
     input.udf5 ?? "",
-    "", "", "", "", "", "",
+    "", "", "", "", "",
     input.salt,
   ].join("|");
   return sha512Hex(seq);
