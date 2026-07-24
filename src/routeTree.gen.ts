@@ -28,6 +28,7 @@ import { Route as OnboardingDoneRouteImport } from './routes/onboarding.done'
 import { Route as OnboardingBusinessTypeRouteImport } from './routes/onboarding.business-type'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email.unsubscribe'
+import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as ApiPublicBookDemoRouteImport } from './routes/api/public/book-demo'
@@ -51,6 +52,7 @@ import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAppActivityRouteImport } from './routes/_authenticated/app.activity'
 import { Route as AuthenticatedAppIntegrationsIndexRouteImport } from './routes/_authenticated/app.integrations.index'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicInboundEmailRouteImport } from './routes/api/public/inbound.email'
 import { Route as ApiPublicHooksLeadsFollowupRouteImport } from './routes/api/public/hooks/leads-followup'
 import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/public/email.unsubscribe'
@@ -158,6 +160,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
+  id: '/checkout/return',
+  path: '/checkout/return',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
@@ -286,6 +293,12 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicInboundEmailRoute = ApiPublicInboundEmailRouteImport.update({
   id: '/api/public/inbound/email',
   path: '/api/public/inbound/email',
@@ -380,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
+  '/checkout/return': typeof CheckoutReturnRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
@@ -421,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/api/public/email/unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/api/public/hooks/leads-followup': typeof ApiPublicHooksLeadsFollowupRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
@@ -435,6 +450,7 @@ export interface FileRoutesByTo {
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
+  '/checkout/return': typeof CheckoutReturnRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
@@ -475,6 +491,7 @@ export interface FileRoutesByTo {
   '/api/public/email/unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/api/public/hooks/leads-followup': typeof ApiPublicHooksLeadsFollowupRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/app/integrations': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
@@ -493,6 +510,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
+  '/checkout/return': typeof CheckoutReturnRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/invite/$token': typeof InviteTokenRoute
   '/onboarding/business-type': typeof OnboardingBusinessTypeRoute
@@ -534,6 +552,7 @@ export interface FileRoutesById {
   '/api/public/email/unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/api/public/hooks/leads-followup': typeof ApiPublicHooksLeadsFollowupRoute
   '/api/public/inbound/email': typeof ApiPublicInboundEmailRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/_authenticated/app/integrations/': typeof AuthenticatedAppIntegrationsIndexRoute
   '/api/public/oauth/gmail/callback': typeof ApiPublicOauthGmailCallbackRoute
@@ -552,6 +571,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/verification'
     | '/app'
+    | '/checkout/return'
     | '/email/unsubscribe'
     | '/invite/$token'
     | '/onboarding/business-type'
@@ -593,6 +613,7 @@ export interface FileRouteTypes {
     | '/api/public/email/unsubscribe'
     | '/api/public/hooks/leads-followup'
     | '/api/public/inbound/email'
+    | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
     | '/app/integrations/'
     | '/api/public/oauth/gmail/callback'
@@ -607,6 +628,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms'
     | '/verification'
+    | '/checkout/return'
     | '/email/unsubscribe'
     | '/invite/$token'
     | '/onboarding/business-type'
@@ -647,6 +669,7 @@ export interface FileRouteTypes {
     | '/api/public/email/unsubscribe'
     | '/api/public/hooks/leads-followup'
     | '/api/public/inbound/email'
+    | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
     | '/app/integrations'
     | '/api/public/oauth/gmail/callback'
@@ -664,6 +687,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/verification'
     | '/_authenticated/app'
+    | '/checkout/return'
     | '/email/unsubscribe'
     | '/invite/$token'
     | '/onboarding/business-type'
@@ -705,6 +729,7 @@ export interface FileRouteTypes {
     | '/api/public/email/unsubscribe'
     | '/api/public/hooks/leads-followup'
     | '/api/public/inbound/email'
+    | '/api/public/payments/webhook'
     | '/lovable/email/queue/process'
     | '/_authenticated/app/integrations/'
     | '/api/public/oauth/gmail/callback'
@@ -722,6 +747,7 @@ export interface RootRouteChildren {
   SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
   VerificationRoute: typeof VerificationRoute
+  CheckoutReturnRoute: typeof CheckoutReturnRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicBookDemoRoute: typeof ApiPublicBookDemoRoute
@@ -731,6 +757,7 @@ export interface RootRouteChildren {
   ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
   ApiPublicHooksLeadsFollowupRoute: typeof ApiPublicHooksLeadsFollowupRoute
   ApiPublicInboundEmailRoute: typeof ApiPublicInboundEmailRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicOauthGmailCallbackRoute: typeof ApiPublicOauthGmailCallbackRoute
 }
@@ -868,6 +895,13 @@ declare module '@tanstack/react-router' {
       path: '/email/unsubscribe'
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/return': {
+      id: '/checkout/return'
+      path: '/checkout/return'
+      fullPath: '/checkout/return'
+      preLoaderRoute: typeof CheckoutReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/app': {
@@ -1029,6 +1063,13 @@ declare module '@tanstack/react-router' {
       path: '/lovable/email/queue/process'
       fullPath: '/lovable/email/queue/process'
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/inbound/email': {
@@ -1285,6 +1326,7 @@ const rootRouteChildren: RootRouteChildren = {
   SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
   VerificationRoute: VerificationRoute,
+  CheckoutReturnRoute: CheckoutReturnRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   InviteTokenRoute: InviteTokenRoute,
   ApiPublicBookDemoRoute: ApiPublicBookDemoRoute,
@@ -1294,6 +1336,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
   ApiPublicHooksLeadsFollowupRoute: ApiPublicHooksLeadsFollowupRoute,
   ApiPublicInboundEmailRoute: ApiPublicInboundEmailRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicOauthGmailCallbackRoute: ApiPublicOauthGmailCallbackRoute,
 }

@@ -44,13 +44,14 @@ async function upsertFromSubscription(sub: any, env: StripeEnv) {
     .select("plan_key")
     .eq("workspace_id", workspaceId)
     .maybeSingle();
-  if ((current?.plan_key as string) === "internal_unlimited") {
+  const currentPlan = (current as { plan_key?: string } | null)?.plan_key;
+  if (currentPlan === "internal_unlimited") {
     console.log("[payments-webhook] skipping update for internal_unlimited workspace", workspaceId);
     return;
   }
 
   await getSupabase().from("workspace_subscriptions").upsert(
-    {
+    [{
       workspace_id: workspaceId,
       plan_key: sub.status === "canceled" && periodEnd
         ? nextPlan // still active until period_end
