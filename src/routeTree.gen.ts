@@ -48,6 +48,7 @@ import { Route as AuthenticatedAppHelpRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAppEmailSourcesRouteImport } from './routes/_authenticated/app.email-sources'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/app.dashboard'
 import { Route as AuthenticatedAppCrmRouteImport } from './routes/_authenticated/app.crm'
+import { Route as AuthenticatedAppBillingRouteImport } from './routes/_authenticated/app.billing'
 import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authenticated/app.analytics'
 import { Route as AuthenticatedAppActivityRouteImport } from './routes/_authenticated/app.activity'
 import { Route as AuthenticatedAppIntegrationsIndexRouteImport } from './routes/_authenticated/app.integrations.index'
@@ -269,6 +270,11 @@ const AuthenticatedAppCrmRoute = AuthenticatedAppCrmRouteImport.update({
   path: '/crm',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppBillingRoute = AuthenticatedAppBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppAnalyticsRoute =
   AuthenticatedAppAnalyticsRouteImport.update({
     id: '/analytics',
@@ -404,6 +410,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/': typeof OnboardingIndexRoute
   '/app/activity': typeof AuthenticatedAppActivityRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsRoute
+  '/app/billing': typeof AuthenticatedAppBillingRoute
   '/app/crm': typeof AuthenticatedAppCrmRoute
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/app/email-sources': typeof AuthenticatedAppEmailSourcesRoute
@@ -461,6 +468,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingIndexRoute
   '/app/activity': typeof AuthenticatedAppActivityRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsRoute
+  '/app/billing': typeof AuthenticatedAppBillingRoute
   '/app/crm': typeof AuthenticatedAppCrmRoute
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/app/email-sources': typeof AuthenticatedAppEmailSourcesRoute
@@ -521,6 +529,7 @@ export interface FileRoutesById {
   '/onboarding/': typeof OnboardingIndexRoute
   '/_authenticated/app/activity': typeof AuthenticatedAppActivityRoute
   '/_authenticated/app/analytics': typeof AuthenticatedAppAnalyticsRoute
+  '/_authenticated/app/billing': typeof AuthenticatedAppBillingRoute
   '/_authenticated/app/crm': typeof AuthenticatedAppCrmRoute
   '/_authenticated/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/app/email-sources': typeof AuthenticatedAppEmailSourcesRoute
@@ -582,6 +591,7 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/app/activity'
     | '/app/analytics'
+    | '/app/billing'
     | '/app/crm'
     | '/app/dashboard'
     | '/app/email-sources'
@@ -639,6 +649,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/app/activity'
     | '/app/analytics'
+    | '/app/billing'
     | '/app/crm'
     | '/app/dashboard'
     | '/app/email-sources'
@@ -698,6 +709,7 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/_authenticated/app/activity'
     | '/_authenticated/app/analytics'
+    | '/_authenticated/app/billing'
     | '/_authenticated/app/crm'
     | '/_authenticated/app/dashboard'
     | '/_authenticated/app/email-sources'
@@ -1037,6 +1049,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCrmRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/billing': {
+      id: '/_authenticated/app/billing'
+      path: '/billing'
+      fullPath: '/app/billing'
+      preLoaderRoute: typeof AuthenticatedAppBillingRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/analytics': {
       id: '/_authenticated/app/analytics'
       path: '/analytics'
@@ -1235,6 +1254,7 @@ const AuthenticatedAppSettingsRouteWithChildren =
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppActivityRoute: typeof AuthenticatedAppActivityRoute
   AuthenticatedAppAnalyticsRoute: typeof AuthenticatedAppAnalyticsRoute
+  AuthenticatedAppBillingRoute: typeof AuthenticatedAppBillingRoute
   AuthenticatedAppCrmRoute: typeof AuthenticatedAppCrmRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppEmailSourcesRoute: typeof AuthenticatedAppEmailSourcesRoute
@@ -1257,6 +1277,7 @@ interface AuthenticatedAppRouteChildren {
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppActivityRoute: AuthenticatedAppActivityRoute,
   AuthenticatedAppAnalyticsRoute: AuthenticatedAppAnalyticsRoute,
+  AuthenticatedAppBillingRoute: AuthenticatedAppBillingRoute,
   AuthenticatedAppCrmRoute: AuthenticatedAppCrmRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppEmailSourcesRoute: AuthenticatedAppEmailSourcesRoute,
