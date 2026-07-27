@@ -32,9 +32,12 @@ export const Route = createFileRoute("/_authenticated/app")({
 function AppLayout() {
   const tour = useGuidedTour();
   const ensureWorkspace = useServerFn(ensureCurrentWorkspace);
+  const kickSync = useServerFn(triggerWorkspaceSync);
   useEffect(() => {
     initNativeShell();
-    ensureWorkspace().catch(() => null);
+    ensureWorkspace()
+      .then(() => kickSync().catch(() => null))
+      .catch(() => null);
     ensurePushSubscription().catch(() => null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
