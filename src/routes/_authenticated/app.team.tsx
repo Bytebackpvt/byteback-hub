@@ -209,7 +209,7 @@ function TeamPage() {
                     variant="outline"
                     size="sm"
                     onClick={async () => {
-                      const link = `${window.location.origin}/invite/${i.token}`;
+                      const link = `https://byteback.digital/invite/${i.token}`;
                       await navigator.clipboard.writeText(link);
                       toast.success("Invite link copied");
                     }}

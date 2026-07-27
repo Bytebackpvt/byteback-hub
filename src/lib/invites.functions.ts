@@ -16,7 +16,7 @@ export const getInviteByToken = createServerFn({ method: "GET" })
     const { data: row } = await (supabaseAdmin as any)
       .from("workspace_invites")
       .select("id, email, role, workspace_id, accepted_at, workspaces:workspace_id(name)")
-      .eq("token", data.token)
+      .or(`token.eq.${data.token},id.eq.${data.token}`)
       .maybeSingle();
     if (!row) return { found: false as const, reason: "invalid" as const };
 
@@ -69,7 +69,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
     const { data: invite } = await (supabaseAdmin as any)
       .from("workspace_invites")
       .select("id, email, role, workspace_id, accepted_at")
-      .eq("token", data.token)
+      .or(`token.eq.${data.token},id.eq.${data.token}`)
       .maybeSingle();
     if (!invite) throw new Error("Invite not found or has been revoked.");
 

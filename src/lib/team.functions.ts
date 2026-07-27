@@ -123,7 +123,7 @@ export const inviteMember = createServerFn({ method: "POST" })
     if (data.role === "owner") throw new Error("Cannot invite as owner");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const appUrl = (data.origin || process.env.APP_URL || "https://byteback.digital").replace(/\/$/, "");
+    const appUrl = "https://byteback.digital";
 
     // If a user with this email already exists, add them directly as a member
     // and notify them. This lookup intentionally uses the admin client after
@@ -166,7 +166,7 @@ export const inviteMember = createServerFn({ method: "POST" })
         const res = await sendAppEmail({
           to: data.email.toLowerCase(),
           label: "team-invite",
-          idempotencyKey: `member-added-${workspaceId}-${existingProfile.id}-${data.role}`,
+          idempotencyKey: `member-added-${workspaceId}-${existingProfile.id}-${data.role}-${Date.now()}`,
           subject: `${inviterName} added you to ${wsName} on ByteBack`,
           text: `${inviterName} added you to the ${wsName} workspace on ByteBack as ${data.role}. Open ByteBack: ${appUrl}/app`,
           html: `
@@ -224,7 +224,7 @@ export const inviteMember = createServerFn({ method: "POST" })
       const res = await sendAppEmail({
         to: data.email.toLowerCase(),
         label: "team-invite",
-        idempotencyKey: `invite-${token ?? data.email.toLowerCase()}`,
+        idempotencyKey: `invite-${token ?? data.email.toLowerCase()}-${Date.now()}`,
         subject: `${inviterName} invited you to ${wsName} on ByteBack`,
         text: `${inviterName} invited you to the ${wsName} workspace on ByteBack as ${data.role}. Accept invitation: ${acceptUrl}`,
         html: `
