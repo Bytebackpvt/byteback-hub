@@ -581,7 +581,8 @@ function InboxPage() {
             {filtered.length > 0 && (() => {
               const hm = threadsQuery.data?.hasMore;
               const hasInstantlyMore = !!threadsQuery.data?.params?.instantlyHasMore;
-              const canLoadMore = !!(hm && (hm.received || hm.sent || hm.db)) || hasInstantlyMore;
+              const hasGmailMore = !!threadsQuery.data?.params?.gmailHasMore;
+              const canLoadMore = !!(hm && (hm.received || hm.sent || hm.db)) || hasInstantlyMore || hasGmailMore;
               const counts = threadsQuery.data?.counts;
               return (
                 <div className="flex flex-col items-center gap-1.5 border-t border-border/40 p-3">
@@ -596,7 +597,7 @@ function InboxPage() {
                       className="h-7 text-xs"
                       disabled={threadsQuery.isFetching}
                       onClick={async () => {
-                        if (hasInstantlyMore && !hm?.db) await handleSyncAllSources();
+                        if ((hasInstantlyMore || hasGmailMore) && !hm?.db) await handleSyncAllSources();
                         setPageWindow((w) => ({
                           receivedPages: hm?.received || hasInstantlyMore ? w.receivedPages + 1 : w.receivedPages,
                           sentPages: hm?.sent || hasInstantlyMore ? w.sentPages + 1 : w.sentPages,

@@ -356,14 +356,14 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       mailError: null,
     }));
     const conn = await loadWorkspaceInstantlyKey(context.supabase, context.userId).catch(() => null);
-    const { data: instantlyState } = mailStatus.workspaceId
+    const { data: syncStates } = mailStatus.workspaceId
       ? await (context.supabase as any)
           .from("sync_state")
-          .select("stats")
+          .select("source, stats")
           .eq("workspace_id", mailStatus.workspaceId)
-          .eq("source", "instantly")
-          .maybeSingle()
       : { data: null };
+    const syncRows = (syncStates ?? []) as Array<{ source?: string | null; stats?: Record<string, unknown> | null }>;
+    const instantlyState = syncRows.find((s) => s.source === "instantly");
     const instantlyStats = (instantlyState?.stats ?? {}) as {
       has_more_received?: number | string | boolean;
       has_more_sent?: number | string | boolean;
@@ -375,6 +375,21 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       instantlyStats.has_more_sent === 1 ||
       instantlyStats.has_more_sent === "1" ||
       instantlyStats.has_more_sent === true;
+    const gmailStates = syncRows.filter((s) => String(s.source ?? "").startsWith("gmail:"));
+    const gmailHasMore = mailStatus.hasActiveMailbox && (
+      gmailStates.length === 0 ||
+      gmailStates.some((s) => {
+        const stats = (s.stats ?? {}) as {
+          inbox_exhausted?: number | string | boolean;
+          sent_exhausted?: number | string | boolean;
+        };
+        const inboxDone = stats.inbox_exhausted === 1 || stats.inbox_exhausted === "1" || stats.inbox_exhausted === true;
+        const sentDone = stats.sent_exhausted === 1 || stats.sent_exhausted === "1" || stats.sent_exhausted === true;
+        if (direction === "in") return !inboxDone;
+        if (direction === "out") return !sentDone;
+        return !inboxDone || !sentDone;
+      })
+    );
 
     const params = {
       receivedPages,
@@ -385,6 +400,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       direction,
       pageSize: 100,
       instantlyHasMore,
+      gmailHasMore,
       instantlyEndpoint: "GET /api/v2/emails?email_type={received|sent|manual}&limit=100&min_timestamp_created=…",
       dbSource: "email_threads (Gmail INBOX + SENT, webhook, IMAP) — order by last_received_at DESC",
     };
