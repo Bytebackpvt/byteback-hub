@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { HelpCircle, Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { ensureCurrentWorkspace } from "@/lib/workspace.functions";
+import { triggerWorkspaceSync } from "@/lib/workspace-sync.functions";
 import { AiAssistant } from "@/components/ai-assistant";
 
 
