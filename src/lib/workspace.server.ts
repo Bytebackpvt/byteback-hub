@@ -6,9 +6,14 @@ export async function getCurrentWorkspaceId(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<string | undefined> {
+  // Step 0: auto-claim any pending invites for this user's email. This makes
+  // newly-signed-up teammates land inside the workspace they were invited to,
+  // instead of a fresh empty solo workspace.
+  await claimPendingInvites(userId);
+
   const { data, error } = await supabase
     .from("workspace_members")
-    .select("workspace_id, created_at")
+    .select("workspace_id, role, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: true })
     .limit(20);
@@ -24,15 +29,29 @@ export async function getCurrentWorkspaceId(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
     const [{ data: threadRows }, { data: oauthRows }, { data: taskRows }] = await Promise.all([
-      sb.from("email_threads").select("workspace_id").in("workspace_id", workspaceIds).limit(1),
-      sb.from("oauth_connections").select("workspace_id").in("workspace_id", workspaceIds).limit(1),
-      sb.from("tasks").select("workspace_id").in("workspace_id", workspaceIds).limit(1),
+      sb.from("email_threads").select("workspace_id").in("workspace_id", workspaceIds).limit(50),
+      sb.from("oauth_connections").select("workspace_id").in("workspace_id", workspaceIds).limit(50),
+      sb.from("tasks").select("workspace_id").in("workspace_id", workspaceIds).limit(50),
     ]);
-    const activeWorkspaceId =
-      threadRows?.[0]?.workspace_id ?? oauthRows?.[0]?.workspace_id ?? taskRows?.[0]?.workspace_id;
-    if (activeWorkspaceId) return activeWorkspaceId as string;
+    const activity = new Set<string>([
+      ...(threadRows ?? []).map((r: { workspace_id: string }) => r.workspace_id),
+      ...(oauthRows ?? []).map((r: { workspace_id: string }) => r.workspace_id),
+      ...(taskRows ?? []).map((r: { workspace_id: string }) => r.workspace_id),
+    ]);
+    // Prefer an invited workspace (non-owner role) that has activity.
+    const invitedWithActivity = memberships.find(
+      (m) => m.role !== "owner" && activity.has(m.workspace_id as string),
+    );
+    if (invitedWithActivity) return invitedWithActivity.workspace_id as string;
+    // Then any invited (non-owner) workspace.
+    const invited = memberships.find((m) => m.role !== "owner");
+    if (invited) return invited.workspace_id as string;
+    // Then owned workspace with activity.
+    const ownedWithActivity = memberships.find((m) => activity.has(m.workspace_id as string));
+    if (ownedWithActivity) return ownedWithActivity.workspace_id as string;
     return memberships[0].workspace_id as string;
   }
+
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
