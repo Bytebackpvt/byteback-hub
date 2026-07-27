@@ -2,6 +2,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 type GmailListItem = { id: string; threadId?: string };
 type GmailHeader = { name: string; value: string };
+type GmailLabel = "INBOX" | "SENT";
+type GmailCursorState = {
+  labels?: Partial<Record<GmailLabel, { nextPageToken?: string | null; exhausted?: boolean }>>;
+};
 type GmailMessage = {
   id: string;
   threadId?: string;
@@ -17,6 +21,19 @@ type GmailMessage = {
     }>;
   };
 };
+
+const GMAIL_PAGE_SIZE = 100;
+const GMAIL_PAGES_PER_LABEL_RUN = 1;
+
+function parseCursor(raw: unknown): GmailCursorState {
+  if (!raw || typeof raw !== "string") return {};
+  try {
+    const parsed = JSON.parse(raw) as GmailCursorState;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
 function decodeB64Url(s: string): string {
   try {
@@ -126,14 +143,29 @@ export async function syncGmailConnection(connectionId: string): Promise<{
   }
   if (!accessToken) return { processed: 0, skipped: 0, error: "no access token" };
 
-  const items: Array<GmailListItem & { _label: "INBOX" | "SENT" }> = [];
-  // Full backfill: paginate INBOX and SENT with no time window and no cap.
-  // Gmail returns newest first; loop until nextPageToken is exhausted.
+  const sourceKey = `gmail:${connectionId}`;
+  const { data: stateRow } = await admin
+    .from("sync_state")
+    .select("cursor")
+    .eq("workspace_id", conn.workspace_id)
+    .eq("source", sourceKey)
+    .maybeSingle();
+  const cursorState = parseCursor(stateRow?.cursor);
+  const nextLabels: NonNullable<GmailCursorState["labels"]> = { ...(cursorState.labels ?? {}) };
+
+  const items: Array<GmailListItem & { _label: GmailLabel }> = [];
+  // Incremental full-history backfill: every run fetches the next page for
+  // INBOX and SENT. This avoids timeouts while repeated sync/load-more clicks
+  // keep walking backward until Gmail returns no nextPageToken.
   for (const label of ["INBOX", "SENT"] as const) {
-    let pageToken: string | undefined;
-    while (true) {
+    const saved = cursorState.labels?.[label];
+    let pageToken = saved?.exhausted ? undefined : saved?.nextPageToken ?? undefined;
+    let exhausted = saved?.exhausted === true;
+    let latestNextToken: string | null = saved?.nextPageToken ?? null;
+
+    for (let page = 0; page < GMAIL_PAGES_PER_LABEL_RUN; page++) {
       const url = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
-      url.searchParams.set("maxResults", "500");
+      url.searchParams.set("maxResults", String(GMAIL_PAGE_SIZE));
       url.searchParams.set("labelIds", label);
       if (pageToken) url.searchParams.set("pageToken", pageToken);
       const listRes = await fetch(url.toString(), {
@@ -150,9 +182,18 @@ export async function syncGmailConnection(connectionId: string): Promise<{
       const list = (await listRes.json()) as { messages?: GmailListItem[]; nextPageToken?: string };
       const batch = list.messages ?? [];
       items.push(...batch.map((m) => ({ ...m, _label: label })));
-      if (!list.nextPageToken) break;
+      latestNextToken = list.nextPageToken ?? null;
+      if (!list.nextPageToken || saved?.exhausted) {
+        exhausted = !list.nextPageToken || saved?.exhausted === true;
+        break;
+      }
       pageToken = list.nextPageToken;
     }
+
+    nextLabels[label] = {
+      nextPageToken: exhausted ? null : latestNextToken,
+      exhausted,
+    };
   }
 
 
@@ -204,12 +245,19 @@ export async function syncGmailConnection(connectionId: string): Promise<{
   await admin.from("sync_state").upsert(
     {
       workspace_id: conn.workspace_id,
-      source: `gmail:${connectionId}`,
-      cursor: null,
+      source: sourceKey,
+      cursor: JSON.stringify({ labels: nextLabels }),
       last_run_at: new Date().toISOString(),
       last_ok_at: new Date().toISOString(),
       last_error: null,
-      stats: { processed, skipped, inbox_backfilled: items.filter((i) => i._label === "INBOX").length, sent_backfilled: items.filter((i) => i._label === "SENT").length },
+      stats: {
+        processed,
+        skipped,
+        inbox_backfilled: items.filter((i) => i._label === "INBOX").length,
+        sent_backfilled: items.filter((i) => i._label === "SENT").length,
+        inbox_exhausted: nextLabels.INBOX?.exhausted ? 1 : 0,
+        sent_exhausted: nextLabels.SENT?.exhausted ? 1 : 0,
+      },
     },
     { onConflict: "workspace_id,source" },
   );
