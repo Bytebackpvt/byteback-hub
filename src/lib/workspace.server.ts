@@ -107,3 +107,44 @@ export async function getCurrentWorkspaceId(
 
   return workspaceId;
 }
+
+/**
+ * Find any pending workspace_invites addressed to this user's email and
+ * accept them: insert workspace_members rows (idempotent) and mark the
+ * invite accepted. Silently ignores errors so a bad invite never blocks
+ * sign-in.
+ */
+async function claimPendingInvites(userId: string): Promise<void> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const admin = supabaseAdmin as any;
+    const { data: authUser } = await admin.auth.admin.getUserById(userId);
+    const email = (authUser?.user?.email ?? "").toLowerCase();
+    if (!email) return;
+
+    const { data: invites } = await admin
+      .from("workspace_invites")
+      .select("id, workspace_id, role, email")
+      .ilike("email", email)
+      .is("accepted_at", null);
+    if (!invites || invites.length === 0) return;
+
+    for (const inv of invites) {
+      const { error: memErr } = await admin
+        .from("workspace_members")
+        .upsert(
+          { workspace_id: inv.workspace_id, user_id: userId, role: inv.role },
+          { onConflict: "workspace_id,user_id" },
+        );
+      if (!memErr) {
+        await admin
+          .from("workspace_invites")
+          .update({ accepted_at: new Date().toISOString() })
+          .eq("id", inv.id);
+      }
+    }
+  } catch {
+    // Non-fatal — invite claim is best-effort.
+  }
+}
