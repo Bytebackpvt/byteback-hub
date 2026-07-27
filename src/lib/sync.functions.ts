@@ -189,6 +189,7 @@ async function fetchInstantlyType(
   let hasMore = false;
   let nextCursor: string | null = null;
   let requests = 0;
+  let lastError: string | null = null;
 
   while (items.length < maxItems) {
     const url = new URL(INSTANTLY_BASE + "/emails");
@@ -197,11 +198,22 @@ async function fetchInstantlyType(
     url.searchParams.set("min_timestamp_created", since);
     if (startingAfter) url.searchParams.set("starting_after", startingAfter);
 
-    requests++;
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
-    });
-    if (!res.ok) throw new Error(`Instantly ${emailType} ${res.status}`);
+    let res: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      requests++;
+      res = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+      });
+      if (res.ok || res.status !== 429) break;
+      await wait(INSTANTLY_REQUEST_GAP_MS * (attempt + 2));
+    }
+    if (!res?.ok) {
+      const status = res?.status ?? "network";
+      lastError = `Instantly ${emailType} ${status}`;
+      hasMore = true;
+      nextCursor = startingAfter ?? nextCursor;
+      break;
+    }
 
     const json = (await res.json()) as {
       items?: RawEmail[];
@@ -222,6 +234,11 @@ async function fetchInstantlyType(
     if (items.length < maxItems) await wait(INSTANTLY_REQUEST_GAP_MS);
   }
 
+  if (lastError) {
+    throw Object.assign(new Error(lastError), {
+      partial: { items, hasMore, nextCursor, requests },
+    });
+  }
   return { items, hasMore, nextCursor, requests };
 }
 
@@ -303,7 +320,8 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
         return await fetchInstantlyType(wsKey, type, perType, start[type]);
       } catch (e) {
         partialErrors.push(`${type}: ${e instanceof Error ? e.message : "fetch failed"}`);
-        return empty;
+        const partial = e && typeof e === "object" && "partial" in e ? (e as { partial?: typeof empty }).partial : null;
+        return partial ?? empty;
       }
     };
     const received = await load("received");
@@ -314,9 +332,6 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
     hasMoreReceived = received.hasMore;
     hasMoreSent = sent.hasMore;
     hasMoreManual = manual.hasMore;
-    if (!received.items.length && !sent.items.length && !manual.items.length && partialErrors.length) {
-      throw new Error(partialErrors.join("; "));
-    }
     typedItems = [
       ...received.items.map((email) => ({ email, direction: "in" as const, type: "received" as const })),
       ...sent.items.map((email) => ({ email, direction: "out" as const, type: "sent" as const })),
@@ -324,9 +339,15 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
     ].sort((a, b) => emailTime(a.email) - emailTime(b.email));
 
     const nextBackfill = { ...(cursorState.backfill ?? {}) };
-    if (mode === "backfill" || !nextBackfill.received) nextBackfill.received = received.nextCursor;
-    if (mode === "backfill" || !nextBackfill.sent) nextBackfill.sent = sent.nextCursor;
-    if (mode === "backfill" || !nextBackfill.manual) nextBackfill.manual = manual.nextCursor;
+    if (!partialErrors.some((e) => e.startsWith("received:")) && (mode === "backfill" || !nextBackfill.received)) {
+      nextBackfill.received = received.nextCursor;
+    }
+    if (!partialErrors.some((e) => e.startsWith("sent:")) && (mode === "backfill" || !nextBackfill.sent)) {
+      nextBackfill.sent = sent.nextCursor;
+    }
+    if (!partialErrors.some((e) => e.startsWith("manual:")) && (mode === "backfill" || !nextBackfill.manual)) {
+      nextBackfill.manual = manual.nextCursor;
+    }
     cursorState = { backfill: nextBackfill };
 
   } catch (err) {
@@ -499,8 +520,8 @@ export async function runInstantlySync(workspaceId: string, opts?: { limit?: num
         skipped: result.skipped,
         received_backfilled: typedItems.filter((i) => i.direction === "in").length,
         sent_backfilled: typedItems.filter((i) => i.direction === "out").length,
-        has_more_received: hasMoreReceived ? 1 : 0,
-        has_more_sent: hasMoreSent || hasMoreManual ? 1 : 0,
+        has_more_received: hasMoreReceived || partialErrors.some((e) => e.startsWith("received:")) ? 1 : 0,
+        has_more_sent: hasMoreSent || hasMoreManual || partialErrors.some((e) => e.startsWith("sent:") || e.startsWith("manual:")) ? 1 : 0,
       },
     },
     { onConflict: "workspace_id,source" },

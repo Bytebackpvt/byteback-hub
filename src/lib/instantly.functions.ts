@@ -199,27 +199,61 @@ async function loadDbThreads(
   userId: string,
   limit: number,
   mailbox?: string,
+  direction?: "all" | "in" | "out",
 ): Promise<{ threads: InstantlyThread[]; hasMore: boolean }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = supabase as any;
   const workspaceId = await getCurrentWorkspaceId(sb, userId);
   if (!workspaceId) return { threads: [], hasMore: false };
-  let query = sb
-    .from("email_threads")
-    .select(
-      "thread_id, subject, last_body, mailbox, source, category, priority, last_received_at, contact_email, meta",
-    )
-    .eq("workspace_id", workspaceId)
-    .order("last_received_at", { ascending: false })
-    .limit(limit + 1); // fetch one extra to detect hasMore
+  const selectFields = "thread_id, subject, last_body, mailbox, source, category, priority, last_received_at, contact_email, meta";
+  const buildBase = (rowLimit: number) => {
+    let query = sb
+      .from("email_threads")
+      .select(selectFields)
+      .eq("workspace_id", workspaceId)
+      .order("last_received_at", { ascending: false })
+      .limit(rowLimit + 1); // fetch one extra to detect hasMore
+    if (mailbox) query = query.ilike("mailbox", mailbox);
+    return query;
+  };
 
-  if (mailbox) query = query.ilike("mailbox", mailbox);
+  const fetchRows = async (kind: "in" | "out", rowLimit: number) => {
+    const query = kind === "out"
+      ? buildBase(rowLimit).eq("meta->>direction", "out")
+      : buildBase(rowLimit).neq("meta->>direction", "out");
+    const { data } = await query;
+    const rows = (data ?? []) as unknown[];
+    return { rows: rows.slice(0, rowLimit), hasMore: rows.length > rowLimit };
+  };
 
-  const { data } = await query;
-
-  const rows = (data ?? []) as unknown[];
-  const hasMore = rows.length > limit;
-  const trimmed = rows.slice(0, limit);
+  let trimmed: unknown[] = [];
+  let hasMore = false;
+  if (direction === "out") {
+    const sent = await fetchRows("out", limit);
+    trimmed = sent.rows;
+    hasMore = sent.hasMore;
+  } else if (direction === "in") {
+    const received = await fetchRows("in", limit);
+    trimmed = received.rows;
+    hasMore = received.hasMore;
+  } else {
+    // Balanced fetch: a huge sent campaign should not starve the received inbox
+    // (and vice versa) before the client-side folder tabs can show anything.
+    const perDirection = Math.max(25, Math.ceil(limit / 2));
+    const [received, sent] = await Promise.all([
+      fetchRows("in", perDirection),
+      fetchRows("out", perDirection),
+    ]);
+    trimmed = [...received.rows, ...sent.rows]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .sort((a: any, b: any) => {
+        const at = a?.last_received_at ? new Date(a.last_received_at).getTime() : 0;
+        const bt = b?.last_received_at ? new Date(b.last_received_at).getTime() : 0;
+        return bt - at;
+      })
+      .slice(0, limit);
+    hasMore = received.hasMore || sent.hasMore;
+  }
 
   const catMap: Record<string, InstantlyThread["category"]> = {
     meeting_request: "meeting",
@@ -294,6 +328,7 @@ const ListInput = z
     dbLimit: z.number().int().min(50).max(20_000).optional(),
     sinceDays: z.number().int().min(1).max(365).optional(),
     mailbox: z.string().max(320).optional(),
+    direction: z.enum(["all", "in", "out"]).optional(),
   })
   .optional();
 
@@ -306,10 +341,11 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
     const dbLimit = data?.dbLimit ?? 500;
     const sinceDays = data?.sinceDays ?? 90;
     const focusMailbox = data?.mailbox && data.mailbox !== "all" ? data.mailbox.toLowerCase() : undefined;
+    const direction = data?.direction ?? "all";
 
     // Always load DB-ingested threads (Gmail, webhook, etc.) — these belong to
     // every workspace member.
-    const dbResult = await loadDbThreads(context.supabase, context.userId, dbLimit, focusMailbox).catch(() => ({
+    const dbResult = await loadDbThreads(context.supabase, context.userId, dbLimit, focusMailbox, direction).catch(() => ({
       threads: [] as InstantlyThread[],
       hasMore: false,
     }));
@@ -346,6 +382,7 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
       dbLimit,
       sinceDays,
       focusMailbox: focusMailbox ?? "all",
+      direction,
       pageSize: 100,
       instantlyHasMore,
       instantlyEndpoint: "GET /api/v2/emails?email_type={received|sent|manual}&limit=100&min_timestamp_created=…",
@@ -436,19 +473,26 @@ export const listInstantlyThreads = createServerFn({ method: "GET" })
         return { items: out, hasMore };
       }
 
+      const empty = { items: [] as RawEmail[], hasMore: false };
       const [received, sent, manual] = await Promise.all([
-        loadType("received", Math.min(receivedPages, 1)).catch((e) => {
-          console.error("Instantly received fetch failed:", e);
-          return { items: [] as RawEmail[], hasMore: false };
-        }),
-        loadType("sent", Math.min(sentPages, 1)).catch((e) => {
-          console.error("Instantly sent fetch failed:", e);
-          return { items: [] as RawEmail[], hasMore: false };
-        }),
-        loadType("manual", 1).catch((e) => {
-          console.error("Instantly manual fetch failed:", e);
-          return { items: [] as RawEmail[], hasMore: false };
-        }),
+        direction !== "out"
+          ? loadType("received", Math.min(receivedPages, 1)).catch((e) => {
+              console.error("Instantly received fetch failed:", e);
+              return empty;
+            })
+          : Promise.resolve(empty),
+        direction !== "in"
+          ? loadType("sent", Math.min(sentPages, 1)).catch((e) => {
+              console.error("Instantly sent fetch failed:", e);
+              return empty;
+            })
+          : Promise.resolve(empty),
+        direction !== "in"
+          ? loadType("manual", 1).catch((e) => {
+              console.error("Instantly manual fetch failed:", e);
+              return empty;
+            })
+          : Promise.resolve(empty),
       ]);
 
 

@@ -91,7 +91,7 @@ function InboxPage() {
   const [pageWindow, setPageWindow] = useState({
     receivedPages: 1,
     sentPages: 1,
-    dbLimit: 5000,
+    dbLimit: 300,
   });
 
 
@@ -109,8 +109,14 @@ function InboxPage() {
   const callSetStage = useServerFn(setLeadStage);
 
   const threadsQuery = useQuery({
-    queryKey: ["instantly", "threads", pageWindow, mailbox],
-    queryFn: () => callListThreads({ data: { ...pageWindow, mailbox: mailbox === "all" ? undefined : mailbox } }),
+    queryKey: ["instantly", "threads", pageWindow, mailbox, folder],
+    queryFn: () => callListThreads({
+      data: {
+        ...pageWindow,
+        mailbox: mailbox === "all" ? undefined : mailbox,
+        direction: folder,
+      },
+    }),
     staleTime: 30_000,
   });
   const mailboxesQuery = useQuery({
@@ -123,6 +129,10 @@ function InboxPage() {
     queryFn: () => callListScores(),
     staleTime: 60_000,
   });
+
+  useEffect(() => {
+    setPageWindow({ receivedPages: 1, sentPages: 1, dbLimit: 300 });
+  }, [mailbox, folder]);
 
 
   const liveThreads: Thread[] = useMemo(() => {
@@ -363,10 +373,12 @@ function InboxPage() {
   async function handleSyncAllSources() {
     setSyncingGmail(true);
     try {
-      const [gmailResult, instantlyResult] = await Promise.allSettled([
-        callSyncGmail(),
-        callSyncInstantly({ data: { limit: 9000, mode: "backfill" } }),
-      ]);
+      const gmailResult = await callSyncGmail()
+        .then((value) => ({ status: "fulfilled" as const, value }))
+        .catch((reason) => ({ status: "rejected" as const, reason }));
+      const instantlyResult = await callSyncInstantly({ data: { limit: 900, mode: "backfill" } })
+        .then((value) => ({ status: "fulfilled" as const, value }))
+        .catch((reason) => ({ status: "rejected" as const, reason }));
       await Promise.all([threadsQuery.refetch(), mailboxesQuery.refetch()]);
       const result = gmailResult.status === "fulfilled" ? gmailResult.value : null;
       const instantly = instantlyResult.status === "fulfilled" ? instantlyResult.value : null;
@@ -584,11 +596,11 @@ function InboxPage() {
                       className="h-7 text-xs"
                       disabled={threadsQuery.isFetching}
                       onClick={async () => {
-                        await handleSyncAllSources();
+                        if (hasInstantlyMore && !hm?.db) await handleSyncAllSources();
                         setPageWindow((w) => ({
-                           receivedPages: hm?.received || hasInstantlyMore ? w.receivedPages + 1 : w.receivedPages,
-                           sentPages: hm?.sent || hasInstantlyMore ? w.sentPages + 1 : w.sentPages,
-                          dbLimit: hm?.db ? w.dbLimit + 5000 : w.dbLimit,
+                          receivedPages: hm?.received || hasInstantlyMore ? w.receivedPages + 1 : w.receivedPages,
+                          sentPages: hm?.sent || hasInstantlyMore ? w.sentPages + 1 : w.sentPages,
+                          dbLimit: hm?.db ? w.dbLimit + 300 : w.dbLimit,
                         }));
                       }}
                     >
