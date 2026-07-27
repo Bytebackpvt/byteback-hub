@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { HelpCircle, Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { ensureCurrentWorkspace } from "@/lib/workspace.functions";
+import { triggerWorkspaceSync } from "@/lib/workspace-sync.functions";
 import { AiAssistant } from "@/components/ai-assistant";
 
 
@@ -31,9 +32,12 @@ export const Route = createFileRoute("/_authenticated/app")({
 function AppLayout() {
   const tour = useGuidedTour();
   const ensureWorkspace = useServerFn(ensureCurrentWorkspace);
+  const kickSync = useServerFn(triggerWorkspaceSync);
   useEffect(() => {
     initNativeShell();
-    ensureWorkspace().catch(() => null);
+    ensureWorkspace()
+      .then(() => kickSync().catch(() => null))
+      .catch(() => null);
     ensurePushSubscription().catch(() => null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
